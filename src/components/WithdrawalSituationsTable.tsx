@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Search, Pencil, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -28,6 +29,7 @@ import {
 interface WithdrawalSituation {
   id: string;
   name: string;
+  color: string;
   created_at: string;
 }
 
@@ -40,6 +42,7 @@ export const WithdrawalSituationsTable = () => {
   const [editingSituation, setEditingSituation] = useState<WithdrawalSituation | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    color: '#6B7280',
   });
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export const WithdrawalSituationsTable = () => {
 
       setShowDialog(false);
       setEditingSituation(null);
-      setFormData({ name: '' });
+      setFormData({ name: '', color: '#6B7280' });
       fetchSituations();
     } catch (error: any) {
       toast.error('Erro ao salvar situação');
@@ -96,6 +99,7 @@ export const WithdrawalSituationsTable = () => {
     setEditingSituation(situation);
     setFormData({
       name: situation.name,
+      color: situation.color,
     });
     setShowDialog(true);
   };
@@ -154,13 +158,15 @@ export const WithdrawalSituationsTable = () => {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">Nome</TableHead>
+              <TableHead className="font-semibold">Cor</TableHead>
+              <TableHead className="font-semibold">Preview</TableHead>
               <TableHead className="font-semibold text-center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSituations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={2} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                   Nenhuma situação encontrada
                 </TableCell>
               </TableRow>
@@ -168,6 +174,18 @@ export const WithdrawalSituationsTable = () => {
               filteredSituations.map((situation) => (
                 <TableRow key={situation.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="font-medium">{situation.name}</TableCell>
+                  <TableCell className="font-mono text-sm">{situation.color}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      style={{ 
+                        backgroundColor: situation.color,
+                        color: '#ffffff'
+                      }}
+                      className="shadow-sm"
+                    >
+                      {situation.name}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
                       <Button 
@@ -200,14 +218,14 @@ export const WithdrawalSituationsTable = () => {
         setShowDialog(open);
         if (!open) {
           setEditingSituation(null);
-          setFormData({ name: '' });
+          setFormData({ name: '', color: '#6B7280' });
         }
       }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingSituation ? 'Editar' : 'Nova'} Situação de Retirada</DialogTitle>
             <DialogDescription>
-              Defina o nome da situação de retirada.
+              Defina o nome e a cor da situação de retirada.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -219,6 +237,36 @@ export const WithdrawalSituationsTable = () => {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ex: RETIRADO"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="color">Cor *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="color"
+                  type="color"
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="w-20 h-10 cursor-pointer"
+                />
+                <Input
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  placeholder="#000000"
+                  className="flex-1 font-mono"
+                />
+              </div>
+            </div>
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <Label className="text-sm text-muted-foreground mb-2 block">Preview:</Label>
+              <Badge 
+                style={{ 
+                  backgroundColor: formData.color,
+                  color: '#ffffff'
+                }}
+                className="shadow-sm"
+              >
+                {formData.name || 'Preview'}
+              </Badge>
             </div>
           </div>
           <DialogFooter>
