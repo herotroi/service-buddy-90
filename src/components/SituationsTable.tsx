@@ -158,15 +158,14 @@ export const SituationsTable = () => {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">Nome</TableHead>
-              <TableHead className="font-semibold">Cor</TableHead>
-              <TableHead className="font-semibold">Preview</TableHead>
+              <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold text-center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredSituations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
                   Nenhuma situação encontrada
                 </TableCell>
               </TableRow>
@@ -174,7 +173,6 @@ export const SituationsTable = () => {
               filteredSituations.map((situation) => (
                 <TableRow key={situation.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="font-medium">{situation.name}</TableCell>
-                  <TableCell className="font-mono text-sm">{situation.color}</TableCell>
                   <TableCell>
                     <Badge 
                       style={{ 
