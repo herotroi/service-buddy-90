@@ -39,6 +39,7 @@ interface ServiceOrder {
   } | null;
   withdrawal_situation: {
     name: string;
+    color: string;
   } | null;
   technician: {
     name: string;
@@ -92,7 +93,7 @@ export const ServiceOrdersTable = () => {
           .select(`
             *,
             situation:situations(id, name, color),
-            withdrawal_situation:withdrawal_situations(name),
+            withdrawal_situation:withdrawal_situations(name, color),
             technician:employees!service_orders_technician_id_fkey(name)
           `)
           .order('os_number', { ascending: false }),
