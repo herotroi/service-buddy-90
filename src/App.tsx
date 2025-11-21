@@ -5,7 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Dashboard from "./pages/Dashboard";
+import { Layout } from "@/components/Layout";
+import ServiceOrders from "./pages/ServiceOrders";
+import Employees from "./pages/Employees";
+import Situations from "./pages/Situations";
+import WithdrawalSituations from "./pages/WithdrawalSituations";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -24,7 +28,39 @@ const App = () => (
               path="/"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Layout>
+                    <ServiceOrders />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/funcionarios"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Employees />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/situacoes"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Situations />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/retirada"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <WithdrawalSituations />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
