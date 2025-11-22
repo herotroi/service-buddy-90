@@ -116,13 +116,13 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="6"
-            markerHeight="6"
-            refX="5.5"
-            refY="3"
+            markerWidth="8"
+            markerHeight="8"
+            refX="7"
+            refY="4"
             orient="auto"
           >
-            <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--primary))" />
+            <polygon points="0 0, 8 4, 0 8" fill="hsl(var(--primary))" />
           </marker>
         </defs>
         {pattern.map((point, index) => {
@@ -140,8 +140,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const offset = 15;
           const startX = start.x + unitX * offset;
           const startY = start.y + unitY * offset;
-          const endX = end.x - unitX * (offset + 5);
-          const endY = end.y - unitY * (offset + 5);
+          const endX = end.x - unitX * (offset + 8);
+          const endY = end.y - unitY * (offset + 8);
           
           return (
             <line
@@ -151,7 +151,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               x2={endX}
               y2={endY}
               stroke="hsl(var(--primary))"
-              strokeWidth="3"
+              strokeWidth="3.5"
               markerEnd="url(#arrowhead)"
             />
           );
