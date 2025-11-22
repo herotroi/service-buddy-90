@@ -32,11 +32,19 @@ interface FormData {
   situation_id?: string;
   technician_id?: string;
   received_by_id?: string;
+  part_order_date?: string;
+  service_date?: string;
+  withdrawn_by?: string;
+  exit_date?: string;
+  withdrawal_situation_id?: string;
+  mensagem_finalizada: boolean;
+  mensagem_entregue: boolean;
 }
 
 export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderFormProps) => {
   const [loading, setLoading] = useState(false);
   const [situations, setSituations] = useState<any[]>([]);
+  const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
@@ -56,6 +64,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       situation_id: undefined,
       technician_id: undefined,
       received_by_id: undefined,
+      part_order_date: undefined,
+      service_date: undefined,
+      withdrawn_by: '',
+      exit_date: undefined,
+      withdrawal_situation_id: undefined,
+      mensagem_finalizada: false,
+      mensagem_entregue: false,
     },
   });
 
@@ -96,6 +111,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         situation_id: data.situation_id || undefined,
         technician_id: data.technician_id || undefined,
         received_by_id: data.received_by_id || undefined,
+        part_order_date: data.part_order_date ? new Date(data.part_order_date).toISOString().split('T')[0] : undefined,
+        service_date: data.service_date ? new Date(data.service_date).toISOString().split('T')[0] : undefined,
+        withdrawn_by: data.withdrawn_by || '',
+        exit_date: data.exit_date ? new Date(data.exit_date).toISOString().split('T')[0] : undefined,
+        withdrawal_situation_id: data.withdrawal_situation_id || undefined,
+        mensagem_finalizada: data.mensagem_finalizada,
+        mensagem_entregue: data.mensagem_entregue,
       });
     } catch (error: any) {
       toast.error('Erro ao carregar dados da OS');
@@ -137,26 +159,31 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
   const fetchOptions = async () => {
     try {
-      const [situationsData, techniciansData, employeesData] = await Promise.all([
+      const [situationsData, withdrawalSituationsData, techniciansData, employeesData] = await Promise.all([
         supabase.from('situations').select('*'),
+        supabase.from('withdrawal_situations').select('*'),
         supabase.from('employees').select('*').eq('type', 'Técnico'),
         supabase.from('employees').select('*'),
       ]);
 
       if (situationsData.error) throw situationsData.error;
+      if (withdrawalSituationsData.error) throw withdrawalSituationsData.error;
       if (techniciansData.error) throw techniciansData.error;
       if (employeesData.error) throw employeesData.error;
 
       setSituations(situationsData.data || []);
+      setWithdrawalSituations(withdrawalSituationsData.data || []);
       setTechnicians(techniciansData.data || []);
       setEmployees(employeesData.data || []);
 
-      // Definir "EM FILA" como situação padrão
-      const emFilaSituation = situationsData.data?.find(
-        (sit) => sit.name.toLowerCase() === 'em fila'
-      );
-      if (emFilaSituation) {
-        form.setValue('situation_id', emFilaSituation.id);
+      // Definir "EM FILA" como situação padrão apenas se não estiver editando
+      if (!orderId) {
+        const emFilaSituation = situationsData.data?.find(
+          (sit) => sit.name.toLowerCase() === 'em fila'
+        );
+        if (emFilaSituation) {
+          form.setValue('situation_id', emFilaSituation.id);
+        }
       }
     } catch (error: any) {
       toast.error('Erro ao carregar opções');
@@ -182,6 +209,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         situation_id: data.situation_id || null,
         technician_id: data.technician_id || null,
         received_by_id: data.received_by_id || null,
+        part_order_date: data.part_order_date ? new Date(data.part_order_date).toISOString() : null,
+        service_date: data.service_date ? new Date(data.service_date).toISOString() : null,
+        withdrawn_by: data.withdrawn_by || null,
+        exit_date: data.exit_date ? new Date(data.exit_date).toISOString() : null,
+        withdrawal_situation_id: data.withdrawal_situation_id || null,
+        mensagem_finalizada: data.mensagem_finalizada,
+        mensagem_entregue: data.mensagem_entregue,
       };
 
       if (orderId) {
@@ -503,6 +537,151 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                       onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="part_order_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data da Encomenda de Peça</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="service_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Para Quando é o Serviço</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Informações de Retirada */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Informações de Retirada
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="withdrawn_by"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quem Retirou</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome de quem retirou" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="exit_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Saída</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="withdrawal_situation_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Situação de Retirada</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma situação" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {withdrawalSituations.map((situation) => (
+                        <SelectItem key={situation.id} value={situation.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full shrink-0" 
+                              style={{ backgroundColor: situation.color }}
+                            />
+                            <span>{situation.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Status das Mensagens */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Status das Mensagens
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="mensagem_finalizada"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal cursor-pointer">
+                    Mensagem Finalizada
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mensagem_entregue"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal cursor-pointer">
+                    Mensagem Entregue
+                  </FormLabel>
                   <FormMessage />
                 </FormItem>
               )}
