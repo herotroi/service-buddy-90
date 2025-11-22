@@ -100,7 +100,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     <div className="flex flex-col gap-4">
       <div
         ref={containerRef}
-        className="grid grid-cols-3 gap-4 p-6 bg-muted/30 rounded-lg border-2 border-border w-fit mx-auto select-none touch-none"
+        className="grid grid-cols-3 gap-8 p-8 bg-muted/30 rounded-lg border-2 border-border w-fit mx-auto select-none touch-none"
       >
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => {
           const isActive = pattern.includes(index);
@@ -111,7 +111,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               key={index}
               ref={(el) => (dotsRef.current[index] = el)}
               className={cn(
-                "w-16 h-16 rounded-full border-4 transition-all cursor-pointer flex items-center justify-center font-semibold text-lg",
+                "w-12 h-12 rounded-full border-3 transition-all cursor-pointer flex items-center justify-center font-medium text-sm",
                 isActive
                   ? "bg-primary border-primary text-primary-foreground scale-110"
                   : "bg-background border-muted-foreground/30 hover:border-primary/50",
