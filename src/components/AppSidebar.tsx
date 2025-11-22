@@ -1,4 +1,4 @@
-import { ClipboardList, Users, Tag, Package } from 'lucide-react';
+import { ClipboardList, Users, Tag, Package, Settings } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 
 import {
@@ -18,6 +18,7 @@ const items = [
   { title: 'Funcionários', url: '/funcionarios', icon: Users },
   { title: 'Situações', url: '/situacoes', icon: Tag },
   { title: 'Retirada', url: '/retirada', icon: Package },
+  { title: 'Configurações', url: '/configuracoes', icon: Settings },
 ];
 
 export function AppSidebar() {
