@@ -18,6 +18,8 @@ interface ServiceOrderFormProps {
 }
 
 interface FormData {
+  os_number: number;
+  entry_date: string;
   client_name: string;
   contact: string;
   device_model: string;
@@ -39,6 +41,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
   
   const form = useForm<FormData>({
     defaultValues: {
+      os_number: 1,
+      entry_date: new Date().toISOString().split('T')[0],
       client_name: '',
       contact: '',
       device_model: '',
@@ -81,32 +85,9 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
     try {
       setLoading(true);
 
-      // Buscar o próximo número de OS
-      const { data: ordersData } = await supabase
-        .from('service_orders')
-        .select('os_number')
-        .order('os_number', { ascending: false })
-        .limit(1);
-
-      let nextOsNumber = 1;
-      
-      // Se não houver ordens, buscar o número inicial das configurações
-      if (!ordersData || ordersData.length === 0) {
-        const { data: settingsData } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'os_starting_number')
-          .single();
-        
-        if (settingsData) {
-          nextOsNumber = parseInt(settingsData.value);
-        }
-      } else {
-        nextOsNumber = ordersData[0].os_number + 1;
-      }
-
       const { error } = await supabase.from('service_orders').insert({
-        os_number: nextOsNumber,
+        os_number: data.os_number,
+        entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
         contact: data.contact,
         device_model: data.device_model,
@@ -117,7 +98,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
         situation_id: data.situation_id || null,
         technician_id: data.technician_id || null,
         received_by_id: data.received_by_id || null,
-        entry_date: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -136,6 +116,49 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Informações da OS */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Informações da OS
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="os_number"
+              rules={{ required: 'Número da OS é obrigatório' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número da OS *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="1" 
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 1)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="entry_date"
+              rules={{ required: 'Data de entrada é obrigatória' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Entrada *</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         {/* Informações do Cliente */}
         <div>
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
