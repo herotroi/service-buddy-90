@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 interface ServiceOrderFormProps {
   onSuccess: () => void;
@@ -41,6 +41,13 @@ interface FormData {
   mensagem_entregue: boolean;
 }
 
+interface MediaFile {
+  url: string;
+  path: string;
+  type: 'image' | 'video';
+  name: string;
+}
+
 export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderFormProps) => {
   const [loading, setLoading] = useState(false);
   const [situations, setSituations] = useState<any[]>([]);
@@ -48,6 +55,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   
   const form = useForm<FormData>({
     defaultValues: {
@@ -119,6 +128,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
       });
+
+      // Carregar arquivos de mídia
+      if (data.media_files && Array.isArray(data.media_files)) {
+        setMediaFiles(data.media_files as unknown as MediaFile[]);
+      }
     } catch (error: any) {
       toast.error('Erro ao carregar dados da OS');
       console.error(error);
@@ -191,11 +205,72 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     }
   };
 
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingMedia(true);
+    try {
+      const uploadedFiles: MediaFile[] = [];
+
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${orderId || 'temp'}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('service-orders-media')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('service-orders-media')
+          .getPublicUrl(filePath);
+
+        const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
+        uploadedFiles.push({
+          url: publicUrl,
+          path: filePath,
+          type: mediaType,
+          name: file.name,
+        });
+      }
+
+      setMediaFiles([...mediaFiles, ...uploadedFiles]);
+      toast.success('Arquivos enviados com sucesso');
+    } catch (error: any) {
+      toast.error('Erro ao enviar arquivos');
+      console.error(error);
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleRemoveMedia = async (index: number) => {
+    const fileToRemove = mediaFiles[index];
+    
+    try {
+      const { error } = await supabase.storage
+        .from('service-orders-media')
+        .remove([fileToRemove.path]);
+
+      if (error) throw error;
+
+      setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+      toast.success('Arquivo removido');
+    } catch (error: any) {
+      toast.error('Erro ao remover arquivo');
+      console.error(error);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
 
-      const orderData = {
+      const orderData: any = {
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
@@ -216,6 +291,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         withdrawal_situation_id: data.withdrawal_situation_id || null,
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
+        media_files: JSON.parse(JSON.stringify(mediaFiles)),
       };
 
       if (orderId) {
@@ -229,16 +305,59 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         toast.success('OS atualizada com sucesso');
       } else {
         // Criar nova OS
-        const { error } = await supabase
+        const { data: newOrder, error } = await supabase
           .from('service_orders')
-          .insert(orderData);
+          .insert(orderData)
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Se houver arquivos temporários, mover para a pasta da OS
+        if (mediaFiles.length > 0 && newOrder) {
+          const updatedFiles: MediaFile[] = [];
+          for (const file of mediaFiles) {
+            if (file.path.startsWith('temp/')) {
+              const newPath = file.path.replace('temp/', `${newOrder.id}/`);
+              
+              const { error: moveError } = await supabase.storage
+                .from('service-orders-media')
+                .move(file.path, newPath);
+
+              if (moveError) {
+                console.error('Erro ao mover arquivo:', moveError);
+                updatedFiles.push(file);
+              } else {
+                const { data: { publicUrl } } = supabase.storage
+                  .from('service-orders-media')
+                  .getPublicUrl(newPath);
+
+                updatedFiles.push({
+                  ...file,
+                  path: newPath,
+                  url: publicUrl,
+                });
+              }
+            } else {
+              updatedFiles.push(file);
+            }
+          }
+
+          // Atualizar a OS com os novos caminhos dos arquivos
+          await supabase
+            .from('service_orders')
+            .update({ media_files: JSON.parse(JSON.stringify(updatedFiles)) } as any)
+            .eq('id', newOrder.id);
+        }
+
         toast.success('OS criada com sucesso');
       }
 
       onSuccess();
-      if (!orderId) form.reset();
+      if (!orderId) {
+        form.reset();
+        setMediaFiles([]);
+      }
     } catch (error: any) {
       toast.error(orderId ? 'Erro ao atualizar OS' : 'Erro ao criar OS');
       console.error(error);
@@ -731,6 +850,76 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 </FormItem>
               )}
             />
+          </div>
+        </div>
+
+        {/* Fotos e Vídeos */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Fotos e Vídeos
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="media-upload" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 hover:border-primary transition-colors text-center">
+                  <input
+                    id="media-upload"
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Plus className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">
+                        {uploadingMedia ? 'Enviando...' : 'Adicionar fotos ou vídeos'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Clique para selecionar arquivos
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Label>
+            </div>
+
+            {mediaFiles.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {mediaFiles.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                      {file.type === 'image' ? (
+                        <img 
+                          src={file.url} 
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video 
+                          src={file.url}
+                          className="w-full h-full object-cover"
+                          controls
+                        />
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveMedia(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

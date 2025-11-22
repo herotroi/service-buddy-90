@@ -50,6 +50,7 @@ interface ServiceOrder {
   withdrawn_by: string | null;
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
+  media_files: any;
   situation: {
     id: string;
     name: string;
@@ -65,6 +66,13 @@ interface ServiceOrder {
   received_by: {
     name: string;
   } | null;
+}
+
+interface MediaFile {
+  url: string;
+  path: string;
+  type: 'image' | 'video';
+  name: string;
 }
 
 interface Filters {
@@ -649,6 +657,36 @@ export const ServiceOrdersTable = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Fotos e Vídeos */}
+                  {order.media_files && Array.isArray(order.media_files) && (order.media_files as any[]).length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Fotos e Vídeos</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {((order.media_files as unknown as MediaFile[]) || []).map((file, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                              {file.type === 'image' ? (
+                                <img 
+                                  src={file.url} 
+                                  alt={file.name}
+                                  className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(file.url, '_blank')}
+                                />
+                              ) : (
+                                <video 
+                                  src={file.url}
+                                  className="w-full h-full object-cover"
+                                  controls
+                                />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
