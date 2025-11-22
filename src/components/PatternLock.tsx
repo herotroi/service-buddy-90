@@ -100,8 +100,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     const row = Math.floor(index / 3);
     const col = index % 3;
     return {
-      x: col * 80 + 40,
-      y: row * 80 + 40,
+      x: col * 100 + 50,
+      y: row * 100 + 50,
     };
   };
 
@@ -111,19 +111,18 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     return (
       <svg
         className="absolute inset-0 pointer-events-none"
-        style={{ width: '240px', height: '240px' }}
+        style={{ width: '300px', height: '300px' }}
       >
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="8"
-            refY="3"
+            markerWidth="8"
+            markerHeight="8"
+            refX="7"
+            refY="4"
             orient="auto"
-            className="fill-primary"
           >
-            <polygon points="0 0, 10 3, 0 6" className="fill-primary" />
+            <polygon points="0 0, 8 4, 0 8" fill="hsl(var(--primary))" />
           </marker>
         </defs>
         {pattern.map((point, index) => {
@@ -131,16 +130,30 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const start = getPosition(point);
           const end = getPosition(pattern[index + 1]);
           
+          // Calcular o ângulo e encurtar a linha para não sobrepor os pontos
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const unitX = dx / length;
+          const unitY = dy / length;
+          
+          const offset = 18;
+          const startX = start.x + unitX * offset;
+          const startY = start.y + unitY * offset;
+          const endX = end.x - unitX * offset;
+          const endY = end.y - unitY * offset;
+          
           return (
             <line
               key={`${point}-${pattern[index + 1]}`}
-              x1={start.x}
-              y1={start.y}
-              x2={end.x}
-              y2={end.y}
+              x1={startX}
+              y1={startY}
+              x2={endX}
+              y2={endY}
               stroke="hsl(var(--primary))"
-              strokeWidth="3"
+              strokeWidth="2.5"
               markerEnd="url(#arrowhead)"
+              opacity="0.8"
             />
           );
         })}
@@ -149,43 +162,45 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div
         ref={containerRef}
-        className="relative grid grid-cols-3 gap-20 p-8 bg-muted/30 rounded-lg border-2 border-border w-fit mx-auto select-none touch-none"
-        style={{ width: '240px', height: '240px' }}
+        className="relative p-10 bg-muted/20 rounded-xl border border-border w-fit mx-auto select-none touch-none"
+        style={{ width: '300px', height: '300px' }}
       >
         {renderLines()}
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => {
-          const isActive = pattern.includes(index);
-          const orderIndex = pattern.indexOf(index);
-          
-          return (
-            <div
-              key={index}
-              ref={(el) => (dotsRef.current[index] = el)}
-              className={cn(
-                "absolute w-10 h-10 rounded-full transition-all cursor-pointer flex items-center justify-center font-medium text-xs z-10",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-lg"
-                  : "bg-muted border-2 border-muted-foreground/30 hover:border-primary/50 text-muted-foreground",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-              style={{
-                left: `${(index % 3) * 80}px`,
-                top: `${Math.floor(index / 3) * 80}px`,
-              }}
-              onMouseDown={() => handleStart(index)}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                handleStart(index);
-              }}
-              data-index={index}
-            >
-              {isActive ? orderIndex + 1 : '•'}
-            </div>
-          );
-        })}
+        <div className="grid grid-cols-3 gap-0 w-full h-full">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => {
+            const isActive = pattern.includes(index);
+            const orderIndex = pattern.indexOf(index);
+            
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-center"
+              >
+                <div
+                  ref={(el) => (dotsRef.current[index] = el)}
+                  className={cn(
+                    "w-12 h-12 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-sm z-10",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg scale-110"
+                      : "bg-background border-2 border-muted-foreground/20 hover:border-primary/40 text-muted-foreground hover:scale-105",
+                    disabled && "opacity-50 cursor-not-allowed"
+                  )}
+                  onMouseDown={() => handleStart(index)}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handleStart(index);
+                  }}
+                  data-index={index}
+                >
+                  {isActive ? orderIndex + 1 : ''}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       
       <div className="flex items-center gap-3 justify-center">
