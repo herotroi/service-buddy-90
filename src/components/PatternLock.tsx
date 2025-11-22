@@ -99,13 +99,15 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   const getPosition = (index: number) => {
     const row = Math.floor(index / 3);
     const col = index % 3;
-    // Adicionar o padding do container (p-8 = 32px) + posição relativa no grid
+    // p-8 = 32px padding + grid position
+    // Total container é 330px, grid interno é 266px (330 - 64px padding)
+    // Cada célula do grid = 266/3 ≈ 88.67px
     const padding = 32;
-    const cellSize = 110;
-    const halfCell = 55;
+    const gridSize = 266; // 330 - (32*2)
+    const cellSize = gridSize / 3;
     return {
-      x: padding + col * cellSize + halfCell,
-      y: padding + row * cellSize + halfCell,
+      x: padding + col * cellSize + cellSize / 2,
+      y: padding + row * cellSize + cellSize / 2,
     };
   };
 
@@ -143,7 +145,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           
           // Círculo tem w-8 h-8 = 32px, raio = 16px
           const circleRadius = 16;
-          const arrowSize = 8;
+          const arrowSize = 6;
           
           // Começa na borda do círculo de origem
           const startX = start.x + unitX * circleRadius;
