@@ -227,17 +227,29 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
                       {...field}
                       placeholder="(00) 00000-0000"
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, '');
-                        if (value.length <= 11) {
-                          if (value.length <= 10) {
+                        // Remove tudo que não é número
+                        const digits = e.target.value.replace(/\D/g, '');
+                        
+                        // Limita a 11 dígitos
+                        const limitedDigits = digits.slice(0, 11);
+                        
+                        // Aplica a máscara baseado na quantidade de dígitos
+                        let formatted = limitedDigits;
+                        if (limitedDigits.length > 0) {
+                          if (limitedDigits.length <= 2) {
+                            formatted = `(${limitedDigits}`;
+                          } else if (limitedDigits.length <= 6) {
+                            formatted = `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2)}`;
+                          } else if (limitedDigits.length <= 10) {
                             // Telefone fixo: (99) 9999-9999
-                            value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+                            formatted = `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 6)}-${limitedDigits.slice(6)}`;
                           } else {
                             // Celular: (99) 99999-9999
-                            value = value.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3');
+                            formatted = `(${limitedDigits.slice(0, 2)}) ${limitedDigits.slice(2, 7)}-${limitedDigits.slice(7)}`;
                           }
                         }
-                        field.onChange(value);
+                        
+                        field.onChange(formatted);
                       }}
                     />
                   </FormControl>
