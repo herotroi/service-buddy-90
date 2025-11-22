@@ -96,7 +96,7 @@ export type Database = {
         Row: {
           client_message: string | null
           client_name: string
-          contact: string
+          contact: string | null
           created_at: string
           device_model: string
           device_password: string | null
@@ -106,6 +106,7 @@ export type Database = {
           mensagem_entregue: boolean
           mensagem_finalizada: boolean
           os_number: number
+          other_contacts: string | null
           part_order_date: string | null
           received_by_id: string | null
           reported_defect: string
@@ -120,7 +121,7 @@ export type Database = {
         Insert: {
           client_message?: string | null
           client_name: string
-          contact: string
+          contact?: string | null
           created_at?: string
           device_model: string
           device_password?: string | null
@@ -130,6 +131,7 @@ export type Database = {
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
+          other_contacts?: string | null
           part_order_date?: string | null
           received_by_id?: string | null
           reported_defect: string
@@ -144,7 +146,7 @@ export type Database = {
         Update: {
           client_message?: string | null
           client_name?: string
-          contact?: string
+          contact?: string | null
           created_at?: string
           device_model?: string
           device_password?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
+          other_contacts?: string | null
           part_order_date?: string | null
           received_by_id?: string | null
           reported_defect?: string

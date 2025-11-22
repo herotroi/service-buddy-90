@@ -21,7 +21,8 @@ interface FormData {
   os_number: number;
   entry_date: string;
   client_name: string;
-  contact: string;
+  contact?: string;
+  other_contacts?: string;
   device_model: string;
   device_password?: string;
   reported_defect: string;
@@ -45,6 +46,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
       entry_date: new Date().toISOString().split('T')[0],
       client_name: '',
       contact: '',
+      other_contacts: '',
       device_model: '',
       device_password: '',
       reported_defect: '',
@@ -122,7 +124,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
-        contact: data.contact,
+        contact: data.contact || null,
+        other_contacts: data.other_contacts || null,
         device_model: data.device_model,
         device_password: data.device_password || null,
         reported_defect: data.reported_defect,
@@ -216,12 +219,41 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
             <FormField
               control={form.control}
               name="contact"
-              rules={{ required: 'Contato é obrigatório' }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contato *</FormLabel>
+                  <FormLabel>Celular/Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder="Telefone ou email" {...field} />
+                    <Input
+                      {...field}
+                      placeholder="(00) 00000-0000"
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 11) {
+                          if (value.length <= 10) {
+                            // Telefone fixo: (99) 9999-9999
+                            value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+                          } else {
+                            // Celular: (99) 99999-9999
+                            value = value.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3');
+                          }
+                        }
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="other_contacts"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Outros Contatos</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Instagram, email ou outro número" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
