@@ -236,11 +236,14 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           console.log(`Arquivo processado: ${file.name} (${originalSize} → ${compressedSize})`);
 
           // Upload do arquivo processado
+          // Upload para o storage (70% -> 100%)
+          setUploadProgress(70);
           const fileExt = file.type.startsWith('video/') ? 
             file.name.split('.').pop() : 'jpg';
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           const filePath = `${orderId || 'temp'}/${fileName}`;
 
+          setUploadProgress(80);
           const { error: uploadError } = await supabase.storage
             .from('service-orders-media')
             .upload(filePath, processedFile, {
@@ -249,6 +252,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             });
 
           if (uploadError) throw uploadError;
+          setUploadProgress(90);
 
           const { data: { publicUrl } } = supabase.storage
             .from('service-orders-media')
@@ -262,6 +266,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             type: mediaType,
             name: file.name,
           });
+          
+          setUploadProgress(100);
         } catch (fileError: any) {
           console.error(`Erro ao processar ${file.name}:`, fileError);
           toast.error(`Erro ao processar ${file.name}: ${fileError.message}`);
