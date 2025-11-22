@@ -464,17 +464,22 @@ export const ServiceOrdersTable = () => {
       {/* Drawer para nova OS */}
       <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer}>
         <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>Nova Ordem de Serviço</DrawerTitle>
+          <DrawerHeader className="border-b pb-4">
+            <DrawerTitle className="text-2xl">Nova Ordem de Serviço</DrawerTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Preencha os dados abaixo para criar uma nova OS
+            </p>
           </DrawerHeader>
-          <div className="overflow-y-auto px-6 pb-6">
-            <ServiceOrderForm 
-              onSuccess={() => {
-                setShowNewOrderDrawer(false);
-                fetchData();
-              }}
-              onCancel={() => setShowNewOrderDrawer(false)}
-            />
+          <div className="overflow-y-auto px-6 py-6">
+            <div className="max-w-4xl mx-auto">
+              <ServiceOrderForm 
+                onSuccess={() => {
+                  setShowNewOrderDrawer(false);
+                  fetchData();
+                }}
+                onCancel={() => setShowNewOrderDrawer(false)}
+              />
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
