@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,9 @@ interface ServiceOrder {
   entry_date: string;
   client_name: string;
   contact: string;
+  other_contacts: string | null;
   device_model: string;
+  device_password: string | null;
   reported_defect: string;
   value: number | null;
   mensagem_finalizada: boolean;
@@ -77,6 +78,8 @@ export const ServiceOrdersTable = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showNewOrderDrawer, setShowNewOrderDrawer] = useState(false);
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
+  const [editOrderId, setEditOrderId] = useState<string | null>(null);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -132,25 +135,6 @@ export const ServiceOrdersTable = () => {
     }
   };
 
-  const updateCheckbox = async (id: string, field: 'mensagem_finalizada' | 'mensagem_entregue', value: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('service_orders')
-        .update({ [field]: value })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setOrders(orders.map(order => 
-        order.id === id ? { ...order, [field]: value } : order
-      ));
-      
-      toast.success('Atualizado com sucesso');
-    } catch (error: any) {
-      toast.error('Erro ao atualizar');
-      console.error(error);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -325,15 +309,13 @@ export const ServiceOrdersTable = () => {
                 <TableHead className="font-semibold">Situação</TableHead>
                 <TableHead className="font-semibold">Técnico</TableHead>
                 <TableHead className="font-semibold">Valor</TableHead>
-                <TableHead className="font-semibold text-center">Msg Final</TableHead>
-                <TableHead className="font-semibold text-center">Msg Entregue</TableHead>
                 <TableHead className="font-semibold text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     Nenhuma ordem de serviço encontrada
                   </TableCell>
                 </TableRow>
@@ -372,28 +354,22 @@ export const ServiceOrdersTable = () => {
                     <TableCell className="font-medium">
                       {order.value ? `R$ ${order.value.toFixed(2)}` : '-'}
                     </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={order.mensagem_finalizada}
-                        onCheckedChange={(checked) => 
-                          updateCheckbox(order.id, 'mensagem_finalizada', checked as boolean)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={order.mensagem_entregue}
-                        onCheckedChange={(checked) => 
-                          updateCheckbox(order.id, 'mensagem_entregue', checked as boolean)
-                        }
-                      />
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => setViewOrderId(order.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => setEditOrderId(order.id)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -488,6 +464,101 @@ export const ServiceOrdersTable = () => {
                   fetchData();
                 }}
                 onCancel={() => setShowNewOrderDrawer(false)}
+              />
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Drawer para visualizar OS */}
+      <Drawer open={!!viewOrderId} onOpenChange={() => setViewOrderId(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="border-b pb-4">
+            <DrawerTitle className="text-2xl">Visualizar Ordem de Serviço</DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-6 pb-6">
+            {viewOrderId && (() => {
+              const order = orders.find(o => o.id === viewOrderId);
+              if (!order) return null;
+              
+              return (
+                <div className="space-y-6 max-w-4xl mx-auto py-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Número da OS</p>
+                      <p className="text-lg font-bold">#{order.os_number}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Data de Entrada</p>
+                      <p className="text-lg">{format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Cliente</p>
+                      <p className="text-lg">{order.client_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Contato</p>
+                      <p className="text-lg">{order.contact || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
+                      <p className="text-lg">{order.device_model}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Situação</p>
+                      {order.situation && (
+                        <Badge 
+                          style={{ 
+                            backgroundColor: order.situation.color,
+                            color: getTextColor(order.situation.color)
+                          }}
+                          className="text-sm mt-1"
+                        >
+                          {order.situation.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Técnico</p>
+                      <p className="text-lg">{order.technician?.name || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Valor</p>
+                      <p className="text-lg font-bold">{order.value ? `R$ ${order.value.toFixed(2)}` : '-'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Defeito Relatado</p>
+                    <p className="text-base bg-muted p-4 rounded-md">{order.reported_defect}</p>
+                  </div>
+                  {order.device_password && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Senha do Aparelho</p>
+                      <p className="text-base bg-muted p-4 rounded-md font-mono">{order.device_password}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Drawer para editar OS */}
+      <Drawer open={!!editOrderId} onOpenChange={() => setEditOrderId(null)}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="border-b pb-4">
+            <DrawerTitle className="text-2xl">Editar Ordem de Serviço</DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-6 py-6">
+            <div className="max-w-4xl mx-auto">
+              <ServiceOrderForm 
+                orderId={editOrderId || undefined}
+                onSuccess={() => {
+                  setEditOrderId(null);
+                  fetchData();
+                }}
+                onCancel={() => setEditOrderId(null)}
               />
             </div>
           </div>

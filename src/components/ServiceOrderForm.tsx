@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 interface ServiceOrderFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  orderId?: string;
 }
 
 interface FormData {
@@ -33,7 +34,7 @@ interface FormData {
   received_by_id?: string;
 }
 
-export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps) => {
+export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderFormProps) => {
   const [loading, setLoading] = useState(false);
   const [situations, setSituations] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
@@ -61,10 +62,46 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
   useEffect(() => {
     const initialize = async () => {
       await fetchOptions();
-      await fetchNextOsNumber();
+      if (orderId) {
+        await loadOrderData(orderId);
+      } else {
+        await fetchNextOsNumber();
+      }
     };
     initialize();
-  }, []);
+  }, [orderId]);
+
+  const loadOrderData = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('service_orders')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      if (!data) return;
+
+      form.reset({
+        os_number: data.os_number,
+        entry_date: new Date(data.entry_date).toISOString().split('T')[0],
+        client_name: data.client_name,
+        contact: data.contact || '',
+        other_contacts: data.other_contacts || '',
+        device_model: data.device_model,
+        device_password: data.device_password || '',
+        reported_defect: data.reported_defect,
+        client_message: data.client_message || '',
+        value: data.value || undefined,
+        situation_id: data.situation_id || undefined,
+        technician_id: data.technician_id || undefined,
+        received_by_id: data.received_by_id || undefined,
+      });
+    } catch (error: any) {
+      toast.error('Erro ao carregar dados da OS');
+      console.error(error);
+    }
+  };
 
   const fetchNextOsNumber = async () => {
     try {
@@ -131,7 +168,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
     try {
       setLoading(true);
 
-      const { error } = await supabase.from('service_orders').insert({
+      const orderData = {
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
@@ -145,15 +182,31 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
         situation_id: data.situation_id || null,
         technician_id: data.technician_id || null,
         received_by_id: data.received_by_id || null,
-      });
+      };
 
-      if (error) throw error;
+      if (orderId) {
+        // Atualizar OS existente
+        const { error } = await supabase
+          .from('service_orders')
+          .update(orderData)
+          .eq('id', orderId);
 
-      toast.success('OS criada com sucesso');
+        if (error) throw error;
+        toast.success('OS atualizada com sucesso');
+      } else {
+        // Criar nova OS
+        const { error } = await supabase
+          .from('service_orders')
+          .insert(orderData);
+
+        if (error) throw error;
+        toast.success('OS criada com sucesso');
+      }
+
       onSuccess();
-      form.reset();
+      if (!orderId) form.reset();
     } catch (error: any) {
-      toast.error('Erro ao criar OS');
+      toast.error(orderId ? 'Erro ao atualizar OS' : 'Erro ao criar OS');
       console.error(error);
     } finally {
       setLoading(false);
@@ -508,7 +561,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
           </Button>
           <Button type="submit" disabled={loading} size="lg">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Criar OS
+            {orderId ? 'Atualizar OS' : 'Criar OS'}
           </Button>
         </div>
       </form>
