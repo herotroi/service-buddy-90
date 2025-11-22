@@ -112,6 +112,36 @@ export const ServiceOrdersTable = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Configurar realtime para service_orders
+    const channel = supabase
+      .channel('service-orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_orders'
+        },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            // Buscar a ordem completa com relações
+            fetchSingleOrder(payload.new.id);
+          } else if (payload.eventType === 'UPDATE') {
+            // Buscar a ordem atualizada com relações
+            fetchSingleOrder(payload.new.id);
+          } else if (payload.eventType === 'DELETE') {
+            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -148,6 +178,39 @@ export const ServiceOrdersTable = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSingleOrder = async (orderId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('service_orders')
+        .select(`
+          *,
+          situation:situations(id, name, color),
+          withdrawal_situation:withdrawal_situations(name, color),
+          technician:employees!service_orders_technician_id_fkey(name),
+          received_by:employees!service_orders_received_by_id_fkey(name)
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (error) throw error;
+
+      setOrders(prev => {
+        const index = prev.findIndex(o => o.id === orderId);
+        if (index !== -1) {
+          // Atualizar ordem existente
+          const newOrders = [...prev];
+          newOrders[index] = data;
+          return newOrders;
+        } else {
+          // Adicionar nova ordem
+          return [data, ...prev];
+        }
+      });
+    } catch (error: any) {
+      console.error('Erro ao buscar ordem:', error);
     }
   };
 
@@ -663,27 +726,44 @@ export const ServiceOrdersTable = () => {
                     <div>
                       <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Fotos e Vídeos</h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {((order.media_files as unknown as MediaFile[]) || []).map((file, index) => (
-                          <div key={index} className="relative group">
-                            <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                              {file.type === 'image' ? (
-                                <img 
-                                  src={file.url} 
-                                  alt={file.name}
-                                  className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => window.open(file.url, '_blank')}
-                                />
-                              ) : (
-                                <video 
-                                  src={file.url}
-                                  className="w-full h-full object-cover"
-                                  controls
-                                />
-                              )}
+                        {((order.media_files as unknown as MediaFile[]) || []).map((file, index) => {
+                          // Garantir que a URL seja pública e válida
+                          const mediaUrl = file.url.startsWith('http') 
+                            ? file.url 
+                            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/service-orders-media/${file.path}`;
+                          
+                          return (
+                            <div key={index} className="relative group">
+                              <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
+                                {file.type === 'image' ? (
+                                  <img 
+                                    src={mediaUrl} 
+                                    alt={file.name}
+                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(mediaUrl, '_blank')}
+                                    onError={(e) => {
+                                      console.error('Erro ao carregar imagem:', file);
+                                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErro%3C/text%3E%3C/svg%3E';
+                                    }}
+                                  />
+                                ) : (
+                                  <video 
+                                    src={mediaUrl}
+                                    className="w-full h-full object-cover"
+                                    controls
+                                    preload="metadata"
+                                    onError={(e) => {
+                                      console.error('Erro ao carregar vídeo:', file);
+                                    }}
+                                  >
+                                    Seu navegador não suporta vídeos.
+                                  </video>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
