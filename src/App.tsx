@@ -10,6 +10,7 @@ import ServiceOrders from "./pages/ServiceOrders";
 import Employees from "./pages/Employees";
 import Situations from "./pages/Situations";
 import WithdrawalSituations from "./pages/WithdrawalSituations";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <WithdrawalSituations />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configuracoes"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Settings />
                   </Layout>
                 </ProtectedRoute>
               }
