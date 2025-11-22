@@ -2,7 +2,7 @@
 const MAX_IMAGE_WIDTH = 1920;
 const MAX_IMAGE_HEIGHT = 1920;
 const IMAGE_QUALITY = 0.8;
-const MAX_VIDEO_SIZE_MB = 50; // Limite máximo para vídeos
+const MAX_VIDEO_SIZE_MB = 200; // Limite máximo para vídeos
 
 /**
  * Comprime uma imagem redimensionando e ajustando a qualidade
