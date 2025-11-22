@@ -122,13 +122,13 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="8"
-            markerHeight="8"
-            refX="7"
-            refY="4"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5.5"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 8 4, 0 8" fill="hsl(var(--primary))" />
+            <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--primary))" />
           </marker>
         </defs>
         {pattern.map((point, index) => {
