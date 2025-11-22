@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 
 interface ServiceOrderFormProps {
   onSuccess: () => void;
@@ -210,41 +211,83 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     if (!files || files.length === 0) return;
 
     setUploadingMedia(true);
+    
     try {
       const uploadedFiles: MediaFile[] = [];
+      let processedCount = 0;
+      const totalFiles = files.length;
 
       for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${orderId || 'temp'}/${fileName}`;
+        try {
+          processedCount++;
+          
+          // Mostrar progresso
+          if (totalFiles > 1) {
+            toast.loading(`Processando arquivo ${processedCount} de ${totalFiles}...`, {
+              id: 'upload-progress'
+            });
+          } else {
+            toast.loading('Comprimindo arquivo...', { id: 'upload-progress' });
+          }
 
-        const { error: uploadError } = await supabase.storage
-          .from('service-orders-media')
-          .upload(filePath, file);
+          // Comprimir/processar o arquivo
+          const originalSize = formatFileSize(file.size);
+          const processedFile = await processMediaFile(file);
+          const compressedSize = formatFileSize(processedFile.size);
+          
+          console.log(`Arquivo processado: ${file.name} (${originalSize} → ${compressedSize})`);
 
-        if (uploadError) throw uploadError;
+          // Upload do arquivo processado
+          const fileExt = file.type.startsWith('video/') ? 
+            file.name.split('.').pop() : 'jpg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `${orderId || 'temp'}/${fileName}`;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('service-orders-media')
-          .getPublicUrl(filePath);
+          const { error: uploadError } = await supabase.storage
+            .from('service-orders-media')
+            .upload(filePath, processedFile, {
+              contentType: processedFile.type,
+              upsert: false
+            });
 
-        const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+          if (uploadError) throw uploadError;
 
-        uploadedFiles.push({
-          url: publicUrl,
-          path: filePath,
-          type: mediaType,
-          name: file.name,
-        });
+          const { data: { publicUrl } } = supabase.storage
+            .from('service-orders-media')
+            .getPublicUrl(filePath);
+
+          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
+          uploadedFiles.push({
+            url: publicUrl,
+            path: filePath,
+            type: mediaType,
+            name: file.name,
+          });
+        } catch (fileError: any) {
+          console.error(`Erro ao processar ${file.name}:`, fileError);
+          toast.error(`Erro ao processar ${file.name}: ${fileError.message}`);
+        }
       }
 
-      setMediaFiles([...mediaFiles, ...uploadedFiles]);
-      toast.success('Arquivos enviados com sucesso');
+      toast.dismiss('upload-progress');
+
+      if (uploadedFiles.length > 0) {
+        setMediaFiles([...mediaFiles, ...uploadedFiles]);
+        toast.success(
+          uploadedFiles.length === 1 
+            ? 'Arquivo enviado com sucesso' 
+            : `${uploadedFiles.length} arquivos enviados com sucesso`
+        );
+      }
     } catch (error: any) {
+      toast.dismiss('upload-progress');
       toast.error('Erro ao enviar arquivos');
       console.error(error);
     } finally {
       setUploadingMedia(false);
+      // Limpar o input para permitir re-upload do mesmo arquivo
+      event.target.value = '';
     }
   };
 
@@ -877,10 +920,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     </div>
                     <div>
                       <p className="font-medium">
-                        {uploadingMedia ? 'Enviando...' : 'Adicionar fotos ou vídeos'}
+                        {uploadingMedia ? 'Processando e enviando...' : 'Adicionar fotos ou vídeos'}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Clique para selecionar arquivos
+                        {uploadingMedia 
+                          ? 'Comprimindo arquivos...' 
+                          : 'Imagens serão comprimidas automaticamente'}
                       </p>
                     </div>
                   </div>
