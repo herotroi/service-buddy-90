@@ -96,12 +96,66 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     };
   }, [isDrawing, pattern, disabled]);
 
+  const getPosition = (index: number) => {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    return {
+      x: col * 80 + 40,
+      y: row * 80 + 40,
+    };
+  };
+
+  const renderLines = () => {
+    if (pattern.length < 2) return null;
+
+    return (
+      <svg
+        className="absolute inset-0 pointer-events-none"
+        style={{ width: '240px', height: '240px' }}
+      >
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="10"
+            refX="8"
+            refY="3"
+            orient="auto"
+            className="fill-primary"
+          >
+            <polygon points="0 0, 10 3, 0 6" className="fill-primary" />
+          </marker>
+        </defs>
+        {pattern.map((point, index) => {
+          if (index === pattern.length - 1) return null;
+          const start = getPosition(point);
+          const end = getPosition(pattern[index + 1]);
+          
+          return (
+            <line
+              key={`${point}-${pattern[index + 1]}`}
+              x1={start.x}
+              y1={start.y}
+              x2={end.x}
+              y2={end.y}
+              stroke="hsl(var(--primary))"
+              strokeWidth="3"
+              markerEnd="url(#arrowhead)"
+            />
+          );
+        })}
+      </svg>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div
         ref={containerRef}
-        className="grid grid-cols-3 gap-8 p-8 bg-muted/30 rounded-lg border-2 border-border w-fit mx-auto select-none touch-none"
+        className="relative grid grid-cols-3 gap-20 p-8 bg-muted/30 rounded-lg border-2 border-border w-fit mx-auto select-none touch-none"
+        style={{ width: '240px', height: '240px' }}
       >
+        {renderLines()}
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((index) => {
           const isActive = pattern.includes(index);
           const orderIndex = pattern.indexOf(index);
@@ -111,12 +165,16 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               key={index}
               ref={(el) => (dotsRef.current[index] = el)}
               className={cn(
-                "w-12 h-12 rounded-full border-3 transition-all cursor-pointer flex items-center justify-center font-medium text-sm",
+                "absolute w-10 h-10 rounded-full transition-all cursor-pointer flex items-center justify-center font-medium text-xs z-10",
                 isActive
-                  ? "bg-primary border-primary text-primary-foreground scale-110"
-                  : "bg-background border-muted-foreground/30 hover:border-primary/50",
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "bg-muted border-2 border-muted-foreground/30 hover:border-primary/50 text-muted-foreground",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
+              style={{
+                left: `${(index % 3) * 80}px`,
+                top: `${Math.floor(index / 3) * 80}px`,
+              }}
               onMouseDown={() => handleStart(index)}
               onTouchStart={(e) => {
                 e.preventDefault();
@@ -124,7 +182,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               }}
               data-index={index}
             >
-              {isActive && orderIndex + 1}
+              {isActive ? orderIndex + 1 : '•'}
             </div>
           );
         })}
