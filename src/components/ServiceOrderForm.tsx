@@ -12,6 +12,7 @@ import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
+import { Progress } from '@/components/ui/progress';
 
 interface ServiceOrderFormProps {
   onSuccess: () => void;
@@ -58,6 +59,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentFileName, setCurrentFileName] = useState('');
   
   const form = useForm<FormData>({
     defaultValues: {
@@ -220,19 +223,14 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       for (const file of Array.from(files)) {
         try {
           processedCount++;
-          
-          // Mostrar progresso
-          if (totalFiles > 1) {
-            toast.loading(`Processando arquivo ${processedCount} de ${totalFiles}...`, {
-              id: 'upload-progress'
-            });
-          } else {
-            toast.loading('Comprimindo arquivo...', { id: 'upload-progress' });
-          }
+          setCurrentFileName(file.name);
+          setUploadProgress(0);
 
-          // Comprimir/processar o arquivo
+          // Comprimir/processar o arquivo com callback de progresso
           const originalSize = formatFileSize(file.size);
-          const processedFile = await processMediaFile(file);
+          const processedFile = await processMediaFile(file, (progress) => {
+            setUploadProgress(progress);
+          });
           const compressedSize = formatFileSize(processedFile.size);
           
           console.log(`Arquivo processado: ${file.name} (${originalSize} → ${compressedSize})`);
@@ -270,7 +268,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         }
       }
 
-      toast.dismiss('upload-progress');
+      setUploadProgress(0);
+      setCurrentFileName('');
 
       if (uploadedFiles.length > 0) {
         setMediaFiles([...mediaFiles, ...uploadedFiles]);
@@ -281,11 +280,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         );
       }
     } catch (error: any) {
-      toast.dismiss('upload-progress');
       toast.error('Erro ao enviar arquivos');
       console.error(error);
     } finally {
       setUploadingMedia(false);
+      setUploadProgress(0);
+      setCurrentFileName('');
       // Limpar o input para permitir re-upload do mesmo arquivo
       event.target.value = '';
     }
@@ -914,19 +914,27 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     disabled={uploadingMedia}
                     className="hidden"
                   />
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-2 w-full">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                       <Plus className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium">
+                    <div className="w-full">
+                      <p className="font-medium text-center">
                         {uploadingMedia ? 'Processando e enviando...' : 'Adicionar fotos ou vídeos'}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground text-center">
                         {uploadingMedia 
-                          ? 'Comprimindo arquivos...' 
+                          ? currentFileName 
                           : 'Imagens serão comprimidas automaticamente'}
                       </p>
+                      {uploadingMedia && uploadProgress > 0 && (
+                        <div className="mt-3 w-full max-w-md mx-auto space-y-2">
+                          <Progress value={uploadProgress} className="h-2" />
+                          <p className="text-xs text-center text-muted-foreground">
+                            {uploadProgress}% completo
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
