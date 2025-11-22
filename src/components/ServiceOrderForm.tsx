@@ -131,205 +131,227 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="client_name"
-            rules={{ required: 'Nome do cliente é obrigatório' }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Cliente *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome completo" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="contact"
-            rules={{ required: 'Contato é obrigatório' }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contato *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Telefone ou email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="device_model"
-            rules={{ required: 'Modelo do aparelho é obrigatório' }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Modelo do Aparelho *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: iPhone 12" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="device_password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Senha do Aparelho</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="Senha (opcional)" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="situation_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Situação</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Informações do Cliente */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Informações do Cliente
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="client_name"
+              rules={{ required: 'Nome do cliente é obrigatório' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome do Cliente *</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma situação" />
-                    </SelectTrigger>
+                    <Input placeholder="Nome completo" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {situations.map((situation) => (
-                      <SelectItem key={situation.id} value={situation.id}>
-                        {situation.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="technician_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Técnico Responsável</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+            <FormField
+              control={form.control}
+              name="contact"
+              rules={{ required: 'Contato é obrigatório' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contato *</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um técnico" />
-                    </SelectTrigger>
+                    <Input placeholder="Telefone ou email" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {technicians.map((tech) => (
-                      <SelectItem key={tech.id} value={tech.id}>
-                        {tech.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="received_by_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recebido Por</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+            <FormField
+              control={form.control}
+              name="device_model"
+              rules={{ required: 'Modelo do aparelho é obrigatório' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modelo do Aparelho *</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione quem recebeu" />
-                    </SelectTrigger>
+                    <Input placeholder="Ex: iPhone 12" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {employees.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor (R$)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00" 
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="device_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha do Aparelho</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Senha (opcional)" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="reported_defect"
-          rules={{ required: 'Defeito relatado é obrigatório' }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Defeito Relatado *</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Descreva o problema relatado pelo cliente" 
-                  className="min-h-20"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Detalhes do Serviço */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Detalhes do Serviço
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="situation_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Situação</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma situação" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {situations.map((situation) => (
+                        <SelectItem key={situation.id} value={situation.id}>
+                          {situation.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="client_message"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mensagem ao Cliente</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Mensagem que será enviada ao cliente (opcional)" 
-                  className="min-h-20"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="technician_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Técnico Responsável</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um técnico" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {technicians.map((tech) => (
+                        <SelectItem key={tech.id} value={tech.id}>
+                          {tech.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div className="flex gap-3 justify-end pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
+            <FormField
+              control={form.control}
+              name="received_by_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recebido Por</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione quem recebeu" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="value"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valor (R$)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="0.00" 
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Descrição do Serviço */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Descrição do Serviço
+          </h3>
+          <div className="space-y-6">
+            <FormField
+              control={form.control}
+              name="reported_defect"
+              rules={{ required: 'Defeito relatado é obrigatório' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Defeito Relatado *</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descreva o problema relatado pelo cliente" 
+                      className="min-h-24 resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="client_message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mensagem ao Cliente</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Mensagem que será enviada ao cliente (opcional)" 
+                      className="min-h-24 resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end pt-6 border-t">
+          <Button type="button" variant="outline" onClick={onCancel} size="lg">
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} size="lg">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Criar OS
           </Button>
