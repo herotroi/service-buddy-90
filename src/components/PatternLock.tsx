@@ -100,8 +100,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     const row = Math.floor(index / 3);
     const col = index % 3;
     return {
-      x: col * 90 + 45,
-      y: row * 90 + 45,
+      x: col * 110 + 55,
+      y: row * 110 + 55,
     };
   };
 
@@ -111,18 +111,18 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     return (
       <svg
         className="absolute inset-0 pointer-events-none"
-        style={{ width: '270px', height: '270px' }}
+        style={{ width: '330px', height: '330px' }}
       >
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            refX="5.5"
+            refY="3"
             orient="auto"
           >
-            <polygon points="0 0, 10 5, 0 10" fill="hsl(var(--primary))" />
+            <polygon points="0 0, 6 3, 0 6" fill="hsl(var(--primary))" />
           </marker>
         </defs>
         {pattern.map((point, index) => {
@@ -165,7 +165,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
       <div
         ref={containerRef}
         className="relative p-8 bg-muted/20 rounded-xl border border-border w-fit mx-auto select-none touch-none"
-        style={{ width: '270px', height: '270px' }}
+        style={{ width: '330px', height: '330px' }}
       >
         {renderLines()}
         <div className="grid grid-cols-3 gap-0 w-full h-full">
