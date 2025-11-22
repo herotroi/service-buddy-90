@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,6 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { ServiceOrderForm } from './ServiceOrderForm';
 
 interface ServiceOrder {
   id: string;
@@ -64,6 +66,7 @@ export const ServiceOrdersTable = () => {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showNewOrderDrawer, setShowNewOrderDrawer] = useState(false);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -204,6 +207,13 @@ export const ServiceOrdersTable = () => {
               className="pl-10 transition-all"
             />
           </div>
+          <Button
+            onClick={() => setShowNewOrderDrawer(true)}
+            className="shrink-0"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nova OS
+          </Button>
           <Button
             variant={showFilters ? "default" : "outline"}
             onClick={() => setShowFilters(!showFilters)}
@@ -450,6 +460,24 @@ export const ServiceOrdersTable = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Drawer para nova OS */}
+      <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>Nova Ordem de Serviço</DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-6 pb-6">
+            <ServiceOrderForm 
+              onSuccess={() => {
+                setShowNewOrderDrawer(false);
+                fetchData();
+              }}
+              onCancel={() => setShowNewOrderDrawer(false)}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };
