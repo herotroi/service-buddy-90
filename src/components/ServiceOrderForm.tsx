@@ -59,8 +59,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
   });
 
   useEffect(() => {
-    fetchOptions();
-    fetchNextOsNumber();
+    const initialize = async () => {
+      await fetchOptions();
+      await fetchNextOsNumber();
+    };
+    initialize();
   }, []);
 
   const fetchNextOsNumber = async () => {
@@ -110,6 +113,14 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
       setSituations(situationsData.data || []);
       setTechnicians(techniciansData.data || []);
       setEmployees(employeesData.data || []);
+
+      // Definir "EM FILA" como situação padrão
+      const emFilaSituation = situationsData.data?.find(
+        (sit) => sit.name.toLowerCase() === 'em fila'
+      );
+      if (emFilaSituation) {
+        form.setValue('situation_id', emFilaSituation.id);
+      }
     } catch (error: any) {
       toast.error('Erro ao carregar opções');
       console.error(error);
