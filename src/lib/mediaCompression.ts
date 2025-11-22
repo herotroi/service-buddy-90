@@ -7,14 +7,20 @@ const MAX_VIDEO_SIZE_MB = 5000; // Limite máximo para vídeos (5GB)
 /**
  * Comprime uma imagem redimensionando e ajustando a qualidade
  */
-export const compressImage = async (file: File): Promise<File> => {
+export const compressImage = async (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<File> => {
   return new Promise((resolve, reject) => {
+    onProgress?.(10);
     const reader = new FileReader();
     
     reader.onload = (e) => {
+      onProgress?.(30);
       const img = new Image();
       
       img.onload = () => {
+        onProgress?.(50);
         // Calcular novas dimensões mantendo proporção
         let width = img.width;
         let height = img.height;
@@ -42,6 +48,7 @@ export const compressImage = async (file: File): Promise<File> => {
         
         // Desenhar imagem redimensionada
         ctx.drawImage(img, 0, 0, width, height);
+        onProgress?.(70);
         
         // Converter para blob com compressão
         canvas.toBlob(
@@ -59,6 +66,7 @@ export const compressImage = async (file: File): Promise<File> => {
             );
             
             console.log(`Imagem comprimida: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+            onProgress?.(100);
             resolve(compressedFile);
           },
           'image/jpeg',
@@ -79,7 +87,11 @@ export const compressImage = async (file: File): Promise<File> => {
  * Valida e prepara vídeo para upload
  * Para vídeos, apenas validamos o tamanho já que compressão real requer backend
  */
-export const prepareVideo = async (file: File): Promise<File> => {
+export const prepareVideo = async (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<File> => {
+  onProgress?.(50);
   const fileSizeMB = file.size / 1024 / 1024;
   
   if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
@@ -87,19 +99,23 @@ export const prepareVideo = async (file: File): Promise<File> => {
   }
   
   console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB`);
+  onProgress?.(100);
   return file;
 };
 
 /**
  * Processa arquivo de mídia (imagem ou vídeo)
  */
-export const processMediaFile = async (file: File): Promise<File> => {
+export const processMediaFile = async (
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<File> => {
   const fileType = file.type.split('/')[0];
   
   if (fileType === 'image') {
-    return await compressImage(file);
+    return await compressImage(file, onProgress);
   } else if (fileType === 'video') {
-    return await prepareVideo(file);
+    return await prepareVideo(file, onProgress);
   }
   
   throw new Error('Tipo de arquivo não suportado');
