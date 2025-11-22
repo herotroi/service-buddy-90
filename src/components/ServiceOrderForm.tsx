@@ -321,7 +321,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
 
                       {passwordType === 'text' ? (
                         <FormControl>
-                          <Input type="password" placeholder="Senha (opcional)" {...field} />
+                          <Input type="text" placeholder="Senha (opcional)" {...field} />
                         </FormControl>
                       ) : (
                         <FormControl>
