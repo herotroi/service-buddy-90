@@ -58,7 +58,40 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
 
   useEffect(() => {
     fetchOptions();
+    fetchNextOsNumber();
   }, []);
+
+  const fetchNextOsNumber = async () => {
+    try {
+      // Buscar o próximo número de OS
+      const { data: ordersData } = await supabase
+        .from('service_orders')
+        .select('os_number')
+        .order('os_number', { ascending: false })
+        .limit(1);
+
+      let nextOsNumber = 1;
+      
+      // Se não houver ordens, buscar o número inicial das configurações
+      if (!ordersData || ordersData.length === 0) {
+        const { data: settingsData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'os_starting_number')
+          .maybeSingle();
+        
+        if (settingsData) {
+          nextOsNumber = parseInt(settingsData.value);
+        }
+      } else {
+        nextOsNumber = ordersData[0].os_number + 1;
+      }
+
+      form.setValue('os_number', nextOsNumber);
+    } catch (error: any) {
+      console.error('Erro ao buscar próximo número de OS:', error);
+    }
+  };
 
   const fetchOptions = async () => {
     try {
