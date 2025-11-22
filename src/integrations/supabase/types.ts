@@ -43,34 +43,52 @@ export type Database = {
       }
       profiles: {
         Row: {
-          address: string | null
+          city: string | null
           cnpj: string | null
+          complement: string | null
           created_at: string
           email: string
           full_name: string | null
           id: string
           logo_url: string | null
+          neighborhood: string | null
+          number: string | null
           phone: string | null
+          state: string | null
+          street: string | null
+          zip_code: string | null
         }
         Insert: {
-          address?: string | null
+          city?: string | null
           cnpj?: string | null
+          complement?: string | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
           logo_url?: string | null
+          neighborhood?: string | null
+          number?: string | null
           phone?: string | null
+          state?: string | null
+          street?: string | null
+          zip_code?: string | null
         }
         Update: {
-          address?: string | null
+          city?: string | null
           cnpj?: string | null
+          complement?: string | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
           logo_url?: string | null
+          neighborhood?: string | null
+          number?: string | null
           phone?: string | null
+          state?: string | null
+          street?: string | null
+          zip_code?: string | null
         }
         Relationships: []
       }

@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,11 +18,36 @@ const Settings = () => {
   
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [complement, setComplement] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [osStartNumber, setOsStartNumber] = useState('1');
+
+  // Mask functions
+  const maskPhone = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 10) {
+      return cleaned.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+    }
+    return cleaned.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+  };
+
+  const maskCNPJ = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+  };
+
+  const maskZipCode = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+  };
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -39,7 +63,13 @@ const Settings = () => {
       if (data) {
         setFullName(data.full_name || '');
         setPhone(data.phone || '');
-        setAddress(data.address || '');
+        setStreet(data.street || '');
+        setNumber(data.number || '');
+        setComplement(data.complement || '');
+        setNeighborhood(data.neighborhood || '');
+        setCity(data.city || '');
+        setState(data.state || '');
+        setZipCode(data.zip_code || '');
         setCnpj(data.cnpj || '');
         setLogoUrl(data.logo_url || '');
       }
@@ -68,7 +98,19 @@ const Settings = () => {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (profileData: { full_name: string; phone: string; address: string; cnpj: string; logo_url: string }) => {
+    mutationFn: async (profileData: { 
+      full_name: string; 
+      phone: string; 
+      street: string;
+      number: string;
+      complement: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+      zip_code: string;
+      cnpj: string; 
+      logo_url: string 
+    }) => {
       const { error } = await supabase
         .from('profiles')
         .update(profileData)
@@ -174,7 +216,13 @@ const Settings = () => {
     updateProfileMutation.mutate({
       full_name: fullName,
       phone,
-      address,
+      street,
+      number,
+      complement,
+      neighborhood,
+      city,
+      state,
+      zip_code: zipCode,
       cnpj,
       logo_url: logoUrl,
     });
@@ -284,8 +332,9 @@ const Settings = () => {
                       id="phone"
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(maskPhone(e.target.value))}
                       placeholder="(00) 00000-0000"
+                      maxLength={15}
                     />
                   </div>
 
@@ -295,20 +344,95 @@ const Settings = () => {
                       id="cnpj"
                       type="text"
                       value={cnpj}
-                      onChange={(e) => setCnpj(e.target.value)}
+                      onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
                       placeholder="00.000.000/0000-00"
+                      maxLength={18}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Endereço Completo</Label>
-                    <Textarea
-                      id="address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Rua, número, complemento, bairro, cidade, estado, CEP"
-                      rows={3}
-                    />
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Endereço</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="street">Rua</Label>
+                        <Input
+                          id="street"
+                          type="text"
+                          value={street}
+                          onChange={(e) => setStreet(e.target.value)}
+                          placeholder="Nome da rua"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="number">Número</Label>
+                        <Input
+                          id="number"
+                          type="text"
+                          value={number}
+                          onChange={(e) => setNumber(e.target.value)}
+                          placeholder="Número"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="complement">Complemento</Label>
+                        <Input
+                          id="complement"
+                          type="text"
+                          value={complement}
+                          onChange={(e) => setComplement(e.target.value)}
+                          placeholder="Apto, sala, etc."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood">Bairro</Label>
+                        <Input
+                          id="neighborhood"
+                          type="text"
+                          value={neighborhood}
+                          onChange={(e) => setNeighborhood(e.target.value)}
+                          placeholder="Bairro"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="city">Cidade</Label>
+                        <Input
+                          id="city"
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="Cidade"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="state">Estado</Label>
+                        <Input
+                          id="state"
+                          type="text"
+                          value={state}
+                          onChange={(e) => setState(e.target.value.toUpperCase())}
+                          placeholder="UF"
+                          maxLength={2}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="zipCode">CEP</Label>
+                        <Input
+                          id="zipCode"
+                          type="text"
+                          value={zipCode}
+                          onChange={(e) => setZipCode(maskZipCode(e.target.value))}
+                          placeholder="00000-000"
+                          maxLength={9}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <Button 
