@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -32,6 +35,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
   const [situations, setSituations] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
   
   const form = useForm<FormData>({
     defaultValues: {
@@ -183,19 +187,53 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="device_password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha do Aparelho</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Senha (opcional)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="device_password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha do Aparelho</FormLabel>
+                    <div className="space-y-4">
+                      <RadioGroup
+                        value={passwordType}
+                        onValueChange={(value: 'text' | 'pattern') => {
+                          setPasswordType(value);
+                          if (value === 'pattern') {
+                            field.onChange('');
+                          }
+                        }}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="text" id="text" />
+                          <Label htmlFor="text" className="cursor-pointer font-normal">
+                            Senha de texto
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="pattern" id="pattern" />
+                          <Label htmlFor="pattern" className="cursor-pointer font-normal">
+                            Padrão de 9 pontos
+                          </Label>
+                        </div>
+                      </RadioGroup>
+
+                      {passwordType === 'text' ? (
+                        <FormControl>
+                          <Input type="password" placeholder="Senha (opcional)" {...field} />
+                        </FormControl>
+                      ) : (
+                        <FormControl>
+                          <PatternLock value={field.value} onChange={field.onChange} />
+                        </FormControl>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
         </div>
 
