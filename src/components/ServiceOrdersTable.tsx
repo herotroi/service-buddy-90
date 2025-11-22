@@ -42,7 +42,12 @@ interface ServiceOrder {
   device_model: string;
   device_password: string | null;
   reported_defect: string;
+  client_message: string | null;
   value: number | null;
+  part_order_date: string | null;
+  service_date: string | null;
+  exit_date: string | null;
+  withdrawn_by: string | null;
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
   situation: {
@@ -57,7 +62,9 @@ interface ServiceOrder {
   technician: {
     name: string;
   } | null;
-  exit_date: string | null;
+  received_by: {
+    name: string;
+  } | null;
 }
 
 interface Filters {
@@ -110,7 +117,8 @@ export const ServiceOrdersTable = () => {
             *,
             situation:situations(id, name, color),
             withdrawal_situation:withdrawal_situations(name, color),
-            technician:employees!service_orders_technician_id_fkey(name)
+            technician:employees!service_orders_technician_id_fkey(name),
+            received_by:employees!service_orders_received_by_id_fkey(name)
           `)
           .order('os_number', { ascending: false }),
         supabase.from('situations').select('*'),
@@ -483,60 +491,164 @@ export const ServiceOrdersTable = () => {
               
               return (
                 <div className="space-y-6 max-w-4xl mx-auto py-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Número da OS</p>
-                      <p className="text-lg font-bold">#{order.os_number}</p>
+                  {/* Informações Básicas */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Informações da OS</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Número da OS</p>
+                        <p className="text-lg font-bold">#{order.os_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Data de Entrada</p>
+                        <p className="text-lg">{format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Data de Entrada</p>
-                      <p className="text-lg">{format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Cliente</p>
-                      <p className="text-lg">{order.client_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Contato</p>
-                      <p className="text-lg">{order.contact || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
-                      <p className="text-lg">{order.device_model}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Situação</p>
-                      {order.situation && (
-                        <Badge 
-                          style={{ 
-                            backgroundColor: order.situation.color,
-                            color: getTextColor(order.situation.color)
-                          }}
-                          className="text-sm mt-1"
-                        >
-                          {order.situation.name}
-                        </Badge>
+                  </div>
+
+                  {/* Informações do Cliente */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Informações do Cliente</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Nome do Cliente</p>
+                        <p className="text-lg">{order.client_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Contato</p>
+                        <p className="text-lg">{order.contact || '-'}</p>
+                      </div>
+                      {order.other_contacts && (
+                        <div className="md:col-span-2">
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Outros Contatos</p>
+                          <p className="text-lg">{order.other_contacts}</p>
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Técnico</p>
-                      <p className="text-lg">{order.technician?.name || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Valor</p>
-                      <p className="text-lg font-bold">{order.value ? `R$ ${order.value.toFixed(2)}` : '-'}</p>
-                    </div>
                   </div>
+
+                  {/* Informações do Aparelho */}
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Defeito Relatado</p>
-                    <p className="text-base bg-muted p-4 rounded-md">{order.reported_defect}</p>
-                  </div>
-                  {order.device_password && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-2">Senha do Aparelho</p>
-                      <p className="text-base bg-muted p-4 rounded-md font-mono">{order.device_password}</p>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Informações do Aparelho</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
+                        <p className="text-lg">{order.device_model}</p>
+                      </div>
+                      {order.device_password && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Senha do Aparelho</p>
+                          <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Defeito e Mensagem */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Descrição do Serviço</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Defeito Relatado</p>
+                        <p className="text-base bg-muted p-4 rounded-md">{order.reported_defect}</p>
+                      </div>
+                      {order.client_message && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">Mensagem para o Cliente</p>
+                          <p className="text-base bg-muted p-4 rounded-md">{order.client_message}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Detalhes do Serviço */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Detalhes do Serviço</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Situação</p>
+                        {order.situation ? (
+                          <Badge 
+                            style={{ 
+                              backgroundColor: order.situation.color,
+                              color: getTextColor(order.situation.color)
+                            }}
+                            className="text-sm mt-1"
+                          >
+                            {order.situation.name}
+                          </Badge>
+                        ) : '-'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Valor</p>
+                        <p className="text-lg font-bold">{order.value ? `R$ ${order.value.toFixed(2)}` : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Data da Encomenda da Peça</p>
+                        <p className="text-lg">{order.part_order_date ? format(new Date(order.part_order_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Para Quando é o Serviço</p>
+                        <p className="text-lg">{order.service_date ? format(new Date(order.service_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Quem Recebeu</p>
+                        <p className="text-lg">{order.received_by?.name || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Técnico Responsável</p>
+                        <p className="text-lg">{order.technician?.name || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Informações de Retirada */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Informações de Retirada</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Quem Retirou</p>
+                        <p className="text-lg">{order.withdrawn_by || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Data de Saída</p>
+                        <p className="text-lg">{order.exit_date ? format(new Date(order.exit_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Situação de Retirada</p>
+                        {order.withdrawal_situation ? (
+                          <Badge 
+                            style={{ 
+                              backgroundColor: order.withdrawal_situation.color,
+                              color: getTextColor(order.withdrawal_situation.color)
+                            }}
+                            className="text-sm mt-1"
+                          >
+                            {order.withdrawal_situation.name}
+                          </Badge>
+                        ) : '-'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status das Mensagens */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Status das Mensagens</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Mensagem Finalizada</p>
+                        <Badge variant={order.mensagem_finalizada ? "default" : "secondary"}>
+                          {order.mensagem_finalizada ? 'Sim' : 'Não'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Mensagem Entregue</p>
+                        <Badge variant={order.mensagem_entregue ? "default" : "secondary"}>
+                          {order.mensagem_entregue ? 'Sim' : 'Não'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
