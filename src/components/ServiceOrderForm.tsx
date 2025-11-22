@@ -251,7 +251,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               upsert: false
             });
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            // Mensagem de erro mais específica
+            if (uploadError.message.includes('exceeded')) {
+              throw new Error('O arquivo excede o limite de 5GB. Por favor, use um arquivo menor.');
+            }
+            throw uploadError;
+          }
           setUploadProgress(90);
 
           const { data: { publicUrl } } = supabase.storage
