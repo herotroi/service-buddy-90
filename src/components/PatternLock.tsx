@@ -141,9 +141,9 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const circleRadius = 16;
           const arrowSize = 8;
           
-          // Começa no centro do círculo de origem
-          const startX = start.x;
-          const startY = start.y;
+          // Começa na borda do círculo de origem
+          const startX = start.x + unitX * circleRadius;
+          const startY = start.y + unitY * circleRadius;
           // Termina na borda do círculo de destino (menos o tamanho da seta)
           const endX = end.x - unitX * (circleRadius + arrowSize);
           const endY = end.y - unitY * (circleRadius + arrowSize);
