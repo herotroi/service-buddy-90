@@ -103,6 +103,7 @@ export type Database = {
           entry_date: string
           exit_date: string | null
           id: string
+          media_files: Json | null
           mensagem_entregue: boolean
           mensagem_finalizada: boolean
           os_number: number
@@ -128,6 +129,7 @@ export type Database = {
           entry_date?: string
           exit_date?: string | null
           id?: string
+          media_files?: Json | null
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
@@ -153,6 +155,7 @@ export type Database = {
           entry_date?: string
           exit_date?: string | null
           id?: string
+          media_files?: Json | null
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
