@@ -12,15 +12,15 @@ export const compressImage = async (
   onProgress?: (progress: number) => void
 ): Promise<File> => {
   return new Promise((resolve, reject) => {
-    onProgress?.(10);
+    onProgress?.(5);
     const reader = new FileReader();
     
     reader.onload = (e) => {
-      onProgress?.(30);
+      onProgress?.(15);
       const img = new Image();
       
       img.onload = () => {
-        onProgress?.(50);
+        onProgress?.(30);
         // Calcular novas dimensões mantendo proporção
         let width = img.width;
         let height = img.height;
@@ -48,7 +48,7 @@ export const compressImage = async (
         
         // Desenhar imagem redimensionada
         ctx.drawImage(img, 0, 0, width, height);
-        onProgress?.(70);
+        onProgress?.(50);
         
         // Converter para blob com compressão
         canvas.toBlob(
@@ -66,7 +66,7 @@ export const compressImage = async (
             );
             
             console.log(`Imagem comprimida: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
-            onProgress?.(100);
+            onProgress?.(70);
             resolve(compressedFile);
           },
           'image/jpeg',
@@ -91,7 +91,7 @@ export const prepareVideo = async (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<File> => {
-  onProgress?.(50);
+  onProgress?.(30);
   const fileSizeMB = file.size / 1024 / 1024;
   
   if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
@@ -99,7 +99,7 @@ export const prepareVideo = async (
   }
   
   console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB`);
-  onProgress?.(100);
+  onProgress?.(70);
   return file;
 };
 
