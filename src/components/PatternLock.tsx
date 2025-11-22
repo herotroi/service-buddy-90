@@ -99,9 +99,13 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   const getPosition = (index: number) => {
     const row = Math.floor(index / 3);
     const col = index % 3;
+    // Adicionar o padding do container (p-8 = 32px) + posição relativa no grid
+    const padding = 32;
+    const cellSize = 110;
+    const halfCell = 55;
     return {
-      x: col * 110 + 55,
-      y: row * 110 + 55,
+      x: padding + col * cellSize + halfCell,
+      y: padding + row * cellSize + halfCell,
     };
   };
 
@@ -110,7 +114,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
 
     return (
       <svg
-        className="absolute inset-0 pointer-events-none"
+        className="absolute top-0 left-0 pointer-events-none"
         style={{ width: '330px', height: '330px' }}
       >
         <defs>
