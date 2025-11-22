@@ -369,7 +369,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel }: ServiceOrderFormProps)
                     <SelectContent>
                       {situations.map((situation) => (
                         <SelectItem key={situation.id} value={situation.id}>
-                          {situation.name}
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full shrink-0" 
+                              style={{ backgroundColor: situation.color }}
+                            />
+                            <span>{situation.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
