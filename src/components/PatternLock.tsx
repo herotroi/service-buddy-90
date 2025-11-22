@@ -100,8 +100,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     const row = Math.floor(index / 3);
     const col = index % 3;
     return {
-      x: col * 100 + 50,
-      y: row * 100 + 50,
+      x: col * 90 + 45,
+      y: row * 90 + 45,
     };
   };
 
@@ -111,18 +111,18 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     return (
       <svg
         className="absolute inset-0 pointer-events-none"
-        style={{ width: '300px', height: '300px' }}
+        style={{ width: '270px', height: '270px' }}
       >
         <defs>
           <marker
             id="arrowhead"
-            markerWidth="8"
-            markerHeight="8"
-            refX="7"
-            refY="4"
+            markerWidth="10"
+            markerHeight="10"
+            refX="9"
+            refY="5"
             orient="auto"
           >
-            <polygon points="0 0, 8 4, 0 8" fill="hsl(var(--primary))" />
+            <polygon points="0 0, 10 5, 0 10" fill="hsl(var(--primary))" />
           </marker>
         </defs>
         {pattern.map((point, index) => {
@@ -137,11 +137,11 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const unitX = dx / length;
           const unitY = dy / length;
           
-          const offset = 18;
+          const offset = 15;
           const startX = start.x + unitX * offset;
           const startY = start.y + unitY * offset;
-          const endX = end.x - unitX * offset;
-          const endY = end.y - unitY * offset;
+          const endX = end.x - unitX * (offset + 5);
+          const endY = end.y - unitY * (offset + 5);
           
           return (
             <line
@@ -151,9 +151,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               x2={endX}
               y2={endY}
               stroke="hsl(var(--primary))"
-              strokeWidth="2.5"
+              strokeWidth="3"
               markerEnd="url(#arrowhead)"
-              opacity="0.8"
             />
           );
         })}
@@ -165,8 +164,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     <div className="flex flex-col gap-6">
       <div
         ref={containerRef}
-        className="relative p-10 bg-muted/20 rounded-xl border border-border w-fit mx-auto select-none touch-none"
-        style={{ width: '300px', height: '300px' }}
+        className="relative p-8 bg-muted/20 rounded-xl border border-border w-fit mx-auto select-none touch-none"
+        style={{ width: '270px', height: '270px' }}
       >
         {renderLines()}
         <div className="grid grid-cols-3 gap-0 w-full h-full">
@@ -182,7 +181,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
                 <div
                   ref={(el) => (dotsRef.current[index] = el)}
                   className={cn(
-                    "w-12 h-12 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-sm z-10",
+                    "w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-xs z-10",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-lg scale-110"
                       : "bg-background border-2 border-muted-foreground/20 hover:border-primary/40 text-muted-foreground hover:scale-105",
