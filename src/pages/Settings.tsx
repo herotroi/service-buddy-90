@@ -1,20 +1,28 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [osStartNumber, setOsStartNumber] = useState('1');
 
   // Fetch user profile
@@ -30,6 +38,10 @@ const Settings = () => {
       if (error) throw error;
       if (data) {
         setFullName(data.full_name || '');
+        setPhone(data.phone || '');
+        setAddress(data.address || '');
+        setCnpj(data.cnpj || '');
+        setLogoUrl(data.logo_url || '');
       }
       return data;
     },
@@ -56,10 +68,10 @@ const Settings = () => {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: async (newFullName: string) => {
+    mutationFn: async (profileData: { full_name: string; phone: string; address: string; cnpj: string; logo_url: string }) => {
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: newFullName })
+        .update(profileData)
         .eq('id', user?.id);
       
       if (error) throw error;
@@ -115,9 +127,57 @@ const Settings = () => {
     },
   });
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/logo.${fileExt}`;
+      
+      // Delete old logo if exists
+      if (logoUrl) {
+        const oldPath = logoUrl.split('/').slice(-2).join('/');
+        await supabase.storage.from('logos').remove([oldPath]);
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('logos')
+        .getPublicUrl(fileName);
+
+      setLogoUrl(publicUrl);
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Logo enviada com sucesso!',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao enviar logo: ' + error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfileMutation.mutate(fullName);
+    updateProfileMutation.mutate({
+      full_name: fullName,
+      phone,
+      address,
+      cnpj,
+      logo_url: logoUrl,
+    });
   };
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
@@ -152,6 +212,48 @@ const Settings = () => {
               ) : (
                 <form onSubmit={handleProfileSubmit} className="space-y-4">
                   <div className="space-y-2">
+                    <Label htmlFor="logo">Logo da Empresa</Label>
+                    <div className="flex items-center gap-4">
+                      {logoUrl && (
+                        <div className="w-24 h-24 rounded-lg border border-border overflow-hidden">
+                          <img 
+                            src={logoUrl} 
+                            alt="Logo" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="mr-2 h-4 w-4" />
+                              {logoUrl ? 'Alterar Logo' : 'Enviar Logo'}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
@@ -173,6 +275,39 @@ const Settings = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Seu nome completo"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="(00) 00000-0000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      type="text"
+                      value={cnpj}
+                      onChange={(e) => setCnpj(e.target.value)}
+                      placeholder="00.000.000/0000-00"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Endereço Completo</Label>
+                    <Textarea
+                      id="address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Rua, número, complemento, bairro, cidade, estado, CEP"
+                      rows={3}
                     />
                   </div>
 
