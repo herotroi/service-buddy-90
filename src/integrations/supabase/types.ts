@@ -41,6 +41,30 @@ export type Database = {
         }
         Relationships: []
       }
+      local_equipamento: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           city: string | null
@@ -89,6 +113,30 @@ export type Database = {
           state?: string | null
           street?: string | null
           zip_code?: string | null
+        }
+        Relationships: []
+      }
+      retirada_informatica: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -201,6 +249,137 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_orders_informatica: {
+        Row: {
+          accessories: string | null
+          client_name: string
+          client_notified: boolean
+          contact: string | null
+          created_at: string
+          defect: string
+          entry_date: string
+          equipment: string
+          equipment_location_id: string | null
+          exit_date: string | null
+          id: string
+          more_details: string | null
+          observations: string | null
+          os_number: number
+          other_contacts: string | null
+          received_by_id: string | null
+          senha: string | null
+          service_date: string | null
+          situation_id: string | null
+          updated_at: string
+          value: number | null
+          withdrawal_situation_id: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          accessories?: string | null
+          client_name: string
+          client_notified?: boolean
+          contact?: string | null
+          created_at?: string
+          defect: string
+          entry_date?: string
+          equipment: string
+          equipment_location_id?: string | null
+          exit_date?: string | null
+          id?: string
+          more_details?: string | null
+          observations?: string | null
+          os_number?: number
+          other_contacts?: string | null
+          received_by_id?: string | null
+          senha?: string | null
+          service_date?: string | null
+          situation_id?: string | null
+          updated_at?: string
+          value?: number | null
+          withdrawal_situation_id?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          accessories?: string | null
+          client_name?: string
+          client_notified?: boolean
+          contact?: string | null
+          created_at?: string
+          defect?: string
+          entry_date?: string
+          equipment?: string
+          equipment_location_id?: string | null
+          exit_date?: string | null
+          id?: string
+          more_details?: string | null
+          observations?: string | null
+          os_number?: number
+          other_contacts?: string | null
+          received_by_id?: string | null
+          senha?: string | null
+          service_date?: string | null
+          situation_id?: string | null
+          updated_at?: string
+          value?: number | null
+          withdrawal_situation_id?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_informatica_equipment_location_id_fkey"
+            columns: ["equipment_location_id"]
+            isOneToOne: false
+            referencedRelation: "local_equipamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_informatica_received_by_id_fkey"
+            columns: ["received_by_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_informatica_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situacao_informatica"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_informatica_withdrawal_situation_id_fkey"
+            columns: ["withdrawal_situation_id"]
+            isOneToOne: false
+            referencedRelation: "retirada_informatica"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      situacao_informatica: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       situations: {
         Row: {

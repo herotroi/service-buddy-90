@@ -1,5 +1,6 @@
-import { ClipboardList, Users, Tag, Package, Settings } from 'lucide-react';
+import { ClipboardList, Users, Tag, Package, Settings, MapPin } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
+import { useSector } from '@/hooks/useSector';
 
 import {
   Sidebar,
@@ -13,16 +14,18 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-const items = [
-  { title: 'Ordens de Serviço', url: '/', icon: ClipboardList },
-  { title: 'Funcionários', url: '/funcionarios', icon: Users },
-  { title: 'Situações', url: '/situacoes', icon: Tag },
-  { title: 'Retirada', url: '/retirada', icon: Package },
-  { title: 'Configurações', url: '/configuracoes', icon: Settings },
-];
-
 export function AppSidebar() {
   const { open } = useSidebar();
+  const { sector } = useSector();
+
+  const items = [
+    { title: 'Ordens de Serviço', url: '/', icon: ClipboardList },
+    { title: 'Funcionários', url: '/funcionarios', icon: Users },
+    { title: 'Situações', url: '/situacoes', icon: Tag },
+    { title: 'Retirada', url: '/retirada', icon: Package },
+    ...(sector === 'informatica' ? [{ title: 'Local Equipamento', url: '/local-equipamento', icon: MapPin }] : []),
+    { title: 'Configurações', url: '/configuracoes', icon: Settings },
+  ];
 
   return (
     <Sidebar collapsible="icon">
