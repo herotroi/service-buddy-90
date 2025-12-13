@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { TriStateCheckbox, TriStateValue } from '@/components/ui/tri-state-checkbox';
 import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
@@ -26,6 +27,7 @@ interface FormData {
   entry_date: string;
   client_name: string;
   client_cpf?: string;
+  client_address?: string;
   contact?: string;
   other_contacts?: string;
   device_model: string;
@@ -43,21 +45,21 @@ interface FormData {
   withdrawal_situation_id?: string;
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
-  // Checklist fields
-  checklist_houve_queda: boolean;
-  checklist_face_id: boolean;
-  checklist_carrega: boolean;
-  checklist_tela_quebrada: boolean;
-  checklist_vidro_trincado: boolean;
-  checklist_manchas_tela: boolean;
-  checklist_carcaca_torta: boolean;
-  checklist_riscos_tampa: boolean;
-  checklist_riscos_laterais: boolean;
-  checklist_vidro_camera: boolean;
-  checklist_acompanha_chip: boolean;
-  checklist_acompanha_sd: boolean;
-  checklist_acompanha_capa: boolean;
-  checklist_esta_ligado: boolean;
+  // Checklist fields - tri-state (null/true/false)
+  checklist_houve_queda: boolean | null;
+  checklist_face_id: boolean | null;
+  checklist_carrega: boolean | null;
+  checklist_tela_quebrada: boolean | null;
+  checklist_vidro_trincado: boolean | null;
+  checklist_manchas_tela: boolean | null;
+  checklist_carcaca_torta: boolean | null;
+  checklist_riscos_tampa: boolean | null;
+  checklist_riscos_laterais: boolean | null;
+  checklist_vidro_camera: boolean | null;
+  checklist_acompanha_chip: boolean | null;
+  checklist_acompanha_sd: boolean | null;
+  checklist_acompanha_capa: boolean | null;
+  checklist_esta_ligado: boolean | null;
 }
 
 interface MediaFile {
@@ -85,6 +87,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       entry_date: new Date().toISOString().split('T')[0],
       client_name: '',
       client_cpf: '',
+      client_address: '',
       contact: '',
       other_contacts: '',
       device_model: '',
@@ -102,21 +105,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       withdrawal_situation_id: undefined,
       mensagem_finalizada: false,
       mensagem_entregue: false,
-      // Checklist defaults
-      checklist_houve_queda: false,
-      checklist_face_id: false,
-      checklist_carrega: false,
-      checklist_tela_quebrada: false,
-      checklist_vidro_trincado: false,
-      checklist_manchas_tela: false,
-      checklist_carcaca_torta: false,
-      checklist_riscos_tampa: false,
-      checklist_riscos_laterais: false,
-      checklist_vidro_camera: false,
-      checklist_acompanha_chip: false,
-      checklist_acompanha_sd: false,
-      checklist_acompanha_capa: false,
-      checklist_esta_ligado: false,
+      // Checklist defaults - null means not evaluated
+      checklist_houve_queda: null,
+      checklist_face_id: null,
+      checklist_carrega: null,
+      checklist_tela_quebrada: null,
+      checklist_vidro_trincado: null,
+      checklist_manchas_tela: null,
+      checklist_carcaca_torta: null,
+      checklist_riscos_tampa: null,
+      checklist_riscos_laterais: null,
+      checklist_vidro_camera: null,
+      checklist_acompanha_chip: null,
+      checklist_acompanha_sd: null,
+      checklist_acompanha_capa: null,
+      checklist_esta_ligado: null,
     },
   });
 
@@ -148,6 +151,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         entry_date: new Date(data.entry_date).toISOString().split('T')[0],
         client_name: data.client_name,
         client_cpf: data.client_cpf || '',
+        client_address: (data as any).client_address || '',
         contact: data.contact || '',
         other_contacts: data.other_contacts || '',
         device_model: data.device_model,
@@ -165,21 +169,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         withdrawal_situation_id: data.withdrawal_situation_id || undefined,
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
-        // Checklist fields
-        checklist_houve_queda: data.checklist_houve_queda || false,
-        checklist_face_id: data.checklist_face_id || false,
-        checklist_carrega: data.checklist_carrega || false,
-        checklist_tela_quebrada: data.checklist_tela_quebrada || false,
-        checklist_vidro_trincado: data.checklist_vidro_trincado || false,
-        checklist_manchas_tela: data.checklist_manchas_tela || false,
-        checklist_carcaca_torta: data.checklist_carcaca_torta || false,
-        checklist_riscos_tampa: data.checklist_riscos_tampa || false,
-        checklist_riscos_laterais: data.checklist_riscos_laterais || false,
-        checklist_vidro_camera: data.checklist_vidro_camera || false,
-        checklist_acompanha_chip: data.checklist_acompanha_chip || false,
-        checklist_acompanha_sd: data.checklist_acompanha_sd || false,
-        checklist_acompanha_capa: data.checklist_acompanha_capa || false,
-        checklist_esta_ligado: data.checklist_esta_ligado || false,
+        // Checklist fields - preserve null values
+        checklist_houve_queda: data.checklist_houve_queda,
+        checklist_face_id: data.checklist_face_id,
+        checklist_carrega: data.checklist_carrega,
+        checklist_tela_quebrada: data.checklist_tela_quebrada,
+        checklist_vidro_trincado: data.checklist_vidro_trincado,
+        checklist_manchas_tela: data.checklist_manchas_tela,
+        checklist_carcaca_torta: data.checklist_carcaca_torta,
+        checklist_riscos_tampa: data.checklist_riscos_tampa,
+        checklist_riscos_laterais: data.checklist_riscos_laterais,
+        checklist_vidro_camera: data.checklist_vidro_camera,
+        checklist_acompanha_chip: data.checklist_acompanha_chip,
+        checklist_acompanha_sd: data.checklist_acompanha_sd,
+        checklist_acompanha_capa: data.checklist_acompanha_capa,
+        checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
       // Carregar arquivos de mídia
@@ -379,6 +383,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
         client_cpf: data.client_cpf || null,
+        client_address: data.client_address || null,
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
         device_model: data.device_model,
@@ -397,7 +402,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
         media_files: JSON.parse(JSON.stringify(mediaFiles)),
-        // Checklist fields
+        // Checklist fields - preserve null values
         checklist_houve_queda: data.checklist_houve_queda,
         checklist_face_id: data.checklist_face_id,
         checklist_carrega: data.checklist_carrega,
@@ -646,6 +651,20 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
             <FormField
               control={form.control}
+              name="client_address"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Endereço do Cliente</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Endereço completo do cliente" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="device_model"
               rules={{ required: 'Modelo do aparelho é obrigatório' }}
               render={({ field }) => (
@@ -714,10 +733,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
             Checklist Técnico
           </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Clique para alternar: — (não avaliado) → S (sim) → N (não)
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[
               { name: 'checklist_houve_queda', label: 'Houve queda?' },
-              { name: 'checklist_face_id', label: 'Face ID funcionando' },
+              { name: 'checklist_face_id', label: 'Face ID funcionando (iPhone)' },
               { name: 'checklist_carrega', label: 'Carrega' },
               { name: 'checklist_tela_quebrada', label: 'Tela quebrada' },
               { name: 'checklist_vidro_trincado', label: 'Vidro trincado' },
@@ -736,11 +758,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 control={form.control}
                 name={item.name as keyof FormData}
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3">
                     <FormControl>
-                      <Checkbox
-                        checked={field.value as boolean}
-                        onCheckedChange={field.onChange}
+                      <TriStateCheckbox
+                        value={field.value as TriStateValue}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormLabel className="font-normal text-sm cursor-pointer">

@@ -156,6 +156,7 @@ export type Database = {
           checklist_tela_quebrada: boolean | null
           checklist_vidro_camera: boolean | null
           checklist_vidro_trincado: boolean | null
+          client_address: string | null
           client_cpf: string | null
           client_message: string | null
           client_name: string
@@ -198,6 +199,7 @@ export type Database = {
           checklist_tela_quebrada?: boolean | null
           checklist_vidro_camera?: boolean | null
           checklist_vidro_trincado?: boolean | null
+          client_address?: string | null
           client_cpf?: string | null
           client_message?: string | null
           client_name: string
@@ -240,6 +242,7 @@ export type Database = {
           checklist_tela_quebrada?: boolean | null
           checklist_vidro_camera?: boolean | null
           checklist_vidro_trincado?: boolean | null
+          client_address?: string | null
           client_cpf?: string | null
           client_message?: string | null
           client_name?: string
