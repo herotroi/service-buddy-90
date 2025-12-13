@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 
 interface ServiceOrderInformaticaFormProps {
   onSuccess: () => void;
@@ -45,6 +46,12 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+
+  const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
+    table: 'service_orders_informatica',
+    currentOrderId: orderId,
+  });
+  
   
   const form = useForm<FormData>({
     defaultValues: {
@@ -190,6 +197,21 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     try {
       setLoading(true);
 
+      // Validar número da OS antes de salvar
+      if (!orderId) {
+        const validation = await validateAndGetAvailableOsNumber(
+          data.os_number,
+          (existingOrder, newNumber) => {
+            form.setValue('os_number', newNumber);
+            toast.info(`Número de OS alterado para ${newNumber}`);
+          }
+        );
+
+        if (!validation.valid && validation.newNumber) {
+          data.os_number = validation.newNumber;
+        }
+      }
+
       const orderData: any = {
         os_number: data.os_number,
         senha: data.senha || null,
@@ -214,20 +236,58 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       };
 
       if (orderId) {
-        const { error } = await supabase
-          .from('service_orders_informatica')
-          .update(orderData)
-          .eq('id', orderId);
+        // Validar se o número foi alterado durante edição
+        const validation = await validateAndGetAvailableOsNumber(
+          data.os_number,
+          (existingOrder, newNumber) => {
+            form.setValue('os_number', newNumber);
+            toast.info(`Número de OS alterado para ${newNumber}`);
+          }
+        );
 
-        if (error) throw error;
+        if (!validation.valid && validation.newNumber) {
+          orderData.os_number = validation.newNumber;
+        }
+
+        const result = await saveWithRetry(
+          orderData,
+          async (retryData) => {
+            return await supabase
+              .from('service_orders_informatica')
+              .update(retryData)
+              .eq('id', orderId);
+          }
+        );
+
+        if (!result.success) {
+          throw new Error('Não foi possível atualizar a OS');
+        }
+
+        if (result.finalOsNumber && result.finalOsNumber !== data.os_number) {
+          form.setValue('os_number', result.finalOsNumber);
+        }
+
         toast.success('OS atualizada com sucesso');
       } else {
-        const { error } = await supabase
-          .from('service_orders_informatica')
-          .insert(orderData);
+        // Criar nova OS com retry para race conditions
+        const result = await saveWithRetry(
+          orderData,
+          async (retryData) => {
+            return await supabase
+              .from('service_orders_informatica')
+              .insert(retryData);
+          }
+        );
 
-        if (error) throw error;
-        toast.success('OS criada com sucesso');
+        if (!result.success) {
+          throw new Error('Não foi possível criar a OS');
+        }
+
+        if (result.finalOsNumber) {
+          toast.success(`OS criada com sucesso (Nº ${result.finalOsNumber})`);
+        } else {
+          toast.success('OS criada com sucesso');
+        }
       }
 
       onSuccess();
