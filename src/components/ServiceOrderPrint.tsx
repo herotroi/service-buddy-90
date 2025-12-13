@@ -17,6 +17,7 @@ interface OrderData {
   entry_date: string;
   client_name: string;
   client_cpf: string | null;
+  client_address: string | null;
   contact: string | null;
   other_contacts: string | null;
   device_model: string;
@@ -24,20 +25,20 @@ interface OrderData {
   reported_defect: string;
   value: number | null;
   tracking_token: string;
-  checklist_houve_queda: boolean;
-  checklist_face_id: boolean;
-  checklist_carrega: boolean;
-  checklist_tela_quebrada: boolean;
-  checklist_vidro_trincado: boolean;
-  checklist_manchas_tela: boolean;
-  checklist_carcaca_torta: boolean;
-  checklist_riscos_tampa: boolean;
-  checklist_riscos_laterais: boolean;
-  checklist_vidro_camera: boolean;
-  checklist_acompanha_chip: boolean;
-  checklist_acompanha_sd: boolean;
-  checklist_acompanha_capa: boolean;
-  checklist_esta_ligado: boolean;
+  checklist_houve_queda: boolean | null;
+  checklist_face_id: boolean | null;
+  checklist_carrega: boolean | null;
+  checklist_tela_quebrada: boolean | null;
+  checklist_vidro_trincado: boolean | null;
+  checklist_manchas_tela: boolean | null;
+  checklist_carcaca_torta: boolean | null;
+  checklist_riscos_tampa: boolean | null;
+  checklist_riscos_laterais: boolean | null;
+  checklist_vidro_camera: boolean | null;
+  checklist_acompanha_chip: boolean | null;
+  checklist_acompanha_sd: boolean | null;
+  checklist_acompanha_capa: boolean | null;
+  checklist_esta_ligado: boolean | null;
 }
 
 interface Profile {
@@ -184,6 +185,9 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                 <p><strong>CPF:</strong> {orderData.client_cpf || '_________________'}</p>
                 <p><strong>Telefone p/ contato:</strong> {orderData.contact || orderData.other_contacts || '_________________'}</p>
               </div>
+              {orderData.client_address && (
+                <p><strong>Endereço:</strong> {orderData.client_address}</p>
+              )}
               <p><strong>Aparelho:</strong> {orderData.device_model}</p>
             </div>
           </div>
@@ -191,91 +195,115 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           {/* Checklist */}
           <div className="p-4 border-b-2 border-black">
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Houve queda?</span>
-                <span>
-                  ({orderData.checklist_houve_queda ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_houve_queda ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Face ID (IPHONE)</span>
-                <span>
-                  ({orderData.checklist_face_id ? 'X' : ' '}) On 
-                  ({!orderData.checklist_face_id ? 'X' : ' '}) Off
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Carrega</span>
-                <span>
-                  ({orderData.checklist_carrega ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_carrega ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tela quebrada</span>
-                <span>
-                  ({orderData.checklist_tela_quebrada ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_tela_quebrada ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Vidro trincado</span>
-                <span>
-                  ({orderData.checklist_vidro_trincado ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_vidro_trincado ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Manchas na tela</span>
-                <span>
-                  ({orderData.checklist_manchas_tela ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_manchas_tela ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Carcaça torta</span>
-                <span>
-                  ({orderData.checklist_carcaca_torta ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_carcaca_torta ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Riscos na tampa traseira</span>
-                <span>
-                  ({orderData.checklist_riscos_tampa ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_riscos_tampa ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Riscos nas laterais</span>
-                <span>
-                  ({orderData.checklist_riscos_laterais ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_riscos_laterais ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Vidro da câmera trincado/quebrado</span>
-                <span>
-                  ({orderData.checklist_vidro_camera ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_vidro_camera ? 'X' : ' '}) Não
-                </span>
-              </div>
-              <div className="flex justify-between col-span-2">
-                <span>Acompanha acessórios</span>
-                <span>
-                  ({orderData.checklist_acompanha_chip ? 'X' : ' '}) Chip 
-                  ({orderData.checklist_acompanha_sd ? 'X' : ' '}) SD 
-                  ({orderData.checklist_acompanha_capa ? 'X' : ' '}) Capa
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Está ligado</span>
-                <span>
-                  ({orderData.checklist_esta_ligado ? 'X' : ' '}) SIM 
-                  ({!orderData.checklist_esta_ligado ? 'X' : ' '}) Não
-                </span>
-              </div>
+              {orderData.checklist_houve_queda !== null && (
+                <div className="flex justify-between">
+                  <span>Houve queda?</span>
+                  <span>
+                    ({orderData.checklist_houve_queda === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_houve_queda === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_face_id !== null && (
+                <div className="flex justify-between">
+                  <span>Face ID (IPHONE)</span>
+                  <span>
+                    ({orderData.checklist_face_id === true ? 'X' : ' '}) On 
+                    ({orderData.checklist_face_id === false ? 'X' : ' '}) Off
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_carrega !== null && (
+                <div className="flex justify-between">
+                  <span>Carrega</span>
+                  <span>
+                    ({orderData.checklist_carrega === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_carrega === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_tela_quebrada !== null && (
+                <div className="flex justify-between">
+                  <span>Tela quebrada</span>
+                  <span>
+                    ({orderData.checklist_tela_quebrada === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_tela_quebrada === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_vidro_trincado !== null && (
+                <div className="flex justify-between">
+                  <span>Vidro trincado</span>
+                  <span>
+                    ({orderData.checklist_vidro_trincado === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_vidro_trincado === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_manchas_tela !== null && (
+                <div className="flex justify-between">
+                  <span>Manchas na tela</span>
+                  <span>
+                    ({orderData.checklist_manchas_tela === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_manchas_tela === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_carcaca_torta !== null && (
+                <div className="flex justify-between">
+                  <span>Carcaça torta</span>
+                  <span>
+                    ({orderData.checklist_carcaca_torta === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_carcaca_torta === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_riscos_tampa !== null && (
+                <div className="flex justify-between">
+                  <span>Riscos na tampa traseira</span>
+                  <span>
+                    ({orderData.checklist_riscos_tampa === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_riscos_tampa === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_riscos_laterais !== null && (
+                <div className="flex justify-between">
+                  <span>Riscos nas laterais</span>
+                  <span>
+                    ({orderData.checklist_riscos_laterais === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_riscos_laterais === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_vidro_camera !== null && (
+                <div className="flex justify-between">
+                  <span>Vidro da câmera trincado/quebrado</span>
+                  <span>
+                    ({orderData.checklist_vidro_camera === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_vidro_camera === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
+              {(orderData.checklist_acompanha_chip !== null || orderData.checklist_acompanha_sd !== null || orderData.checklist_acompanha_capa !== null) && (
+                <div className="flex justify-between col-span-2">
+                  <span>Acompanha acessórios</span>
+                  <span>
+                    ({orderData.checklist_acompanha_chip === true ? 'X' : ' '}) Chip 
+                    ({orderData.checklist_acompanha_sd === true ? 'X' : ' '}) SD 
+                    ({orderData.checklist_acompanha_capa === true ? 'X' : ' '}) Capa
+                  </span>
+                </div>
+              )}
+              {orderData.checklist_esta_ligado !== null && (
+                <div className="flex justify-between">
+                  <span>Está ligado</span>
+                  <span>
+                    ({orderData.checklist_esta_ligado === true ? 'X' : ' '}) SIM 
+                    ({orderData.checklist_esta_ligado === false ? 'X' : ' '}) Não
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
