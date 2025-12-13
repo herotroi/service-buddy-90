@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
@@ -24,6 +25,7 @@ interface FormData {
   os_number: number;
   entry_date: string;
   client_name: string;
+  client_cpf?: string;
   contact?: string;
   other_contacts?: string;
   device_model: string;
@@ -41,6 +43,21 @@ interface FormData {
   withdrawal_situation_id?: string;
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
+  // Checklist fields
+  checklist_houve_queda: boolean;
+  checklist_face_id: boolean;
+  checklist_carrega: boolean;
+  checklist_tela_quebrada: boolean;
+  checklist_vidro_trincado: boolean;
+  checklist_manchas_tela: boolean;
+  checklist_carcaca_torta: boolean;
+  checklist_riscos_tampa: boolean;
+  checklist_riscos_laterais: boolean;
+  checklist_vidro_camera: boolean;
+  checklist_acompanha_chip: boolean;
+  checklist_acompanha_sd: boolean;
+  checklist_acompanha_capa: boolean;
+  checklist_esta_ligado: boolean;
 }
 
 interface MediaFile {
@@ -67,6 +84,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       os_number: 1,
       entry_date: new Date().toISOString().split('T')[0],
       client_name: '',
+      client_cpf: '',
       contact: '',
       other_contacts: '',
       device_model: '',
@@ -84,6 +102,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       withdrawal_situation_id: undefined,
       mensagem_finalizada: false,
       mensagem_entregue: false,
+      // Checklist defaults
+      checklist_houve_queda: false,
+      checklist_face_id: false,
+      checklist_carrega: false,
+      checklist_tela_quebrada: false,
+      checklist_vidro_trincado: false,
+      checklist_manchas_tela: false,
+      checklist_carcaca_torta: false,
+      checklist_riscos_tampa: false,
+      checklist_riscos_laterais: false,
+      checklist_vidro_camera: false,
+      checklist_acompanha_chip: false,
+      checklist_acompanha_sd: false,
+      checklist_acompanha_capa: false,
+      checklist_esta_ligado: false,
     },
   });
 
@@ -114,6 +147,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString().split('T')[0],
         client_name: data.client_name,
+        client_cpf: data.client_cpf || '',
         contact: data.contact || '',
         other_contacts: data.other_contacts || '',
         device_model: data.device_model,
@@ -131,6 +165,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         withdrawal_situation_id: data.withdrawal_situation_id || undefined,
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
+        // Checklist fields
+        checklist_houve_queda: data.checklist_houve_queda || false,
+        checklist_face_id: data.checklist_face_id || false,
+        checklist_carrega: data.checklist_carrega || false,
+        checklist_tela_quebrada: data.checklist_tela_quebrada || false,
+        checklist_vidro_trincado: data.checklist_vidro_trincado || false,
+        checklist_manchas_tela: data.checklist_manchas_tela || false,
+        checklist_carcaca_torta: data.checklist_carcaca_torta || false,
+        checklist_riscos_tampa: data.checklist_riscos_tampa || false,
+        checklist_riscos_laterais: data.checklist_riscos_laterais || false,
+        checklist_vidro_camera: data.checklist_vidro_camera || false,
+        checklist_acompanha_chip: data.checklist_acompanha_chip || false,
+        checklist_acompanha_sd: data.checklist_acompanha_sd || false,
+        checklist_acompanha_capa: data.checklist_acompanha_capa || false,
+        checklist_esta_ligado: data.checklist_esta_ligado || false,
       });
 
       // Carregar arquivos de mídia
@@ -329,6 +378,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString(),
         client_name: data.client_name,
+        client_cpf: data.client_cpf || null,
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
         device_model: data.device_model,
@@ -347,6 +397,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
         media_files: JSON.parse(JSON.stringify(mediaFiles)),
+        // Checklist fields
+        checklist_houve_queda: data.checklist_houve_queda,
+        checklist_face_id: data.checklist_face_id,
+        checklist_carrega: data.checklist_carrega,
+        checklist_tela_quebrada: data.checklist_tela_quebrada,
+        checklist_vidro_trincado: data.checklist_vidro_trincado,
+        checklist_manchas_tela: data.checklist_manchas_tela,
+        checklist_carcaca_torta: data.checklist_carcaca_torta,
+        checklist_riscos_tampa: data.checklist_riscos_tampa,
+        checklist_riscos_laterais: data.checklist_riscos_laterais,
+        checklist_vidro_camera: data.checklist_vidro_camera,
+        checklist_acompanha_chip: data.checklist_acompanha_chip,
+        checklist_acompanha_sd: data.checklist_acompanha_sd,
+        checklist_acompanha_capa: data.checklist_acompanha_capa,
+        checklist_esta_ligado: data.checklist_esta_ligado,
       };
 
       if (orderId) {
@@ -546,6 +611,41 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
             <FormField
               control={form.control}
+              name="client_cpf"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        const limitedDigits = digits.slice(0, 11);
+                        let formatted = limitedDigits;
+                        if (limitedDigits.length > 0) {
+                          if (limitedDigits.length <= 3) {
+                            formatted = limitedDigits;
+                          } else if (limitedDigits.length <= 6) {
+                            formatted = `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3)}`;
+                          } else if (limitedDigits.length <= 9) {
+                            formatted = `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6)}`;
+                          } else {
+                            formatted = `${limitedDigits.slice(0, 3)}.${limitedDigits.slice(3, 6)}.${limitedDigits.slice(6, 9)}-${limitedDigits.slice(9)}`;
+                          }
+                        }
+                        field.onChange(formatted);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="device_model"
               rules={{ required: 'Modelo do aparelho é obrigatório' }}
               render={({ field }) => (
@@ -606,6 +706,50 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 )}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Checklist Técnico */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Checklist Técnico
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[
+              { name: 'checklist_houve_queda', label: 'Houve queda?' },
+              { name: 'checklist_face_id', label: 'Face ID funcionando' },
+              { name: 'checklist_carrega', label: 'Carrega' },
+              { name: 'checklist_tela_quebrada', label: 'Tela quebrada' },
+              { name: 'checklist_vidro_trincado', label: 'Vidro trincado' },
+              { name: 'checklist_manchas_tela', label: 'Manchas na tela' },
+              { name: 'checklist_carcaca_torta', label: 'Carcaça torta' },
+              { name: 'checklist_riscos_tampa', label: 'Riscos na tampa traseira' },
+              { name: 'checklist_riscos_laterais', label: 'Riscos nas laterais' },
+              { name: 'checklist_vidro_camera', label: 'Vidro da câmera quebrado' },
+              { name: 'checklist_acompanha_chip', label: 'Acompanha chip' },
+              { name: 'checklist_acompanha_sd', label: 'Acompanha SD' },
+              { name: 'checklist_acompanha_capa', label: 'Acompanha capa' },
+              { name: 'checklist_esta_ligado', label: 'Está ligado' },
+            ].map((item) => (
+              <FormField
+                key={item.name}
+                control={form.control}
+                name={item.name as keyof FormData}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value as boolean}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal text-sm cursor-pointer">
+                      {item.label}
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            ))}
           </div>
         </div>
 

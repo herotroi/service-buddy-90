@@ -15,6 +15,7 @@ import LocalEquipamento from "./pages/LocalEquipamento";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import TrackingOS from "./pages/TrackingOS";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,8 @@ const App = () => (
           <SectorProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              {/* Public tracking route - no auth required */}
+              <Route path="/acompanhar/:token" element={<TrackingOS />} />
               <Route
                 path="/"
                 element={

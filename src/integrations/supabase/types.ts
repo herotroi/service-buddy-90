@@ -142,6 +142,21 @@ export type Database = {
       }
       service_orders: {
         Row: {
+          checklist_acompanha_capa: boolean | null
+          checklist_acompanha_chip: boolean | null
+          checklist_acompanha_sd: boolean | null
+          checklist_carcaca_torta: boolean | null
+          checklist_carrega: boolean | null
+          checklist_esta_ligado: boolean | null
+          checklist_face_id: boolean | null
+          checklist_houve_queda: boolean | null
+          checklist_manchas_tela: boolean | null
+          checklist_riscos_laterais: boolean | null
+          checklist_riscos_tampa: boolean | null
+          checklist_tela_quebrada: boolean | null
+          checklist_vidro_camera: boolean | null
+          checklist_vidro_trincado: boolean | null
+          client_cpf: string | null
           client_message: string | null
           client_name: string
           contact: string | null
@@ -162,12 +177,28 @@ export type Database = {
           service_date: string | null
           situation_id: string | null
           technician_id: string | null
+          tracking_token: string | null
           updated_at: string
           value: number | null
           withdrawal_situation_id: string | null
           withdrawn_by: string | null
         }
         Insert: {
+          checklist_acompanha_capa?: boolean | null
+          checklist_acompanha_chip?: boolean | null
+          checklist_acompanha_sd?: boolean | null
+          checklist_carcaca_torta?: boolean | null
+          checklist_carrega?: boolean | null
+          checklist_esta_ligado?: boolean | null
+          checklist_face_id?: boolean | null
+          checklist_houve_queda?: boolean | null
+          checklist_manchas_tela?: boolean | null
+          checklist_riscos_laterais?: boolean | null
+          checklist_riscos_tampa?: boolean | null
+          checklist_tela_quebrada?: boolean | null
+          checklist_vidro_camera?: boolean | null
+          checklist_vidro_trincado?: boolean | null
+          client_cpf?: string | null
           client_message?: string | null
           client_name: string
           contact?: string | null
@@ -188,12 +219,28 @@ export type Database = {
           service_date?: string | null
           situation_id?: string | null
           technician_id?: string | null
+          tracking_token?: string | null
           updated_at?: string
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
         }
         Update: {
+          checklist_acompanha_capa?: boolean | null
+          checklist_acompanha_chip?: boolean | null
+          checklist_acompanha_sd?: boolean | null
+          checklist_carcaca_torta?: boolean | null
+          checklist_carrega?: boolean | null
+          checklist_esta_ligado?: boolean | null
+          checklist_face_id?: boolean | null
+          checklist_houve_queda?: boolean | null
+          checklist_manchas_tela?: boolean | null
+          checklist_riscos_laterais?: boolean | null
+          checklist_riscos_tampa?: boolean | null
+          checklist_tela_quebrada?: boolean | null
+          checklist_vidro_camera?: boolean | null
+          checklist_vidro_trincado?: boolean | null
+          client_cpf?: string | null
           client_message?: string | null
           client_name?: string
           contact?: string | null
@@ -214,6 +261,7 @@ export type Database = {
           service_date?: string | null
           situation_id?: string | null
           technician_id?: string | null
+          tracking_token?: string | null
           updated_at?: string
           value?: number | null
           withdrawal_situation_id?: string | null
