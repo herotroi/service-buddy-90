@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
+import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 
 interface ServiceOrderFormProps {
   onSuccess: () => void;
@@ -80,6 +81,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
+
+  const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
+    table: 'service_orders',
+    currentOrderId: orderId,
+  });
   
   const form = useForm<FormData>({
     defaultValues: {
@@ -378,6 +384,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     try {
       setLoading(true);
 
+      // Validar número da OS antes de salvar (apenas para novas OS)
+      if (!orderId) {
+        const validation = await validateAndGetAvailableOsNumber(
+          data.os_number,
+          (existingOrder, newNumber) => {
+            form.setValue('os_number', newNumber);
+            toast.info(`Número de OS alterado para ${newNumber}`);
+          }
+        );
+
+        if (!validation.valid && validation.newNumber) {
+          data.os_number = validation.newNumber;
+        }
+      }
+
       const orderData: any = {
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString(),
@@ -402,7 +423,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
         media_files: JSON.parse(JSON.stringify(mediaFiles)),
-        // Checklist fields - preserve null values
         checklist_houve_queda: data.checklist_houve_queda,
         checklist_face_id: data.checklist_face_id,
         checklist_carrega: data.checklist_carrega,
@@ -420,23 +440,56 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       };
 
       if (orderId) {
-        // Atualizar OS existente
-        const { error } = await supabase
-          .from('service_orders')
-          .update(orderData)
-          .eq('id', orderId);
+        // Validar se o número foi alterado durante edição
+        const validation = await validateAndGetAvailableOsNumber(
+          data.os_number,
+          (existingOrder, newNumber) => {
+            form.setValue('os_number', newNumber);
+            toast.info(`Número de OS alterado para ${newNumber}`);
+          }
+        );
 
-        if (error) throw error;
+        if (!validation.valid && validation.newNumber) {
+          orderData.os_number = validation.newNumber;
+        }
+
+        const result = await saveWithRetry(
+          orderData,
+          async (retryData) => {
+            return await supabase
+              .from('service_orders')
+              .update(retryData)
+              .eq('id', orderId);
+          }
+        );
+
+        if (!result.success) {
+          throw new Error('Não foi possível atualizar a OS');
+        }
+
+        if (result.finalOsNumber && result.finalOsNumber !== data.os_number) {
+          form.setValue('os_number', result.finalOsNumber);
+        }
+
         toast.success('OS atualizada com sucesso');
       } else {
-        // Criar nova OS
-        const { data: newOrder, error } = await supabase
-          .from('service_orders')
-          .insert(orderData)
-          .select()
-          .single();
+        // Criar nova OS com retry para race conditions
+        const result = await saveWithRetry(
+          orderData,
+          async (retryData) => {
+            return await supabase
+              .from('service_orders')
+              .insert(retryData)
+              .select()
+              .single();
+          }
+        );
 
-        if (error) throw error;
+        if (!result.success) {
+          throw new Error('Não foi possível criar a OS');
+        }
+
+        const newOrder = result.data;
 
         // Se houver arquivos temporários, mover para a pasta da OS
         if (mediaFiles.length > 0 && newOrder) {
@@ -468,14 +521,17 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             }
           }
 
-          // Atualizar a OS com os novos caminhos dos arquivos
           await supabase
             .from('service_orders')
             .update({ media_files: JSON.parse(JSON.stringify(updatedFiles)) } as any)
             .eq('id', newOrder.id);
         }
 
-        toast.success('OS criada com sucesso');
+        if (result.finalOsNumber) {
+          toast.success(`OS criada com sucesso (Nº ${result.finalOsNumber})`);
+        } else {
+          toast.success('OS criada com sucesso');
+        }
       }
 
       onSuccess();
