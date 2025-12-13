@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ServiceOrderForm } from './ServiceOrderForm';
+import { ServiceOrderPrint } from './ServiceOrderPrint';
 
 interface ServiceOrder {
   id: string;
@@ -95,6 +96,7 @@ export const ServiceOrdersTable = () => {
   const [showNewOrderDrawer, setShowNewOrderDrawer] = useState(false);
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
+  const [printOrderId, setPrintOrderId] = useState<string | null>(null);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -440,6 +442,7 @@ export const ServiceOrdersTable = () => {
                           size="icon" 
                           className="h-8 w-8"
                           onClick={() => setViewOrderId(order.id)}
+                          title="Visualizar"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -447,7 +450,17 @@ export const ServiceOrdersTable = () => {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8"
+                          onClick={() => setPrintOrderId(order.id)}
+                          title="Imprimir"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
                           onClick={() => setEditOrderId(order.id)}
+                          title="Editar"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -456,6 +469,7 @@ export const ServiceOrdersTable = () => {
                           size="icon" 
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => setDeleteId(order.id)}
+                          title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -794,6 +808,14 @@ export const ServiceOrdersTable = () => {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Print Component */}
+      {printOrderId && (
+        <ServiceOrderPrint 
+          orderId={printOrderId} 
+          onClose={() => setPrintOrderId(null)} 
+        />
+      )}
     </div>
   );
 };
