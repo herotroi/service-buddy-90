@@ -120,15 +120,15 @@ export const WithdrawalSituationsTable = () => {
     try {
       const { error } = await supabase
         .from('withdrawal_situations')
-        .delete()
+        .update({ deleted: true })
         .eq('id', deleteId);
 
       if (error) throw error;
-      toast.success('Situação excluída com sucesso');
+      toast.success('Situação arquivada com sucesso');
       setDeleteId(null);
       fetchSituations();
     } catch (error: any) {
-      toast.error('Erro ao excluir situação');
+      toast.error('Erro ao arquivar situação');
       console.error(error);
     }
   };
@@ -288,19 +288,19 @@ export const WithdrawalSituationsTable = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Exclusão */}
+      {/* Dialog de Arquivamento */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta situação? Esta ação não pode ser desfeita.
+              Tem certeza que deseja arquivar esta situação? O registro será ocultado mas não excluído permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir
+              Arquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
