@@ -23,6 +23,7 @@ export type Database = {
           name: string
           type: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           contact?: string | null
@@ -32,6 +33,7 @@ export type Database = {
           name: string
           type: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           contact?: string | null
@@ -41,6 +43,7 @@ export type Database = {
           name?: string
           type?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -52,6 +55,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string
@@ -60,6 +64,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -68,6 +73,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -130,6 +136,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string
@@ -138,6 +145,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -146,6 +154,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -190,6 +199,7 @@ export type Database = {
           technician_id: string | null
           tracking_token: string | null
           updated_at: string
+          user_id: string | null
           value: number | null
           withdrawal_situation_id: string | null
           withdrawn_by: string | null
@@ -234,6 +244,7 @@ export type Database = {
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -278,6 +289,7 @@ export type Database = {
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -336,6 +348,7 @@ export type Database = {
           service_date: string | null
           situation_id: string | null
           updated_at: string
+          user_id: string | null
           value: number | null
           withdrawal_situation_id: string | null
           withdrawn_by: string | null
@@ -362,6 +375,7 @@ export type Database = {
           service_date?: string | null
           situation_id?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -388,6 +402,7 @@ export type Database = {
           service_date?: string | null
           situation_id?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -431,6 +446,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string
@@ -439,6 +455,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -447,6 +464,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -458,6 +476,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color: string
@@ -466,6 +485,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -474,6 +494,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -483,6 +504,7 @@ export type Database = {
           id: string
           key: string
           updated_at: string
+          user_id: string | null
           value: string
         }
         Insert: {
@@ -490,6 +512,7 @@ export type Database = {
           id?: string
           key: string
           updated_at?: string
+          user_id?: string | null
           value: string
         }
         Update: {
@@ -497,6 +520,7 @@ export type Database = {
           id?: string
           key?: string
           updated_at?: string
+          user_id?: string | null
           value?: string
         }
         Relationships: []
@@ -509,6 +533,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string
@@ -517,6 +542,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string
@@ -525,6 +551,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

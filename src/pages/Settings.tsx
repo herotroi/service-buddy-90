@@ -146,9 +146,10 @@ const Settings = () => {
         .from('system_settings')
         .upsert({ 
           key: 'os_starting_number', 
-          value: startNumber 
+          value: startNumber,
+          user_id: user?.id
         }, {
-          onConflict: 'key'
+          onConflict: 'key,user_id'
         });
       
       if (error) throw error;

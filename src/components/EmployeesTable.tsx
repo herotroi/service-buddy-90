@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ interface Employee {
 }
 
 export const EmployeesTable = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,7 +84,7 @@ export const EmployeesTable = () => {
       } else {
         const { error } = await supabase
           .from('employees')
-          .insert([formData]);
+          .insert([{ ...formData, user_id: user?.id }]);
 
         if (error) throw error;
         toast.success('Funcionário adicionado com sucesso');

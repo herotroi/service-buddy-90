@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ interface LocalEquipamento {
 }
 
 export const LocalEquipamentoTable = () => {
+  const { user } = useAuth();
   const [locais, setLocais] = useState<LocalEquipamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,7 +91,7 @@ export const LocalEquipamentoTable = () => {
       } else {
         const { error } = await supabase
           .from('local_equipamento')
-          .insert([formData]);
+          .insert([{ ...formData, user_id: user?.id }]);
 
         if (error) throw error;
         toast.success('Local adicionado com sucesso');

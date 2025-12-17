@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +42,7 @@ interface FormData {
 }
 
 export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: ServiceOrderInformaticaFormProps) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [situations, setSituations] = useState<any[]>([]);
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
@@ -233,6 +235,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         client_notified: data.client_notified,
         exit_date: data.exit_date ? new Date(data.exit_date).toISOString() : null,
         withdrawn_by: data.withdrawn_by || null,
+        user_id: user?.id,
       };
 
       if (orderId) {
