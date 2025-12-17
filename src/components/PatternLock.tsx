@@ -13,13 +13,13 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   const containerRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Sincronizar apenas quando não estiver desenhando e o valor externo mudar
   useEffect(() => {
-    if (value) {
-      setPattern(value.split(',').map(Number).filter(n => !isNaN(n)));
-    } else {
-      setPattern([]);
+    if (!isDrawing && value !== undefined) {
+      const newPattern = value ? value.split(',').map(Number).filter(n => !isNaN(n)) : [];
+      setPattern(newPattern);
     }
-  }, [value]);
+  }, [value, isDrawing]);
 
   const addToPattern = (index: number) => {
     if (!pattern.includes(index)) {
