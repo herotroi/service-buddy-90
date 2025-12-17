@@ -50,16 +50,22 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
       clientY = e.touches[0].clientY;
     }
 
-    // Encontrar qual ponto está sob o cursor
+    // Encontrar qual ponto está sob o cursor com área de detecção maior
     dotsRef.current.forEach((dot, index) => {
       if (!dot) return;
       const rect = dot.getBoundingClientRect();
-      if (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      ) {
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      // Calcular distância do cursor ao centro do ponto
+      const distance = Math.sqrt(
+        Math.pow(clientX - centerX, 2) + Math.pow(clientY - centerY, 2)
+      );
+      
+      // Raio de detecção aumentado (40px para facilitar o arraste)
+      const hitRadius = 40;
+      
+      if (distance <= hitRadius) {
         addToPattern(index);
       }
     });
