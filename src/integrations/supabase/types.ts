@@ -183,6 +183,7 @@ export type Database = {
           deleted: boolean
           device_model: string
           device_password: string | null
+          device_pattern: string | null
           entry_date: string
           exit_date: string | null
           id: string
@@ -228,6 +229,7 @@ export type Database = {
           deleted?: boolean
           device_model: string
           device_password?: string | null
+          device_pattern?: string | null
           entry_date?: string
           exit_date?: string | null
           id?: string
@@ -273,6 +275,7 @@ export type Database = {
           deleted?: boolean
           device_model?: string
           device_password?: string | null
+          device_pattern?: string | null
           entry_date?: string
           exit_date?: string | null
           id?: string

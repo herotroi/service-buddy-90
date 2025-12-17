@@ -22,6 +22,7 @@ interface OrderData {
   other_contacts: string | null;
   device_model: string;
   device_password: string | null;
+  device_pattern: string | null;
   reported_defect: string;
   value: number | null;
   tracking_token: string;
@@ -318,15 +319,15 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           {/* Password and Value */}
           <div className="p-4 border-b-2 border-black flex justify-between items-center">
             <div className="flex items-center gap-8">
-              <p><strong>SENHA:</strong> {orderData.device_password || '_____________'}</p>
+              <p><strong>SENHA:</strong> {orderData.device_password || orderData.device_pattern || '_____________'}</p>
               {/* Pattern Lock dots representation */}
-              {orderData.device_password && orderData.device_password.includes('-') && (
+              {orderData.device_pattern && (
                 <div className="grid grid-cols-3 gap-1">
-                  {[1,2,3,4,5,6,7,8,9].map(n => (
+                  {[0,1,2,3,4,5,6,7,8].map(n => (
                     <div 
                       key={n} 
                       className={`w-2 h-2 rounded-full ${
-                        orderData.device_password?.split('-').includes(n.toString()) 
+                        orderData.device_pattern?.split(',').includes(n.toString()) 
                           ? 'bg-black' 
                           : 'border border-black'
                       }`}
