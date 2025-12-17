@@ -134,6 +134,17 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     },
   });
 
+  // Monitorar valores do form para sincronizar tipo de senha
+  const watchedPattern = form.watch('device_pattern');
+  const watchedPassword = form.watch('device_password');
+  
+  useEffect(() => {
+    // Se tiver device_pattern, mostrar como padrão
+    if (watchedPattern && watchedPattern.length > 0) {
+      setPasswordType('pattern');
+    }
+  }, [watchedPattern]);
+
   useEffect(() => {
     const initialize = async () => {
       await fetchOptions();
@@ -161,6 +172,9 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       let passwordValue = data.device_password || '';
       let patternValue = (data as any).device_pattern || '';
       let detectedPasswordType: 'text' | 'pattern' = 'text';
+
+      console.log('loadOrderData - device_password:', data.device_password);
+      console.log('loadOrderData - device_pattern:', (data as any).device_pattern);
 
       if (patternValue) {
         // Já tem device_pattern, usar diretamente
@@ -215,8 +229,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
-      // Definir o tipo de senha após o reset
-      setPasswordType(detectedPasswordType);
+      // Definir o tipo de senha após o reset (com timeout para garantir que o form atualizou)
+      setTimeout(() => {
+        setPasswordType(detectedPasswordType);
+        console.log('setPasswordType called with:', detectedPasswordType);
+      }, 0);
 
       // Carregar arquivos de mídia
       if (data.media_files && Array.isArray(data.media_files)) {
@@ -805,11 +822,19 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     <FormField
                       control={form.control}
                       name="device_pattern"
-                      render={({ field }) => (
-                        <FormControl>
-                          <PatternLock value={field.value} onChange={field.onChange} />
-                        </FormControl>
-                      )}
+                      render={({ field }) => {
+                        const watchedValue = form.watch('device_pattern');
+                        console.log('PatternLock field.value:', field.value, 'watched:', watchedValue);
+                        return (
+                          <FormControl>
+                            <PatternLock 
+                              key={watchedValue || 'empty'} 
+                              value={watchedValue || ''} 
+                              onChange={field.onChange} 
+                            />
+                          </FormControl>
+                        );
+                      }}
                     />
                   )}
                 </div>
