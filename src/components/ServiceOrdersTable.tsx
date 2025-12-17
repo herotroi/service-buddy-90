@@ -627,20 +627,20 @@ export const ServiceOrdersTable = () => {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
                         <p className="text-lg">{order.device_model}</p>
                       </div>
-                      {order.device_password && (
+                      {(order.device_password || (order as any).device_pattern) && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">Senha do Aparelho</p>
-                          {/^[0-8]([-,][0-8])+$/.test(order.device_password) ? (
+                          {(order as any).device_pattern ? (
                             <div className="mt-2">
                               <PatternLock
-                                value={order.device_password.replace(/,/g, '-')}
+                                value={(order as any).device_pattern}
                                 onChange={() => {}}
                                 disabled={true}
                               />
                             </div>
-                          ) : (
+                          ) : order.device_password ? (
                             <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
-                          )}
+                          ) : null}
                         </div>
                       )}
                     </div>

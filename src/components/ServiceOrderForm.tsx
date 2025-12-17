@@ -34,6 +34,7 @@ interface FormData {
   other_contacts?: string;
   device_model: string;
   device_password?: string;
+  device_pattern?: string;
   reported_defect: string;
   client_message?: string;
   value?: number;
@@ -101,6 +102,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       other_contacts: '',
       device_model: '',
       device_password: '',
+      device_pattern: '',
       reported_defect: '',
       client_message: '',
       value: undefined,
@@ -165,6 +167,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         other_contacts: data.other_contacts || '',
         device_model: data.device_model,
         device_password: data.device_password || '',
+        device_pattern: (data as any).device_pattern || '',
         reported_defect: data.reported_defect,
         client_message: data.client_message || '',
         value: data.value || undefined,
@@ -178,7 +181,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         withdrawal_situation_id: data.withdrawal_situation_id || undefined,
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
-        // Checklist fields - preserve null values
         checklist_houve_queda: data.checklist_houve_queda,
         checklist_face_id: data.checklist_face_id,
         checklist_carrega: data.checklist_carrega,
@@ -195,12 +197,18 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
-      // Detectar se a senha é um padrão (formato: 0,1,2 ou 0-1-2 ou 0, 1, 2)
-      const cleanPassword = data.device_password?.replace(/\s/g, '') || '';
-      if (cleanPassword && /^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
+      // Detectar o tipo de senha
+      // Priorizar device_pattern se existir, caso contrário verificar se device_password é um padrão (para migração de dados antigos)
+      if ((data as any).device_pattern) {
         setPasswordType('pattern');
-        // Normalizar o formato para vírgulas sem espaços
-        form.setValue('device_password', cleanPassword.replace(/-/g, ','));
+      } else if (data.device_password) {
+        const cleanPassword = data.device_password.replace(/\s/g, '');
+        if (/^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
+          // Migrar senha de padrão antiga para o novo campo
+          setPasswordType('pattern');
+          form.setValue('device_pattern', cleanPassword.replace(/-/g, ','));
+          form.setValue('device_password', '');
+        }
       }
 
       // Carregar arquivos de mídia
@@ -423,7 +431,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
         device_model: data.device_model,
-        device_password: data.device_password || null,
+        device_password: passwordType === 'text' ? (data.device_password || null) : null,
+        device_pattern: passwordType === 'pattern' ? (data.device_pattern || null) : null,
         reported_defect: data.reported_defect,
         client_message: data.client_message || null,
         value: data.value || null,
@@ -751,53 +760,53 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             />
 
             <div className="md:col-span-2">
-              <FormField
-                control={form.control}
-                name="device_password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha do Aparelho</FormLabel>
-                    <div className="space-y-4">
-                      <RadioGroup
-                        value={passwordType}
-                        onValueChange={(value: 'text' | 'pattern') => {
-                          // Só processar se realmente mudou o tipo
-                          if (passwordType !== value) {
-                            // Limpar o campo ANTES de mudar o tipo
-                            field.onChange('');
-                            setPasswordType(value);
-                          }
-                        }}
-                        className="flex gap-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="text" id="text" />
-                          <Label htmlFor="text" className="cursor-pointer font-normal">
-                            Senha de texto
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="pattern" id="pattern" />
-                          <Label htmlFor="pattern" className="cursor-pointer font-normal">
-                            Padrão de 9 pontos
-                          </Label>
-                        </div>
-                      </RadioGroup>
+              <FormItem>
+                <FormLabel>Senha do Aparelho</FormLabel>
+                <div className="space-y-4">
+                  <RadioGroup
+                    value={passwordType}
+                    onValueChange={(value: 'text' | 'pattern') => {
+                      setPasswordType(value);
+                    }}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="text" id="text" />
+                      <Label htmlFor="text" className="cursor-pointer font-normal">
+                        Senha de texto
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pattern" id="pattern" />
+                      <Label htmlFor="pattern" className="cursor-pointer font-normal">
+                        Padrão de 9 pontos
+                      </Label>
+                    </div>
+                  </RadioGroup>
 
-                      {passwordType === 'text' ? (
+                  {passwordType === 'text' ? (
+                    <FormField
+                      control={form.control}
+                      name="device_password"
+                      render={({ field }) => (
                         <FormControl>
                           <Input type="text" placeholder="Senha (opcional)" {...field} />
                         </FormControl>
-                      ) : (
+                      )}
+                    />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="device_pattern"
+                      render={({ field }) => (
                         <FormControl>
                           <PatternLock value={field.value} onChange={field.onChange} />
                         </FormControl>
                       )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    />
+                  )}
+                </div>
+              </FormItem>
             </div>
           </div>
         </div>
