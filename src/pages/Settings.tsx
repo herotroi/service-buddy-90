@@ -8,8 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Upload, Database } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Loader2, Upload } from 'lucide-react';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -168,58 +167,6 @@ const Settings = () => {
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar configurações: ' + error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Migrate existing data mutation
-  const migrateDataMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.id) throw new Error('Usuário não autenticado');
-
-      // Update all tables with null user_id
-      const tables = [
-        'situations',
-        'withdrawal_situations',
-        'situacao_informatica',
-        'retirada_informatica',
-        'local_equipamento',
-        'employees',
-        'service_orders',
-        'service_orders_informatica',
-        'system_settings',
-      ];
-
-      let totalUpdated = 0;
-
-      for (const table of tables) {
-        const { data, error } = await supabase
-          .from(table as any)
-          .update({ user_id: user.id })
-          .is('user_id', null)
-          .select();
-
-        if (error) {
-          console.error(`Erro ao atualizar ${table}:`, error);
-        } else {
-          totalUpdated += data?.length || 0;
-        }
-      }
-
-      return totalUpdated;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries();
-      toast({
-        title: 'Sucesso',
-        description: `${count} registro(s) vinculado(s) à sua conta!`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao migrar dados: ' + error.message,
         variant: 'destructive',
       });
     },
@@ -555,37 +502,6 @@ const Settings = () => {
                   </Button>
                 </form>
               )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Migração de Dados</CardTitle>
-              <CardDescription>Vincule dados existentes à sua conta</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Se você tinha dados no sistema antes da atualização de multi-usuário, 
-                clique no botão abaixo para vincular esses dados à sua conta.
-              </p>
-              <Button 
-                onClick={() => migrateDataMutation.mutate()}
-                disabled={migrateDataMutation.isPending}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                {migrateDataMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Migrando...
-                  </>
-                ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Vincular Dados à Minha Conta
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
         </TabsContent>
