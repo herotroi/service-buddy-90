@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           contact: string | null
           created_at: string
+          deleted: boolean
           id: string
           name: string
           type: string
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           contact?: string | null
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           type: string
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           contact?: string | null
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           type?: string
@@ -45,6 +48,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          deleted: boolean
           id: string
           name: string
           updated_at: string
@@ -52,6 +56,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           updated_at?: string
@@ -59,6 +64,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           updated_at?: string
@@ -120,6 +126,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          deleted: boolean
           id: string
           name: string
           updated_at: string
@@ -127,6 +134,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           updated_at?: string
@@ -134,6 +142,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           updated_at?: string
@@ -162,6 +171,7 @@ export type Database = {
           client_name: string
           contact: string | null
           created_at: string
+          deleted: boolean
           device_model: string
           device_password: string | null
           entry_date: string
@@ -205,6 +215,7 @@ export type Database = {
           client_name: string
           contact?: string | null
           created_at?: string
+          deleted?: boolean
           device_model: string
           device_password?: string | null
           entry_date?: string
@@ -248,6 +259,7 @@ export type Database = {
           client_name?: string
           contact?: string | null
           created_at?: string
+          deleted?: boolean
           device_model?: string
           device_password?: string | null
           entry_date?: string
@@ -309,6 +321,7 @@ export type Database = {
           contact: string | null
           created_at: string
           defect: string
+          deleted: boolean
           entry_date: string
           equipment: string
           equipment_location_id: string | null
@@ -334,6 +347,7 @@ export type Database = {
           contact?: string | null
           created_at?: string
           defect: string
+          deleted?: boolean
           entry_date?: string
           equipment: string
           equipment_location_id?: string | null
@@ -359,6 +373,7 @@ export type Database = {
           contact?: string | null
           created_at?: string
           defect?: string
+          deleted?: boolean
           entry_date?: string
           equipment?: string
           equipment_location_id?: string | null
@@ -412,6 +427,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          deleted: boolean
           id: string
           name: string
           updated_at: string
@@ -419,6 +435,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           updated_at?: string
@@ -426,6 +443,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           updated_at?: string
@@ -436,6 +454,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          deleted: boolean
           id: string
           name: string
           updated_at: string
@@ -443,6 +462,7 @@ export type Database = {
         Insert: {
           color: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           updated_at?: string
@@ -450,6 +470,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           updated_at?: string
@@ -484,6 +505,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          deleted: boolean
           id: string
           name: string
           updated_at: string
@@ -491,6 +513,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name: string
           updated_at?: string
@@ -498,6 +521,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          deleted?: boolean
           id?: string
           name?: string
           updated_at?: string

@@ -182,9 +182,15 @@ export const ServiceOrdersInformaticaTable = () => {
           equipment_location:local_equipamento(name, color)
         `)
         .eq('id', orderId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+
+      // Se não encontrou (pode ter sido soft-deleted), remover da lista
+      if (!data) {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        return;
+      }
 
       setOrders(prev => {
         const index = prev.findIndex(o => o.id === orderId);
@@ -207,16 +213,16 @@ export const ServiceOrdersInformaticaTable = () => {
     try {
       const { error } = await supabase
         .from('service_orders_informatica')
-        .delete()
+        .update({ deleted: true })
         .eq('id', deleteId);
 
       if (error) throw error;
 
       setOrders(orders.filter(order => order.id !== deleteId));
-      toast.success('OS deletada com sucesso');
+      toast.success('OS arquivada com sucesso');
       setDeleteId(null);
     } catch (error: any) {
-      toast.error('Erro ao deletar OS');
+      toast.error('Erro ao arquivar OS');
       console.error(error);
     }
   };
@@ -667,19 +673,19 @@ export const ServiceOrdersInformaticaTable = () => {
         </DrawerContent>
       </Drawer>
 
-      {/* Dialog de Exclusão */}
+      {/* Dialog de Arquivamento */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta OS? Esta ação não pode ser desfeita.
+              Tem certeza que deseja arquivar esta OS? O registro será ocultado mas não excluído permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir
+              Arquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

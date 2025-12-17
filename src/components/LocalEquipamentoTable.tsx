@@ -120,15 +120,15 @@ export const LocalEquipamentoTable = () => {
     try {
       const { error } = await supabase
         .from('local_equipamento')
-        .delete()
+        .update({ deleted: true })
         .eq('id', deleteId);
 
       if (error) throw error;
-      toast.success('Local excluído com sucesso');
+      toast.success('Local arquivado com sucesso');
       setDeleteId(null);
       fetchLocais();
     } catch (error: any) {
-      toast.error('Erro ao excluir local');
+      toast.error('Erro ao arquivar local');
       console.error(error);
     }
   };
@@ -290,15 +290,15 @@ export const LocalEquipamentoTable = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este local? Esta ação não pode ser desfeita.
+              Tem certeza que deseja arquivar este local? O registro será ocultado mas não excluído permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir
+              Arquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -114,15 +114,15 @@ export const EmployeesTable = () => {
     try {
       const { error } = await supabase
         .from('employees')
-        .delete()
+        .update({ deleted: true })
         .eq('id', deleteId);
 
       if (error) throw error;
-      toast.success('Funcionário excluído com sucesso');
+      toast.success('Funcionário arquivado com sucesso');
       setDeleteId(null);
       fetchEmployees();
     } catch (error: any) {
-      toast.error('Erro ao excluir funcionário');
+      toast.error('Erro ao arquivar funcionário');
       console.error(error);
     }
   };
@@ -270,19 +270,19 @@ export const EmployeesTable = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Exclusão */}
+      {/* Dialog de Arquivamento */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.
+              Tem certeza que deseja arquivar este funcionário? O registro será ocultado mas não excluído permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir
+              Arquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
