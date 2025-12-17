@@ -758,14 +758,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                         value={passwordType}
                         onValueChange={(value: 'text' | 'pattern') => {
                           setPasswordType(value);
-                          // Só limpar se estiver mudando para padrão e o valor atual NÃO for um padrão válido
-                          if (value === 'pattern') {
-                            const cleanValue = (field.value || '').replace(/\s/g, '');
-                            const isValidPattern = /^[0-8]([-,][0-8])+$/.test(cleanValue);
-                            if (!isValidPattern) {
-                              field.onChange('');
-                            }
-                          }
+                          // Limpar o campo ao alternar entre tipos de senha
+                          field.onChange('');
                         }}
                         className="flex gap-4"
                       >
