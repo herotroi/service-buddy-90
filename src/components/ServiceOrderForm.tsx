@@ -157,6 +157,24 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       if (error) throw error;
       if (!data) return;
 
+      // Detectar e migrar senha de padrão antiga (antes do form.reset)
+      let passwordValue = data.device_password || '';
+      let patternValue = (data as any).device_pattern || '';
+      let detectedPasswordType: 'text' | 'pattern' = 'text';
+
+      if (patternValue) {
+        // Já tem device_pattern, usar diretamente
+        detectedPasswordType = 'pattern';
+      } else if (passwordValue) {
+        const cleanPassword = passwordValue.replace(/\s/g, '');
+        if (/^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
+          // Migrar senha de padrão antiga para o novo campo
+          detectedPasswordType = 'pattern';
+          patternValue = cleanPassword.replace(/-/g, ',');
+          passwordValue = '';
+        }
+      }
+
       form.reset({
         os_number: data.os_number,
         entry_date: new Date(data.entry_date).toISOString().split('T')[0],
@@ -166,8 +184,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         contact: data.contact || '',
         other_contacts: data.other_contacts || '',
         device_model: data.device_model,
-        device_password: data.device_password || '',
-        device_pattern: (data as any).device_pattern || '',
+        device_password: passwordValue,
+        device_pattern: patternValue,
         reported_defect: data.reported_defect,
         client_message: data.client_message || '',
         value: data.value || undefined,
@@ -197,19 +215,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
-      // Detectar o tipo de senha
-      // Priorizar device_pattern se existir, caso contrário verificar se device_password é um padrão (para migração de dados antigos)
-      if ((data as any).device_pattern) {
-        setPasswordType('pattern');
-      } else if (data.device_password) {
-        const cleanPassword = data.device_password.replace(/\s/g, '');
-        if (/^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
-          // Migrar senha de padrão antiga para o novo campo
-          setPasswordType('pattern');
-          form.setValue('device_pattern', cleanPassword.replace(/-/g, ','));
-          form.setValue('device_password', '');
-        }
-      }
+      // Definir o tipo de senha após o reset
+      setPasswordType(detectedPasswordType);
 
       // Carregar arquivos de mídia
       if (data.media_files && Array.isArray(data.media_files)) {
