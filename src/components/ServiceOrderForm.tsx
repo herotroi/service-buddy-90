@@ -194,6 +194,14 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
+      // Detectar se a senha é um padrão (formato: 0,1,2 ou 0-1-2 ou 0, 1, 2)
+      const cleanPassword = data.device_password?.replace(/\s/g, '') || '';
+      if (cleanPassword && /^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
+        setPasswordType('pattern');
+        // Normalizar o formato para vírgulas sem espaços
+        form.setValue('device_password', cleanPassword.replace(/-/g, ','));
+      }
+
       // Carregar arquivos de mídia
       if (data.media_files && Array.isArray(data.media_files)) {
         setMediaFiles(data.media_files as unknown as MediaFile[]);
