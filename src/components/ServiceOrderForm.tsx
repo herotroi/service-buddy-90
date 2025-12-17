@@ -221,6 +221,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           .from('system_settings')
           .select('value')
           .eq('key', 'os_starting_number')
+          .eq('user_id', user?.id)
           .maybeSingle();
         
         if (settingsData) {

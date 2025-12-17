@@ -80,12 +80,13 @@ const Settings = () => {
 
   // Fetch system settings
   const { data: settings, isLoading: settingsLoading } = useQuery({
-    queryKey: ['system-settings'],
+    queryKey: ['system-settings', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
         .eq('key', 'os_starting_number')
+        .eq('user_id', user?.id)
         .maybeSingle();
       
       if (error) throw error;
@@ -94,6 +95,7 @@ const Settings = () => {
       }
       return data;
     },
+    enabled: !!user?.id,
   });
 
   // Update profile mutation
