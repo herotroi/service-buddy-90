@@ -761,11 +761,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                       <RadioGroup
                         value={passwordType}
                         onValueChange={(value: 'text' | 'pattern') => {
-                          const previousType = passwordType;
-                          setPasswordType(value);
-                          // Só limpar o campo se o usuário realmente trocou o tipo (não no carregamento inicial)
-                          if (previousType !== value) {
+                          // Só processar se realmente mudou o tipo
+                          if (passwordType !== value) {
+                            // Limpar o campo ANTES de mudar o tipo
                             field.onChange('');
+                            setPasswordType(value);
                           }
                         }}
                         className="flex gap-4"
