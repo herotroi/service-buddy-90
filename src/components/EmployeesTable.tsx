@@ -118,11 +118,11 @@ export const EmployeesTable = () => {
         .eq('id', deleteId);
 
       if (error) throw error;
-      toast.success('Funcionário arquivado com sucesso');
+      toast.success('Funcionário excluído com sucesso');
       setDeleteId(null);
       fetchEmployees();
     } catch (error: any) {
-      toast.error('Erro ao arquivar funcionário');
+      toast.error('Erro ao excluir funcionário');
       console.error(error);
     }
   };
@@ -270,19 +270,19 @@ export const EmployeesTable = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Arquivamento */}
+      {/* Dialog de Exclusão */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja arquivar este funcionário? O registro será ocultado mas não excluído permanentemente.
+              Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Arquivar
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
