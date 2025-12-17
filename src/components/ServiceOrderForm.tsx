@@ -79,6 +79,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -206,6 +207,9 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       if (data.media_files && Array.isArray(data.media_files)) {
         setMediaFiles(data.media_files as unknown as MediaFile[]);
       }
+      
+      // Marcar que o carregamento inicial foi concluído
+      setIsInitialLoad(false);
     } catch (error: any) {
       toast.error('Erro ao carregar dados da OS');
       console.error(error);
@@ -757,9 +761,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                       <RadioGroup
                         value={passwordType}
                         onValueChange={(value: 'text' | 'pattern') => {
+                          const previousType = passwordType;
                           setPasswordType(value);
-                          // Limpar o campo ao alternar entre tipos de senha
-                          field.onChange('');
+                          // Só limpar o campo se o usuário realmente trocou o tipo (não no carregamento inicial)
+                          if (previousType !== value) {
+                            field.onChange('');
+                          }
                         }}
                         className="flex gap-4"
                       >
