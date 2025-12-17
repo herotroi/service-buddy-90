@@ -22,7 +22,8 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
         let query = supabase
           .from('service_orders')
           .select('id, os_number, client_name, device_model')
-          .eq('os_number', osNumber);
+          .eq('os_number', osNumber)
+          .eq('deleted', false);
 
         if (currentOrderId) {
           query = query.neq('id', currentOrderId);
@@ -41,7 +42,8 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
         let query = supabase
           .from('service_orders_informatica')
           .select('id, os_number, client_name, equipment')
-          .eq('os_number', osNumber);
+          .eq('os_number', osNumber)
+          .eq('deleted', false);
 
         if (currentOrderId) {
           query = query.neq('id', currentOrderId);
