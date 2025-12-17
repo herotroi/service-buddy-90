@@ -85,7 +85,7 @@ export const ServiceOrdersInformaticaTable = () => {
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteOrder, setDeleteOrder] = useState<{ id: string; os_number: number; client_name: string } | null>(null);
   const [showNewOrderDrawer, setShowNewOrderDrawer] = useState(false);
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
@@ -208,19 +208,19 @@ export const ServiceOrdersInformaticaTable = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteOrder) return;
 
     try {
       const { error } = await supabase
         .from('service_orders_informatica')
         .update({ deleted: true })
-        .eq('id', deleteId);
+        .eq('id', deleteOrder.id);
 
       if (error) throw error;
 
-      setOrders(orders.filter(order => order.id !== deleteId));
+      setOrders(orders.filter(order => order.id !== deleteOrder.id));
       toast.success('OS excluída com sucesso');
-      setDeleteId(null);
+      setDeleteOrder(null);
     } catch (error: any) {
       toast.error('Erro ao excluir OS');
       console.error(error);
@@ -458,7 +458,7 @@ export const ServiceOrdersInformaticaTable = () => {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(order.id)}
+                          onClick={() => setDeleteOrder({ id: order.id, os_number: order.os_number, client_name: order.client_name })}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -674,12 +674,12 @@ export const ServiceOrdersInformaticaTable = () => {
       </Drawer>
 
       {/* Dialog de Exclusão */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={!!deleteOrder} onOpenChange={() => setDeleteOrder(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta OS? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir a <strong>OS #{deleteOrder?.os_number}</strong> do cliente <strong>{deleteOrder?.client_name}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -40,7 +40,7 @@ export const EmployeesTable = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDialog, setShowDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -109,17 +109,17 @@ export const EmployeesTable = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteItem) return;
 
     try {
       const { error } = await supabase
         .from('employees')
         .update({ deleted: true })
-        .eq('id', deleteId);
+        .eq('id', deleteItem.id);
 
       if (error) throw error;
       toast.success('Funcionário excluído com sucesso');
-      setDeleteId(null);
+      setDeleteItem(null);
       fetchEmployees();
     } catch (error: any) {
       toast.error('Erro ao excluir funcionário');
@@ -199,7 +199,7 @@ export const EmployeesTable = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(employee.id)}
+                        onClick={() => setDeleteItem({ id: employee.id, name: employee.name })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -271,12 +271,12 @@ export const EmployeesTable = () => {
       </Dialog>
 
       {/* Dialog de Exclusão */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o funcionário <strong>{deleteItem?.name}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
