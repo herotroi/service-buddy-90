@@ -16,6 +16,8 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   useEffect(() => {
     if (value) {
       setPattern(value.split(',').map(Number).filter(n => !isNaN(n)));
+    } else {
+      setPattern([]);
     }
   }, [value]);
 
