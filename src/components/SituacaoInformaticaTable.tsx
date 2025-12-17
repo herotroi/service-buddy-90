@@ -48,7 +48,7 @@ export const SituacaoInformaticaTable = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDialog, setShowDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
   const [editingSituation, setEditingSituation] = useState<Situation | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -115,17 +115,17 @@ export const SituacaoInformaticaTable = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteItem) return;
 
     try {
       const { error } = await supabase
         .from('situacao_informatica')
         .update({ deleted: true })
-        .eq('id', deleteId);
+        .eq('id', deleteItem.id);
 
       if (error) throw error;
       toast.success('Situação excluída com sucesso');
-      setDeleteId(null);
+      setDeleteItem(null);
       fetchSituations();
     } catch (error: any) {
       toast.error('Erro ao excluir situação');
@@ -208,7 +208,7 @@ export const SituacaoInformaticaTable = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(situation.id)}
+                        onClick={() => setDeleteItem({ id: situation.id, name: situation.name })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -287,12 +287,12 @@ export const SituacaoInformaticaTable = () => {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta situação? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir a situação <strong>{deleteItem?.name}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

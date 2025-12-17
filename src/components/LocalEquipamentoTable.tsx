@@ -48,7 +48,7 @@ export const LocalEquipamentoTable = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDialog, setShowDialog] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ id: string; name: string } | null>(null);
   const [editingLocal, setEditingLocal] = useState<LocalEquipamento | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -115,17 +115,17 @@ export const LocalEquipamentoTable = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteId) return;
+    if (!deleteItem) return;
 
     try {
       const { error } = await supabase
         .from('local_equipamento')
         .update({ deleted: true })
-        .eq('id', deleteId);
+        .eq('id', deleteItem.id);
 
       if (error) throw error;
       toast.success('Local excluído com sucesso');
-      setDeleteId(null);
+      setDeleteItem(null);
       fetchLocais();
     } catch (error: any) {
       toast.error('Erro ao excluir local');
@@ -208,7 +208,7 @@ export const LocalEquipamentoTable = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(local.id)}
+                        onClick={() => setDeleteItem({ id: local.id, name: local.name })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -287,12 +287,12 @@ export const LocalEquipamentoTable = () => {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este local? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o local <strong>{deleteItem?.name}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
