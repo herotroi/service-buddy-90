@@ -32,6 +32,7 @@ import {
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ServiceOrderForm } from './ServiceOrderForm';
 import { ServiceOrderPrint } from './ServiceOrderPrint';
+import { PatternLock } from './PatternLock';
 
 interface ServiceOrder {
   id: string;
@@ -629,7 +630,17 @@ export const ServiceOrdersTable = () => {
                       {order.device_password && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">Senha do Aparelho</p>
-                          <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
+                          {/^[0-8](-[0-8])+$/.test(order.device_password) ? (
+                            <div className="mt-2">
+                              <PatternLock
+                                value={order.device_password}
+                                onChange={() => {}}
+                                disabled={true}
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
+                          )}
                         </div>
                       )}
                     </div>
