@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TriStateCheckbox, TriStateValue } from '@/components/ui/tri-state-checkbox';
@@ -79,7 +79,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
-  const [passwordType, setPasswordType] = useState<'text' | 'pattern'>('text');
+  
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -134,15 +134,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     },
   });
 
-  // Monitorar valores do form para sincronizar tipo de senha
-  const watchedPattern = form.watch('device_pattern');
-  
-  useEffect(() => {
-    // Se tiver device_pattern, mostrar como padrão (apenas na carga inicial)
-    if (watchedPattern && watchedPattern.length > 0 && passwordType === 'text') {
-      setPasswordType('pattern');
-    }
-  }, [watchedPattern, passwordType]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -167,20 +158,14 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       if (error) throw error;
       if (!data) return;
 
-      // Detectar e migrar senha de padrão antiga (antes do form.reset)
+      // Detectar e migrar senha de padrão antiga
       let passwordValue = data.device_password || '';
       let patternValue = (data as any).device_pattern || '';
-      let detectedPasswordType: 'text' | 'pattern' = 'text';
 
-
-      if (patternValue) {
-        // Já tem device_pattern, usar diretamente
-        detectedPasswordType = 'pattern';
-      } else if (passwordValue) {
+      // Migrar senha de padrão antiga que estava em device_password
+      if (!patternValue && passwordValue) {
         const cleanPassword = passwordValue.replace(/\s/g, '');
         if (/^[0-8]([-,][0-8])+$/.test(cleanPassword)) {
-          // Migrar senha de padrão antiga para o novo campo
-          detectedPasswordType = 'pattern';
           patternValue = cleanPassword.replace(/-/g, ',');
           passwordValue = '';
         }
@@ -225,11 +210,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_acompanha_capa: data.checklist_acompanha_capa,
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
-
-      // Definir o tipo de senha após o reset
-      setTimeout(() => {
-        setPasswordType(detectedPasswordType);
-      }, 0);
 
       // Carregar arquivos de mídia
       if (data.media_files && Array.isArray(data.media_files)) {
@@ -451,8 +431,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
         device_model: data.device_model,
-        device_password: passwordType === 'text' ? (data.device_password || null) : null,
-        device_pattern: passwordType === 'pattern' ? (data.device_pattern || null) : null,
+        device_password: data.device_password || null,
+        device_pattern: data.device_pattern || null,
         reported_defect: data.reported_defect,
         client_message: data.client_message || null,
         value: data.value || null,
@@ -783,38 +763,23 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               <FormItem>
                 <FormLabel>Senha do Aparelho</FormLabel>
                 <div className="space-y-4">
-                  <RadioGroup
-                    value={passwordType}
-                    onValueChange={(value: 'text' | 'pattern') => {
-                      setPasswordType(value);
-                    }}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="text" id="text" />
-                      <Label htmlFor="text" className="cursor-pointer font-normal">
-                        Senha de texto
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="pattern" id="pattern" />
-                      <Label htmlFor="pattern" className="cursor-pointer font-normal">
-                        Padrão de 9 pontos
-                      </Label>
-                    </div>
-                  </RadioGroup>
-
-                  {passwordType === 'text' ? (
+                  {/* Senha de texto */}
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Senha de texto</Label>
                     <FormField
                       control={form.control}
                       name="device_password"
                       render={({ field }) => (
                         <FormControl>
-                          <Input type="text" placeholder="Senha (opcional)" {...field} />
+                          <Input type="text" placeholder="Senha de texto (opcional)" {...field} />
                         </FormControl>
                       )}
                     />
-                  ) : (
+                  </div>
+                  
+                  {/* Padrão de 9 pontos */}
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Padrão de 9 pontos</Label>
                     <FormField
                       control={form.control}
                       name="device_pattern"
@@ -827,7 +792,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                         </FormControl>
                       )}
                     />
-                  )}
+                  </div>
                 </div>
               </FormItem>
             </div>
