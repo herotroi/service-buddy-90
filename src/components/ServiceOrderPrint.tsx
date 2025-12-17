@@ -319,9 +319,10 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           {/* Password and Value */}
           <div className="p-4 border-b-2 border-black flex justify-between items-center">
             <div className="flex items-center gap-8">
-              <p><strong>SENHA:</strong> {orderData.device_password || orderData.device_pattern || '_____________'}</p>
+              <p><strong>SENHA TEXTO:</strong> {orderData.device_password || '_____________'}</p>
               {/* Pattern Lock dots representation */}
-              {orderData.device_pattern && (
+              <div className="flex items-center gap-2">
+                <p><strong>PADRÃO:</strong></p>
                 <div className="grid grid-cols-3 gap-1">
                   {[0,1,2,3,4,5,6,7,8].map(n => (
                     <div 
@@ -334,7 +335,7 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                     />
                   ))}
                 </div>
-              )}
+              </div>
             </div>
             <p><strong>Orçamento R$</strong> {orderData.value?.toFixed(2) || '_____________'}</p>
           </div>

@@ -627,23 +627,23 @@ export const ServiceOrdersTable = () => {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
                         <p className="text-lg">{order.device_model}</p>
                       </div>
-                      {(order.device_password || (order as any).device_pattern) && (
+                      {order.device_password && (
                         <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Senha do Aparelho</p>
-                          {(order as any).device_pattern ? (
-                            <div className="mt-2">
-                              <PatternLock
-                                value={(order as any).device_pattern}
-                                onChange={() => {}}
-                                disabled={true}
-                              />
-                            </div>
-                          ) : order.device_password ? (
-                            <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
-                          ) : null}
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Senha de Texto</p>
+                          <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
                         </div>
                       )}
                     </div>
+                    {(order as any).device_pattern && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Padrão de 9 Pontos</p>
+                        <PatternLock
+                          value={(order as any).device_pattern}
+                          onChange={() => {}}
+                          disabled={true}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Defeito e Mensagem */}
