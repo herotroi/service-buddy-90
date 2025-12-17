@@ -630,10 +630,10 @@ export const ServiceOrdersTable = () => {
                       {order.device_password && (
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">Senha do Aparelho</p>
-                          {/^[0-8](-[0-8])+$/.test(order.device_password) ? (
+                          {/^[0-8]([-,][0-8])+$/.test(order.device_password) ? (
                             <div className="mt-2">
                               <PatternLock
-                                value={order.device_password}
+                                value={order.device_password.replace(/,/g, '-')}
                                 onChange={() => {}}
                                 disabled={true}
                               />
