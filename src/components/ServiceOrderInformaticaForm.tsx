@@ -146,6 +146,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           .from('system_settings')
           .select('value')
           .eq('key', 'os_starting_number_informatica')
+          .eq('user_id', user?.id)
           .maybeSingle();
         
         if (settingsData) {
