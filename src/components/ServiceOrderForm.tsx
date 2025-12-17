@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -71,6 +72,7 @@ interface MediaFile {
 }
 
 export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderFormProps) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [situations, setSituations] = useState<any[]>([]);
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
@@ -437,6 +439,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_acompanha_sd: data.checklist_acompanha_sd,
         checklist_acompanha_capa: data.checklist_acompanha_capa,
         checklist_esta_ligado: data.checklist_esta_ligado,
+        user_id: user?.id,
       };
 
       if (orderId) {
