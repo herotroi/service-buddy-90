@@ -124,11 +124,11 @@ export const LocalEquipamentoTable = () => {
         .eq('id', deleteId);
 
       if (error) throw error;
-      toast.success('Local arquivado com sucesso');
+      toast.success('Local excluído com sucesso');
       setDeleteId(null);
       fetchLocais();
     } catch (error: any) {
-      toast.error('Erro ao arquivar local');
+      toast.error('Erro ao excluir local');
       console.error(error);
     }
   };
@@ -290,15 +290,15 @@ export const LocalEquipamentoTable = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja arquivar este local? O registro será ocultado mas não excluído permanentemente.
+              Tem certeza que deseja excluir este local? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Arquivar
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

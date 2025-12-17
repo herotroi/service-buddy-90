@@ -235,10 +235,10 @@ export const ServiceOrdersTable = () => {
       if (error) throw error;
 
       setOrders(orders.filter(order => order.id !== deleteId));
-      toast.success('OS arquivada com sucesso');
+      toast.success('OS excluída com sucesso');
       setDeleteId(null);
     } catch (error: any) {
-      toast.error('Erro ao arquivar OS');
+      toast.error('Erro ao excluir OS');
       console.error(error);
     }
   };
@@ -528,19 +528,19 @@ export const ServiceOrdersTable = () => {
         </div>
       )}
 
-      {/* Dialog de confirmação de arquivamento */}
+      {/* Dialog de confirmação de exclusão */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja arquivar esta ordem de serviço? O registro será ocultado mas não excluído permanentemente.
+              Tem certeza que deseja excluir esta ordem de serviço? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Arquivar
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
