@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield, PackageCheck, ShieldAlert } from 'lucide-react';
+import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, ClipboardList, Image, Shield, PackageCheck, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -16,18 +16,13 @@ interface MediaFile {
 
 interface TrackingData {
   os_number: number;
-  client_name: string;
   device_model: string;
   entry_date: string;
   reported_defect: string;
-  situation: {
-    name: string;
-    color: string;
-  } | null;
-  withdrawal_situation: {
-    name: string;
-    color: string;
-  } | null;
+  situation_name: string | null;
+  situation_color: string | null;
+  withdrawal_name: string | null;
+  withdrawal_color: string | null;
   exit_date: string | null;
   withdrawn_by: string | null;
   media_files: MediaFile[] | null;
@@ -104,7 +99,7 @@ const checkRateLimit = (): boolean => {
   return true;
 };
 
-// Security: Strict UUID validation
+// Security: Strict UUID validation (UUID v4)
 const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
@@ -121,7 +116,6 @@ const TrackingOS = () => {
   useEffect(() => {
     const preventContextMenu = (e: MouseEvent) => e.preventDefault();
     const preventKeyShortcuts = (e: KeyboardEvent) => {
-      // Prevent F12, Ctrl+Shift+I, Ctrl+U
       if (e.key === 'F12' || 
           (e.ctrlKey && e.shiftKey && e.key === 'I') ||
           (e.ctrlKey && e.key === 'u')) {
@@ -143,7 +137,6 @@ const TrackingOS = () => {
     if (isInIframe()) {
       setSecurityBlocked(true);
       setLoading(false);
-      return;
     }
   }, []);
 
@@ -162,50 +155,25 @@ const TrackingOS = () => {
         return;
       }
 
-      // Security: Strict UUID validation (UUID v4 format)
+      // Security: Strict UUID validation
       if (!isValidUUID(token)) {
         setError('Token inválido');
         setLoading(false);
         return;
       }
 
-      // Security: Additional token sanitization
+      // Security: Sanitize token
       const sanitizedToken = token.toLowerCase().trim();
 
       try {
-        const { data: order, error: fetchError } = await supabase
-          .from('service_orders')
-          .select(`
-            os_number,
-            client_name,
-            device_model,
-            entry_date,
-            reported_defect,
-            exit_date,
-            withdrawn_by,
-            media_files,
-            checklist_houve_queda,
-            checklist_face_id,
-            checklist_carrega,
-            checklist_tela_quebrada,
-            checklist_vidro_trincado,
-            checklist_manchas_tela,
-            checklist_carcaca_torta,
-            checklist_riscos_tampa,
-            checklist_riscos_laterais,
-            checklist_vidro_camera,
-            checklist_acompanha_chip,
-            checklist_acompanha_sd,
-            checklist_acompanha_capa,
-            checklist_esta_ligado,
-            situation:situations(name, color),
-            withdrawal_situation:withdrawal_situations(name, color)
-          `)
-          .eq('tracking_token', sanitizedToken)
-          .maybeSingle();
+        // Use secure function that only returns non-sensitive data
+        const { data: orders, error: fetchError } = await supabase
+          .rpc('get_tracking_order', { p_token: sanitizedToken });
 
         if (fetchError) throw fetchError;
-        if (!order) throw new Error('Ordem de serviço não encontrada');
+        if (!orders || orders.length === 0) throw new Error('Ordem não encontrada');
+
+        const order = orders[0];
 
         // Parse media_files safely
         let mediaFiles: MediaFile[] = [];
@@ -214,9 +182,32 @@ const TrackingOS = () => {
         }
 
         setData({
-          ...order,
+          os_number: order.os_number,
+          device_model: order.device_model,
+          entry_date: order.entry_date,
+          reported_defect: order.reported_defect,
+          situation_name: order.situation_name,
+          situation_color: order.situation_color,
+          withdrawal_name: order.withdrawal_name,
+          withdrawal_color: order.withdrawal_color,
+          exit_date: order.exit_date,
+          withdrawn_by: order.withdrawn_by,
           media_files: mediaFiles,
-        } as TrackingData);
+          checklist_houve_queda: order.checklist_houve_queda,
+          checklist_face_id: order.checklist_face_id,
+          checklist_carrega: order.checklist_carrega,
+          checklist_tela_quebrada: order.checklist_tela_quebrada,
+          checklist_vidro_trincado: order.checklist_vidro_trincado,
+          checklist_manchas_tela: order.checklist_manchas_tela,
+          checklist_carcaca_torta: order.checklist_carcaca_torta,
+          checklist_riscos_tampa: order.checklist_riscos_tampa,
+          checklist_riscos_laterais: order.checklist_riscos_laterais,
+          checklist_vidro_camera: order.checklist_vidro_camera,
+          checklist_acompanha_chip: order.checklist_acompanha_chip,
+          checklist_acompanha_sd: order.checklist_acompanha_sd,
+          checklist_acompanha_capa: order.checklist_acompanha_capa,
+          checklist_esta_ligado: order.checklist_esta_ligado,
+        });
       } catch (err: any) {
         // Security: Don't expose detailed error messages
         setError('Ordem de serviço não encontrada ou link inválido.');
@@ -225,10 +216,12 @@ const TrackingOS = () => {
       }
     };
 
-    fetchOrder();
-  }, [token]);
+    if (!securityBlocked) {
+      fetchOrder();
+    }
+  }, [token, securityBlocked]);
 
-  // Get checklist items that have been evaluated (not null)
+  // Get checklist items
   const getChecklistItems = () => {
     if (!data) return [];
     
@@ -328,15 +321,15 @@ const TrackingOS = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {data.situation ? (
+            {data.situation_name && data.situation_color ? (
               <Badge
                 className="text-lg px-4 py-2 select-none pointer-events-none"
                 style={{
-                  backgroundColor: data.situation.color,
-                  color: getTextColor(data.situation.color),
+                  backgroundColor: data.situation_color,
+                  color: getTextColor(data.situation_color),
                 }}
               >
-                {data.situation.name}
+                {data.situation_name}
               </Badge>
             ) : (
               <Badge variant="secondary" className="text-lg px-4 py-2 select-none pointer-events-none">
@@ -351,8 +344,8 @@ const TrackingOS = () => {
           </CardContent>
         </Card>
 
-        {/* Withdrawal Card - Only show if there's withdrawal data */}
-        {(data.exit_date || data.withdrawn_by || data.withdrawal_situation) && (
+        {/* Withdrawal Card */}
+        {(data.exit_date || data.withdrawn_by || data.withdrawal_name) && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -361,17 +354,17 @@ const TrackingOS = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {data.withdrawal_situation && (
+              {data.withdrawal_name && data.withdrawal_color && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Situação da Retirada</p>
                   <Badge
                     className="select-none pointer-events-none"
                     style={{
-                      backgroundColor: data.withdrawal_situation.color,
-                      color: getTextColor(data.withdrawal_situation.color),
+                      backgroundColor: data.withdrawal_color,
+                      color: getTextColor(data.withdrawal_color),
                     }}
                   >
-                    {data.withdrawal_situation.name}
+                    {data.withdrawal_name}
                   </Badge>
                 </div>
               )}
@@ -398,18 +391,6 @@ const TrackingOS = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                <User className="w-4 h-4" />
-                Cliente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="font-semibold text-foreground select-none">{data.client_name}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
                 <Smartphone className="w-4 h-4" />
                 Aparelho
               </CardTitle>
@@ -433,7 +414,7 @@ const TrackingOS = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="md:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
                 <Clock className="w-4 h-4" />
@@ -499,23 +480,19 @@ const TrackingOS = () => {
                       <video
                         src={file.url}
                         controls
+                        className="w-full aspect-video object-cover"
                         controlsList="nodownload"
-                        disablePictureInPicture
-                        className="w-full h-32 object-cover pointer-events-auto"
                         onContextMenu={(e) => e.preventDefault()}
                       />
                     ) : (
                       <img
                         src={file.url}
-                        alt={file.name}
-                        className="w-full h-32 object-cover pointer-events-none"
-                        draggable={false}
+                        alt={`Mídia ${index + 1}`}
+                        className="w-full aspect-square object-cover"
                         onContextMenu={(e) => e.preventDefault()}
+                        draggable={false}
                       />
                     )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate pointer-events-none">
-                      {file.name}
-                    </div>
                   </div>
                 ))}
               </div>
@@ -524,9 +501,9 @@ const TrackingOS = () => {
         )}
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground py-4">
-          <p>Este é um link exclusivo para acompanhamento.</p>
-          <p>Não compartilhe com terceiros.</p>
+        <div className="text-center text-xs text-muted-foreground pb-4">
+          <p>Esta é uma página pública de acompanhamento.</p>
+          <p>Dados sensíveis não são exibidos por segurança.</p>
         </div>
       </div>
     </div>
