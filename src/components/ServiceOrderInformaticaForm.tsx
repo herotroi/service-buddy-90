@@ -8,9 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
+import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 
 interface ServiceOrderInformaticaFormProps {
   onSuccess: () => void;
@@ -41,6 +44,13 @@ interface FormData {
   withdrawn_by?: string;
 }
 
+interface MediaFile {
+  url: string;
+  path: string;
+  type: 'image' | 'video';
+  name: string;
+}
+
 export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: ServiceOrderInformaticaFormProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -48,6 +58,10 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   const [withdrawalSituations, setWithdrawalSituations] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentFileName, setCurrentFileName] = useState('');
 
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
     table: 'service_orders_informatica',
@@ -125,6 +139,11 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         exit_date: data.exit_date ? new Date(data.exit_date).toISOString().split('T')[0] : undefined,
         withdrawn_by: data.withdrawn_by || '',
       });
+
+      // Carregar arquivos de mídia
+      if (data.media_files && Array.isArray(data.media_files)) {
+        setMediaFiles(data.media_files as unknown as MediaFile[]);
+      }
     } catch (error: any) {
       toast.error('Erro ao carregar dados da OS');
       console.error(error);
@@ -198,6 +217,110 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     }
   };
 
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingMedia(true);
+    
+    try {
+      const uploadedFiles: MediaFile[] = [];
+
+      for (const file of Array.from(files)) {
+        try {
+          setCurrentFileName(file.name);
+          setUploadProgress(0);
+
+          const originalSize = formatFileSize(file.size);
+          const processedFile = await processMediaFile(file, (progress) => {
+            setUploadProgress(progress);
+          });
+          const compressedSize = formatFileSize(processedFile.size);
+          
+          console.log(`Arquivo processado: ${file.name} (${originalSize} → ${compressedSize})`);
+
+          setUploadProgress(70);
+          const fileExt = file.type.startsWith('video/') ? 
+            file.name.split('.').pop() : 'jpg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `informatica/${orderId || 'temp'}/${fileName}`;
+
+          setUploadProgress(80);
+          const { error: uploadError } = await supabase.storage
+            .from('service-orders-media')
+            .upload(filePath, processedFile, {
+              contentType: processedFile.type,
+              upsert: false
+            });
+
+          if (uploadError) {
+            if (uploadError.message.includes('exceeded')) {
+              throw new Error('O arquivo excede o limite de 5GB. Por favor, use um arquivo menor.');
+            }
+            throw uploadError;
+          }
+          setUploadProgress(90);
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('service-orders-media')
+            .getPublicUrl(filePath);
+
+          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
+          uploadedFiles.push({
+            url: publicUrl,
+            path: filePath,
+            type: mediaType,
+            name: file.name,
+          });
+          
+          setUploadProgress(100);
+        } catch (fileError: any) {
+          console.error(`Erro ao processar ${file.name}:`, fileError);
+          toast.error(`Erro ao processar ${file.name}: ${fileError.message}`);
+        }
+      }
+
+      setUploadProgress(0);
+      setCurrentFileName('');
+
+      if (uploadedFiles.length > 0) {
+        setMediaFiles([...mediaFiles, ...uploadedFiles]);
+        toast.success(
+          uploadedFiles.length === 1 
+            ? 'Arquivo enviado com sucesso' 
+            : `${uploadedFiles.length} arquivos enviados com sucesso`
+        );
+      }
+    } catch (error: any) {
+      toast.error('Erro ao enviar arquivos');
+      console.error(error);
+    } finally {
+      setUploadingMedia(false);
+      setUploadProgress(0);
+      setCurrentFileName('');
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveMedia = async (index: number) => {
+    const fileToRemove = mediaFiles[index];
+    
+    try {
+      const { error } = await supabase.storage
+        .from('service-orders-media')
+        .remove([fileToRemove.path]);
+
+      if (error) throw error;
+
+      setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+      toast.success('Arquivo removido');
+    } catch (error: any) {
+      toast.error('Erro ao remover arquivo');
+      console.error(error);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
@@ -239,6 +362,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         exit_date: data.exit_date ? new Date(data.exit_date).toISOString() : null,
         withdrawn_by: data.withdrawn_by || null,
         user_id: user?.id,
+        media_files: mediaFiles,
       };
 
       if (orderId) {
@@ -686,6 +810,121 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                 </FormItem>
               )}
             />
+          </div>
+        </div>
+
+        {/* Fotos e Vídeos */}
+        <div>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+            Fotos e Vídeos
+          </h3>
+          <div className="space-y-4">
+            {/* Botões de captura da câmera */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Label htmlFor="camera-photo-info" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
+                  <input
+                    id="camera-photo-info"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Tirar Foto</span>
+                  </div>
+                </div>
+              </Label>
+
+              <Label htmlFor="camera-video-info" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
+                  <input
+                    id="camera-video-info"
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Video className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Gravar Vídeo</span>
+                  </div>
+                </div>
+              </Label>
+
+              <Label htmlFor="media-upload-info" className="cursor-pointer md:col-span-2">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
+                  <input
+                    id="media-upload-info"
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Plus className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Escolher da Galeria</span>
+                  </div>
+                </div>
+              </Label>
+            </div>
+
+            {/* Progress */}
+            {uploadingMedia && (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <p className="font-medium text-center mb-2">Processando e enviando...</p>
+                <p className="text-sm text-muted-foreground text-center mb-3">{currentFileName}</p>
+                {uploadProgress > 0 && (
+                  <div className="w-full max-w-md mx-auto space-y-2">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-xs text-center text-muted-foreground">
+                      {uploadProgress}% completo
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Arquivos Enviados */}
+            {mediaFiles.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {mediaFiles.map((file, index) => (
+                  <div key={index} className="relative group">
+                    <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                      {file.type === 'image' ? (
+                        <img 
+                          src={file.url} 
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <video 
+                          src={file.url}
+                          className="w-full h-full object-cover"
+                          controls
+                        />
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveMedia(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
