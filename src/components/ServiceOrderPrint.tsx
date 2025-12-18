@@ -320,21 +320,72 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           <div className="p-4 border-b-2 border-black flex justify-between items-center">
             <div className="flex items-center gap-8">
               <p><strong>SENHA TEXTO:</strong> {orderData.device_password || '_____________'}</p>
-              {/* Pattern Lock dots representation */}
-              <div className="flex items-center gap-2">
+              {/* Pattern Lock visual representation */}
+              <div className="flex items-center gap-3">
                 <p><strong>PADRÃO:</strong></p>
-                <div className="grid grid-cols-3 gap-1">
-                  {[0,1,2,3,4,5,6,7,8].map(n => (
-                    <div 
-                      key={n} 
-                      className={`w-2 h-2 rounded-full ${
-                        orderData.device_pattern?.split(',').includes(n.toString()) 
-                          ? 'bg-black' 
-                          : 'border border-black'
-                      }`}
-                    />
-                  ))}
-                </div>
+                {orderData.device_pattern ? (
+                  <svg width="80" height="80" viewBox="0 0 80 80" className="border border-black rounded">
+                    {/* Grid lines for reference */}
+                    {[20, 40, 60].map(pos => (
+                      <g key={pos}>
+                        <line x1={pos} y1="5" x2={pos} y2="75" stroke="#ddd" strokeWidth="0.5" />
+                        <line x1="5" y1={pos} x2="75" y2={pos} stroke="#ddd" strokeWidth="0.5" />
+                      </g>
+                    ))}
+                    {/* Connection lines */}
+                    {(() => {
+                      const points = orderData.device_pattern.split(',').map(Number);
+                      const getPos = (n: number) => ({ x: (n % 3) * 25 + 15, y: Math.floor(n / 3) * 25 + 15 });
+                      return points.slice(0, -1).map((point, idx) => {
+                        const from = getPos(point);
+                        const to = getPos(points[idx + 1]);
+                        return (
+                          <line
+                            key={`line-${idx}`}
+                            x1={from.x}
+                            y1={from.y}
+                            x2={to.x}
+                            y2={to.y}
+                            stroke="black"
+                            strokeWidth="2"
+                          />
+                        );
+                      });
+                    })()}
+                    {/* Dots with numbers */}
+                    {[0,1,2,3,4,5,6,7,8].map(n => {
+                      const x = (n % 3) * 25 + 15;
+                      const y = Math.floor(n / 3) * 25 + 15;
+                      const isSelected = orderData.device_pattern?.split(',').includes(n.toString());
+                      const order = orderData.device_pattern?.split(',').indexOf(n.toString());
+                      return (
+                        <g key={n}>
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="8"
+                            fill={isSelected ? 'black' : 'white'}
+                            stroke="black"
+                            strokeWidth="1.5"
+                          />
+                          <text
+                            x={x}
+                            y={y + 1}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fontSize="8"
+                            fontWeight="bold"
+                            fill={isSelected ? 'white' : 'black'}
+                          >
+                            {isSelected && order !== undefined && order >= 0 ? order + 1 : ''}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                ) : (
+                  <span className="text-gray-500">Não definido</span>
+                )}
               </div>
             </div>
             <p><strong>Orçamento R$</strong> {orderData.value?.toFixed(2) || '_____________'}</p>
