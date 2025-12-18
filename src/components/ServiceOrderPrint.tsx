@@ -406,12 +406,14 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
             )}
             <div className="flex gap-16">
               <div className="text-center">
-                <div className="border-t border-black w-40 pt-1">
+                <div className="h-16" />
+                <div className="border-t border-black w-48 pt-1">
                   Cliente
                 </div>
               </div>
               <div className="text-center">
-                <div className="border-t border-black w-40 pt-1">
+                <div className="h-16" />
+                <div className="border-t border-black w-48 pt-1">
                   Empresa
                 </div>
               </div>
