@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield, PackageCheck } from 'lucide-react';
+import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield, PackageCheck, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -73,27 +73,104 @@ const checklistLabels: Record<string, string> = {
   checklist_esta_ligado: 'Está ligado',
 };
 
+// Security: Rate limiting storage key
+const RATE_LIMIT_KEY = 'tracking_requests';
+const MAX_REQUESTS_PER_MINUTE = 10;
+
+// Security: Check if running in iframe (clickjacking protection)
+const isInIframe = () => {
+  try {
+    return window.self !== window.top;
+  } catch (e) {
+    return true;
+  }
+};
+
+// Security: Simple client-side rate limiting
+const checkRateLimit = (): boolean => {
+  const now = Date.now();
+  const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
+  let requests: number[] = stored ? JSON.parse(stored) : [];
+  
+  // Remove requests older than 1 minute
+  requests = requests.filter(time => now - time < 60000);
+  
+  if (requests.length >= MAX_REQUESTS_PER_MINUTE) {
+    return false;
+  }
+  
+  requests.push(now);
+  sessionStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(requests));
+  return true;
+};
+
+// Security: Strict UUID validation
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 const TrackingOS = () => {
   const { token } = useParams<{ token: string }>();
   const [data, setData] = useState<TrackingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [securityBlocked, setSecurityBlocked] = useState(false);
+
+  // Security: Prevent right-click and keyboard shortcuts
+  useEffect(() => {
+    const preventContextMenu = (e: MouseEvent) => e.preventDefault();
+    const preventKeyShortcuts = (e: KeyboardEvent) => {
+      // Prevent F12, Ctrl+Shift+I, Ctrl+U
+      if (e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+          (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+      }
+    };
+    
+    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener('keydown', preventKeyShortcuts);
+    
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener('keydown', preventKeyShortcuts);
+    };
+  }, []);
+
+  // Security: Check for iframe embedding
+  useEffect(() => {
+    if (isInIframe()) {
+      setSecurityBlocked(true);
+      setLoading(false);
+      return;
+    }
+  }, []);
 
   useEffect(() => {
     const fetchOrder = async () => {
+      // Security: Check rate limit
+      if (!checkRateLimit()) {
+        setError('Muitas requisições. Tente novamente em alguns instantes.');
+        setLoading(false);
+        return;
+      }
+
       if (!token) {
         setError('Token inválido');
         setLoading(false);
         return;
       }
 
-      // Validate token format (UUID)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(token)) {
+      // Security: Strict UUID validation (UUID v4 format)
+      if (!isValidUUID(token)) {
         setError('Token inválido');
         setLoading(false);
         return;
       }
+
+      // Security: Additional token sanitization
+      const sanitizedToken = token.toLowerCase().trim();
 
       try {
         const { data: order, error: fetchError } = await supabase
@@ -124,7 +201,7 @@ const TrackingOS = () => {
             situation:situations(name, color),
             withdrawal_situation:withdrawal_situations(name, color)
           `)
-          .eq('tracking_token', token)
+          .eq('tracking_token', sanitizedToken)
           .maybeSingle();
 
         if (fetchError) throw fetchError;
@@ -141,7 +218,7 @@ const TrackingOS = () => {
           media_files: mediaFiles,
         } as TrackingData);
       } catch (err: any) {
-        console.error('Erro ao buscar OS:', err);
+        // Security: Don't expose detailed error messages
         setError('Ordem de serviço não encontrada ou link inválido.');
       } finally {
         setLoading(false);
@@ -169,6 +246,27 @@ const TrackingOS = () => {
     return items;
   };
 
+  // Security: Block if iframe detected
+  if (securityBlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="mb-4 text-destructive">
+              <ShieldAlert className="w-16 h-16 mx-auto" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Acesso Bloqueado
+            </h2>
+            <p className="text-muted-foreground">
+              Por motivos de segurança, esta página não pode ser exibida em um iframe.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -183,19 +281,7 @@ const TrackingOS = () => {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <div className="mb-4 text-destructive">
-              <svg
-                className="w-16 h-16 mx-auto"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
+              <ShieldAlert className="w-16 h-16 mx-auto" />
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">
               Acesso não autorizado
