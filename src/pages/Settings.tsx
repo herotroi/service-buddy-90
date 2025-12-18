@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Upload } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -29,6 +30,8 @@ const Settings = () => {
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [osStartNumber, setOsStartNumber] = useState('1');
+  const [osStartNumberInformatica, setOsStartNumberInformatica] = useState('1');
+  const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
 
   // Mask functions
   const maskPhone = (value: string) => {
@@ -85,13 +88,17 @@ const Settings = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .eq('key', 'os_starting_number')
-        .eq('user_id', user?.id)
-        .maybeSingle();
+        .eq('user_id', user?.id);
       
       if (error) throw error;
       if (data) {
-        setOsStartNumber(data.value);
+        const osStart = data.find(s => s.key === 'os_starting_number');
+        const osStartInfo = data.find(s => s.key === 'os_starting_number_informatica');
+        const printQr = data.find(s => s.key === 'print_qr_code_enabled');
+        
+        if (osStart) setOsStartNumber(osStart.value);
+        if (osStartInfo) setOsStartNumberInformatica(osStartInfo.value);
+        if (printQr) setPrintQrCodeEnabled(printQr.value === 'true');
       }
       return data;
     },
@@ -138,23 +145,30 @@ const Settings = () => {
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
-    mutationFn: async (startNumber: string) => {
-      const numValue = parseInt(startNumber, 10);
-      if (isNaN(numValue) || numValue < 1) {
-        throw new Error('Número inicial deve ser maior que 0');
+    mutationFn: async (settings: { osStart: string; osStartInfo: string; printQr: boolean }) => {
+      const numValueCelulares = parseInt(settings.osStart, 10);
+      const numValueInformatica = parseInt(settings.osStartInfo, 10);
+      
+      if (isNaN(numValueCelulares) || numValueCelulares < 1) {
+        throw new Error('Número inicial de Celulares deve ser maior que 0');
+      }
+      if (isNaN(numValueInformatica) || numValueInformatica < 1) {
+        throw new Error('Número inicial de Informática deve ser maior que 0');
       }
 
-      const { error } = await supabase
-        .from('system_settings')
-        .upsert({ 
-          key: 'os_starting_number', 
-          value: startNumber,
-          user_id: user?.id
-        }, {
-          onConflict: 'key,user_id'
-        });
-      
-      if (error) throw error;
+      const settingsToUpsert = [
+        { key: 'os_starting_number', value: settings.osStart, user_id: user?.id },
+        { key: 'os_starting_number_informatica', value: settings.osStartInfo, user_id: user?.id },
+        { key: 'print_qr_code_enabled', value: settings.printQr.toString(), user_id: user?.id },
+      ];
+
+      for (const setting of settingsToUpsert) {
+        const { error } = await supabase
+          .from('system_settings')
+          .upsert(setting, { onConflict: 'key,user_id' });
+        
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-settings'] });
@@ -233,7 +247,11 @@ const Settings = () => {
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateSettingsMutation.mutate(osStartNumber);
+    updateSettingsMutation.mutate({
+      osStart: osStartNumber,
+      osStartInfo: osStartNumberInformatica,
+      printQr: printQrCodeEnabled,
+    });
   };
 
   return (
@@ -470,20 +488,59 @@ const Settings = () => {
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <form onSubmit={handleSettingsSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="osStartNumber">Número Inicial das OS</Label>
-                    <Input
-                      id="osStartNumber"
-                      type="number"
-                      min="1"
-                      value={osStartNumber}
-                      onChange={(e) => setOsStartNumber(e.target.value)}
-                      placeholder="1"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Define a partir de qual número as novas ordens de serviço serão criadas. O valor padrão é 1.
-                    </p>
+                <form onSubmit={handleSettingsSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Numeração de Ordens de Serviço</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="osStartNumber">Número Inicial - Celulares</Label>
+                        <Input
+                          id="osStartNumber"
+                          type="number"
+                          min="1"
+                          value={osStartNumber}
+                          onChange={(e) => setOsStartNumber(e.target.value)}
+                          placeholder="1"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Número inicial para OS do setor Celulares
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="osStartNumberInformatica">Número Inicial - Informática</Label>
+                        <Input
+                          id="osStartNumberInformatica"
+                          type="number"
+                          min="1"
+                          value={osStartNumberInformatica}
+                          onChange={(e) => setOsStartNumberInformatica(e.target.value)}
+                          placeholder="1"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Número inicial para OS do setor Informática
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border-t pt-4">
+                    <h3 className="text-sm font-medium">Impressão</h3>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="printQrCode">QR Code na Impressão</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Exibir QR code de acompanhamento nas ordens de serviço impressas
+                        </p>
+                      </div>
+                      <Switch
+                        id="printQrCode"
+                        checked={printQrCodeEnabled}
+                        onCheckedChange={setPrintQrCodeEnabled}
+                      />
+                    </div>
                   </div>
 
                   <Button 
