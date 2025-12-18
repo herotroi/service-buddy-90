@@ -18,6 +18,7 @@ import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
+import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
 
 interface ServiceOrderFormProps {
   onSuccess: () => void;
@@ -213,9 +214,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         checklist_esta_ligado: data.checklist_esta_ligado,
       });
 
-      // Carregar arquivos de mídia
+      // Carregar arquivos de mídia com URLs assinadas
       if (data.media_files && Array.isArray(data.media_files)) {
-        setMediaFiles(data.media_files as unknown as MediaFile[]);
+        const files = data.media_files as unknown as MediaFile[];
+        const signedFiles = await getSignedUrls(files);
+        setMediaFiles(signedFiles);
       }
       
       // Marcar que o carregamento inicial foi concluído
@@ -344,14 +347,16 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           }
           setUploadProgress(90);
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('service-orders-media')
-            .getPublicUrl(filePath);
+          // Get signed URL for the uploaded file
+          const signedUrl = await getSignedUrl(filePath);
+          if (!signedUrl) {
+            throw new Error('Erro ao gerar URL de acesso');
+          }
 
           const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
           uploadedFiles.push({
-            url: publicUrl,
+            url: signedUrl,
             path: filePath,
             type: mediaType,
             name: file.name,
@@ -437,14 +442,16 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       
       setUploadProgress(90);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('service-orders-media')
-        .getPublicUrl(filePath);
+      // Get signed URL for the uploaded file
+      const signedUrl = await getSignedUrl(filePath);
+      if (!signedUrl) {
+        throw new Error('Erro ao gerar URL de acesso');
+      }
 
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
       setMediaFiles(prev => [...prev, {
-        url: publicUrl,
+        url: signedUrl,
         path: filePath,
         type: mediaType,
         name: file.name,
