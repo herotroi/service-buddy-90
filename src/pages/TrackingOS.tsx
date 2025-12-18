@@ -178,7 +178,36 @@ const TrackingOS = () => {
         // Parse media_files safely
         let mediaFiles: MediaFile[] = [];
         if (order.media_files && Array.isArray(order.media_files)) {
-          mediaFiles = order.media_files as unknown as MediaFile[];
+          const rawMediaFiles = order.media_files as unknown as MediaFile[];
+          
+          // Get signed URLs for media files via edge function
+          if (rawMediaFiles.length > 0) {
+            try {
+              const paths = rawMediaFiles.map((f) => f.path);
+              const { data: signedData, error: signedError } = await supabase.functions.invoke(
+                'get-media-signed-urls',
+                {
+                  body: {
+                    tracking_token: sanitizedToken,
+                    paths,
+                  },
+                }
+              );
+
+              if (!signedError && signedData?.signedUrls) {
+                mediaFiles = rawMediaFiles.map((file) => ({
+                  ...file,
+                  url: signedData.signedUrls[file.path] || file.url,
+                }));
+              } else {
+                // Fallback to stored URLs if edge function fails
+                mediaFiles = rawMediaFiles;
+              }
+            } catch (signedUrlError) {
+              console.error('Error fetching signed URLs:', signedUrlError);
+              mediaFiles = rawMediaFiles;
+            }
+          }
         }
 
         setData({
