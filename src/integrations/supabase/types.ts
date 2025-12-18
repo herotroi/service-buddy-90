@@ -563,10 +563,134 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      service_orders_tracking: {
+        Row: {
+          checklist_acompanha_capa: boolean | null
+          checklist_acompanha_chip: boolean | null
+          checklist_acompanha_sd: boolean | null
+          checklist_carcaca_torta: boolean | null
+          checklist_carrega: boolean | null
+          checklist_esta_ligado: boolean | null
+          checklist_face_id: boolean | null
+          checklist_houve_queda: boolean | null
+          checklist_manchas_tela: boolean | null
+          checklist_riscos_laterais: boolean | null
+          checklist_riscos_tampa: boolean | null
+          checklist_tela_quebrada: boolean | null
+          checklist_vidro_camera: boolean | null
+          checklist_vidro_trincado: boolean | null
+          device_model: string | null
+          entry_date: string | null
+          exit_date: string | null
+          media_files: Json | null
+          os_number: number | null
+          reported_defect: string | null
+          situation_id: string | null
+          tracking_token: string | null
+          withdrawal_situation_id: string | null
+          withdrawn_by: string | null
+        }
+        Insert: {
+          checklist_acompanha_capa?: boolean | null
+          checklist_acompanha_chip?: boolean | null
+          checklist_acompanha_sd?: boolean | null
+          checklist_carcaca_torta?: boolean | null
+          checklist_carrega?: boolean | null
+          checklist_esta_ligado?: boolean | null
+          checklist_face_id?: boolean | null
+          checklist_houve_queda?: boolean | null
+          checklist_manchas_tela?: boolean | null
+          checklist_riscos_laterais?: boolean | null
+          checklist_riscos_tampa?: boolean | null
+          checklist_tela_quebrada?: boolean | null
+          checklist_vidro_camera?: boolean | null
+          checklist_vidro_trincado?: boolean | null
+          device_model?: string | null
+          entry_date?: string | null
+          exit_date?: string | null
+          media_files?: Json | null
+          os_number?: number | null
+          reported_defect?: string | null
+          situation_id?: string | null
+          tracking_token?: string | null
+          withdrawal_situation_id?: string | null
+          withdrawn_by?: string | null
+        }
+        Update: {
+          checklist_acompanha_capa?: boolean | null
+          checklist_acompanha_chip?: boolean | null
+          checklist_acompanha_sd?: boolean | null
+          checklist_carcaca_torta?: boolean | null
+          checklist_carrega?: boolean | null
+          checklist_esta_ligado?: boolean | null
+          checklist_face_id?: boolean | null
+          checklist_houve_queda?: boolean | null
+          checklist_manchas_tela?: boolean | null
+          checklist_riscos_laterais?: boolean | null
+          checklist_riscos_tampa?: boolean | null
+          checklist_tela_quebrada?: boolean | null
+          checklist_vidro_camera?: boolean | null
+          checklist_vidro_trincado?: boolean | null
+          device_model?: string | null
+          entry_date?: string | null
+          exit_date?: string | null
+          media_files?: Json | null
+          os_number?: number | null
+          reported_defect?: string | null
+          situation_id?: string | null
+          tracking_token?: string | null
+          withdrawal_situation_id?: string | null
+          withdrawn_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_situation_id_fkey"
+            columns: ["situation_id"]
+            isOneToOne: false
+            referencedRelation: "situations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_withdrawal_situation_id_fkey"
+            columns: ["withdrawal_situation_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawal_situations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_tracking_order: {
+        Args: { p_token: string }
+        Returns: {
+          checklist_acompanha_capa: boolean
+          checklist_acompanha_chip: boolean
+          checklist_acompanha_sd: boolean
+          checklist_carcaca_torta: boolean
+          checklist_carrega: boolean
+          checklist_esta_ligado: boolean
+          checklist_face_id: boolean
+          checklist_houve_queda: boolean
+          checklist_manchas_tela: boolean
+          checklist_riscos_laterais: boolean
+          checklist_riscos_tampa: boolean
+          checklist_tela_quebrada: boolean
+          checklist_vidro_camera: boolean
+          checklist_vidro_trincado: boolean
+          device_model: string
+          entry_date: string
+          exit_date: string
+          media_files: Json
+          os_number: number
+          reported_defect: string
+          situation_color: string
+          situation_name: string
+          withdrawal_color: string
+          withdrawal_name: string
+          withdrawn_by: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
