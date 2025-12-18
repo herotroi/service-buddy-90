@@ -1,1 +1,13 @@
 project_id = "rpssrnpgogwqwijksygq"
+
+[functions.get-media-signed-urls]
+verify_jwt = true
+
+[functions.n8n-service-orders]
+verify_jwt = false
+
+[functions.n8n-notifications]
+verify_jwt = false
+
+[functions.n8n-reports]
+verify_jwt = false
