@@ -61,12 +61,13 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
   const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [orderResponse, profileResponse] = await Promise.all([
+        const [orderResponse, profileResponse, settingsResponse] = await Promise.all([
           supabase
             .from('service_orders')
             .select('*')
@@ -76,7 +77,13 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
             .from('profiles')
             .select('*')
             .eq('id', user?.id)
-            .single()
+            .single(),
+          supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'print_qr_code_enabled')
+            .eq('user_id', user?.id)
+            .maybeSingle()
         ]);
 
         if (orderResponse.error) throw orderResponse.error;
@@ -84,6 +91,10 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
 
         setOrderData(orderResponse.data as OrderData);
         setProfile(profileResponse.data);
+        
+        if (settingsResponse.data) {
+          setPrintQrCodeEnabled(settingsResponse.data.value === 'true');
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
       } finally {
@@ -385,10 +396,14 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
 
           {/* QR Code and Signatures */}
           <div className="p-4 flex justify-between items-end">
-            <div className="text-center">
-              <QRCodeSVG value={trackingUrl} size={80} />
-              <p className="text-xs mt-1">Acompanhe seu serviço</p>
-            </div>
+            {printQrCodeEnabled ? (
+              <div className="text-center">
+                <QRCodeSVG value={trackingUrl} size={80} />
+                <p className="text-xs mt-1">Acompanhe seu serviço</p>
+              </div>
+            ) : (
+              <div className="w-20" />
+            )}
             <div className="flex gap-16">
               <div className="text-center">
                 <div className="border-t border-black w-40 pt-1">
