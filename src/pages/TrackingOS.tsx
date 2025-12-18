@@ -3,9 +3,16 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User } from 'lucide-react';
+import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+interface MediaFile {
+  name: string;
+  path: string;
+  type: string;
+  url: string;
+}
 
 interface TrackingData {
   os_number: number;
@@ -18,6 +25,21 @@ interface TrackingData {
     color: string;
   } | null;
   exit_date: string | null;
+  media_files: MediaFile[] | null;
+  checklist_houve_queda: boolean | null;
+  checklist_face_id: boolean | null;
+  checklist_carrega: boolean | null;
+  checklist_tela_quebrada: boolean | null;
+  checklist_vidro_trincado: boolean | null;
+  checklist_manchas_tela: boolean | null;
+  checklist_carcaca_torta: boolean | null;
+  checklist_riscos_tampa: boolean | null;
+  checklist_riscos_laterais: boolean | null;
+  checklist_vidro_camera: boolean | null;
+  checklist_acompanha_chip: boolean | null;
+  checklist_acompanha_sd: boolean | null;
+  checklist_acompanha_capa: boolean | null;
+  checklist_esta_ligado: boolean | null;
 }
 
 const getTextColor = (backgroundColor: string) => {
@@ -27,6 +49,23 @@ const getTextColor = (backgroundColor: string) => {
   const b = parseInt(hex.substr(4, 2), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
+const checklistLabels: Record<string, string> = {
+  checklist_houve_queda: 'Houve queda',
+  checklist_face_id: 'Face ID',
+  checklist_carrega: 'Carrega',
+  checklist_tela_quebrada: 'Tela quebrada',
+  checklist_vidro_trincado: 'Vidro trincado',
+  checklist_manchas_tela: 'Manchas na tela',
+  checklist_carcaca_torta: 'Carcaça torta',
+  checklist_riscos_tampa: 'Riscos na tampa',
+  checklist_riscos_laterais: 'Riscos laterais',
+  checklist_vidro_camera: 'Vidro da câmera',
+  checklist_acompanha_chip: 'Acompanha chip',
+  checklist_acompanha_sd: 'Acompanha SD',
+  checklist_acompanha_capa: 'Acompanha capa',
+  checklist_esta_ligado: 'Está ligado',
 };
 
 const TrackingOS = () => {
@@ -43,6 +82,14 @@ const TrackingOS = () => {
         return;
       }
 
+      // Validate token format (UUID)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(token)) {
+        setError('Token inválido');
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data: order, error: fetchError } = await supabase
           .from('service_orders')
@@ -53,15 +100,39 @@ const TrackingOS = () => {
             entry_date,
             reported_defect,
             exit_date,
+            media_files,
+            checklist_houve_queda,
+            checklist_face_id,
+            checklist_carrega,
+            checklist_tela_quebrada,
+            checklist_vidro_trincado,
+            checklist_manchas_tela,
+            checklist_carcaca_torta,
+            checklist_riscos_tampa,
+            checklist_riscos_laterais,
+            checklist_vidro_camera,
+            checklist_acompanha_chip,
+            checklist_acompanha_sd,
+            checklist_acompanha_capa,
+            checklist_esta_ligado,
             situation:situations(name, color)
           `)
           .eq('tracking_token', token)
-          .single();
+          .maybeSingle();
 
         if (fetchError) throw fetchError;
         if (!order) throw new Error('Ordem de serviço não encontrada');
 
-        setData(order as TrackingData);
+        // Parse media_files safely
+        let mediaFiles: MediaFile[] = [];
+        if (order.media_files && Array.isArray(order.media_files)) {
+          mediaFiles = order.media_files as unknown as MediaFile[];
+        }
+
+        setData({
+          ...order,
+          media_files: mediaFiles,
+        } as TrackingData);
       } catch (err: any) {
         console.error('Erro ao buscar OS:', err);
         setError('Ordem de serviço não encontrada ou link inválido.');
@@ -72,6 +143,24 @@ const TrackingOS = () => {
 
     fetchOrder();
   }, [token]);
+
+  // Get checklist items that have been evaluated (not null)
+  const getChecklistItems = () => {
+    if (!data) return [];
+    
+    const items: { key: string; label: string; value: boolean | null }[] = [];
+    
+    Object.keys(checklistLabels).forEach((key) => {
+      const value = data[key as keyof TrackingData] as boolean | null;
+      items.push({
+        key,
+        label: checklistLabels[key],
+        value,
+      });
+    });
+    
+    return items;
+  };
 
   if (loading) {
     return (
@@ -113,9 +202,19 @@ const TrackingOS = () => {
     );
   }
 
+  const checklistItems = getChecklistItems();
+  const hasChecklist = checklistItems.some(item => item.value !== null);
+  const hasMedia = data.media_files && data.media_files.length > 0;
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Security Notice */}
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+          <Shield className="w-3 h-3" />
+          <span>Página de visualização apenas - Dados protegidos</span>
+        </div>
+
         {/* Header */}
         <div className="text-center py-6">
           <Smartphone className="w-12 h-12 mx-auto text-primary mb-2" />
@@ -138,7 +237,7 @@ const TrackingOS = () => {
           <CardContent>
             {data.situation ? (
               <Badge
-                className="text-lg px-4 py-2"
+                className="text-lg px-4 py-2 select-none pointer-events-none"
                 style={{
                   backgroundColor: data.situation.color,
                   color: getTextColor(data.situation.color),
@@ -147,7 +246,7 @@ const TrackingOS = () => {
                 {data.situation.name}
               </Badge>
             ) : (
-              <Badge variant="secondary" className="text-lg px-4 py-2">
+              <Badge variant="secondary" className="text-lg px-4 py-2 select-none pointer-events-none">
                 Aguardando
               </Badge>
             )}
@@ -169,7 +268,7 @@ const TrackingOS = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="font-semibold text-foreground">{data.client_name}</p>
+              <p className="font-semibold text-foreground select-none">{data.client_name}</p>
             </CardContent>
           </Card>
 
@@ -181,7 +280,7 @@ const TrackingOS = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="font-semibold text-foreground">{data.device_model}</p>
+              <p className="font-semibold text-foreground select-none">{data.device_model}</p>
             </CardContent>
           </Card>
 
@@ -193,7 +292,7 @@ const TrackingOS = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="font-semibold text-foreground">
+              <p className="font-semibold text-foreground select-none">
                 {format(new Date(data.entry_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </p>
             </CardContent>
@@ -207,10 +306,87 @@ const TrackingOS = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground text-sm">{data.reported_defect}</p>
+              <p className="text-foreground text-sm select-none">{data.reported_defect}</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Checklist Card */}
+        {hasChecklist && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-primary" />
+                Checklist do Aparelho
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2">
+                {checklistItems.map((item) => (
+                  <div 
+                    key={item.key} 
+                    className="flex items-center gap-2 text-sm select-none pointer-events-none"
+                  >
+                    <span className={`w-5 h-5 rounded border flex items-center justify-center text-xs font-bold ${
+                      item.value === true 
+                        ? 'bg-green-500/20 border-green-500 text-green-600' 
+                        : item.value === false 
+                        ? 'bg-red-500/20 border-red-500 text-red-600'
+                        : 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                    }`}>
+                      {item.value === true ? '✓' : item.value === false ? '✗' : '-'}
+                    </span>
+                    <span className="text-foreground">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Media Files Card */}
+        {hasMedia && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Image className="w-5 h-5 text-primary" />
+                Fotos e Vídeos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {data.media_files!.map((file, index) => (
+                  <div 
+                    key={index} 
+                    className="relative rounded-lg overflow-hidden border border-border select-none"
+                  >
+                    {file.type === 'video' ? (
+                      <video
+                        src={file.url}
+                        controls
+                        controlsList="nodownload"
+                        disablePictureInPicture
+                        className="w-full h-32 object-cover pointer-events-auto"
+                        onContextMenu={(e) => e.preventDefault()}
+                      />
+                    ) : (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="w-full h-32 object-cover pointer-events-none"
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
+                      />
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate pointer-events-none">
+                      {file.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground py-4">
