@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -8,35 +8,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Smartphone, Eye, EyeOff } from 'lucide-react';
-import { z } from 'zod';
 
-// Security: Input validation schemas
-const emailSchema = z.string()
-  .trim()
-  .min(1, 'Email é obrigatório')
-  .email('Email inválido')
-  .max(255, 'Email muito longo');
+// Security: Input validation functions
+const validateEmail = (email: string): string | null => {
+  const trimmed = email?.trim() || '';
+  if (!trimmed) return 'Email é obrigatório';
+  if (trimmed.length > 255) return 'Email muito longo';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) return 'Email inválido';
+  return null;
+};
 
-const passwordSchema = z.string()
-  .min(6, 'Senha deve ter no mínimo 6 caracteres')
-  .max(72, 'Senha muito longa'); // bcrypt limit
+const validatePassword = (password: string): string | null => {
+  if (!password) return 'Senha é obrigatória';
+  if (password.length < 6) return 'Senha deve ter no mínimo 6 caracteres';
+  if (password.length > 72) return 'Senha muito longa';
+  return null;
+};
 
-const fullNameSchema = z.string()
-  .trim()
-  .min(2, 'Nome deve ter no mínimo 2 caracteres')
-  .max(100, 'Nome muito longo')
-  .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Nome contém caracteres inválidos');
-
-const signInSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-});
-
-const signUpSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  fullName: fullNameSchema,
-});
+const validateFullName = (name: string): string | null => {
+  const trimmed = name?.trim() || '';
+  if (!trimmed) return 'Nome é obrigatório';
+  if (trimmed.length < 2) return 'Nome deve ter no mínimo 2 caracteres';
+  if (trimmed.length > 100) return 'Nome muito longo';
+  const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
+  if (!nameRegex.test(trimmed)) return 'Nome contém caracteres inválidos';
+  return null;
+};
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -64,15 +62,14 @@ const Auth = () => {
     const password = formData.get('password') as string;
 
     // Security: Validate inputs
-    const validation = signInSchema.safeParse({ email, password });
+    const fieldErrors: Record<string, string> = {};
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
     
-    if (!validation.success) {
-      const fieldErrors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0] as string] = err.message;
-        }
-      });
+    if (emailError) fieldErrors.email = emailError;
+    if (passwordError) fieldErrors.password = passwordError;
+    
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       setIsLoading(false);
       return;
@@ -112,15 +109,16 @@ const Auth = () => {
     const fullName = (formData.get('fullName') as string)?.trim();
 
     // Security: Validate inputs
-    const validation = signUpSchema.safeParse({ email, password, fullName });
+    const fieldErrors: Record<string, string> = {};
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+    const nameError = validateFullName(fullName);
     
-    if (!validation.success) {
-      const fieldErrors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0] as string] = err.message;
-        }
-      });
+    if (emailError) fieldErrors.email = emailError;
+    if (passwordError) fieldErrors.password = passwordError;
+    if (nameError) fieldErrors.fullName = nameError;
+    
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       setIsLoading(false);
       return;
