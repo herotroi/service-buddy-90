@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield } from 'lucide-react';
+import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, User, ClipboardList, Image, Shield, PackageCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -24,7 +24,12 @@ interface TrackingData {
     name: string;
     color: string;
   } | null;
+  withdrawal_situation: {
+    name: string;
+    color: string;
+  } | null;
   exit_date: string | null;
+  withdrawn_by: string | null;
   media_files: MediaFile[] | null;
   checklist_houve_queda: boolean | null;
   checklist_face_id: boolean | null;
@@ -100,6 +105,7 @@ const TrackingOS = () => {
             entry_date,
             reported_defect,
             exit_date,
+            withdrawn_by,
             media_files,
             checklist_houve_queda,
             checklist_face_id,
@@ -115,7 +121,8 @@ const TrackingOS = () => {
             checklist_acompanha_sd,
             checklist_acompanha_capa,
             checklist_esta_ligado,
-            situation:situations(name, color)
+            situation:situations(name, color),
+            withdrawal_situation:withdrawal_situations(name, color)
           `)
           .eq('tracking_token', token)
           .maybeSingle();
@@ -257,6 +264,48 @@ const TrackingOS = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Withdrawal Card - Only show if there's withdrawal data */}
+        {(data.exit_date || data.withdrawn_by || data.withdrawal_situation) && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <PackageCheck className="w-5 h-5 text-primary" />
+                Informações de Retirada
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {data.withdrawal_situation && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Situação da Retirada</p>
+                  <Badge
+                    className="select-none pointer-events-none"
+                    style={{
+                      backgroundColor: data.withdrawal_situation.color,
+                      color: getTextColor(data.withdrawal_situation.color),
+                    }}
+                  >
+                    {data.withdrawal_situation.name}
+                  </Badge>
+                </div>
+              )}
+              {data.withdrawn_by && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Retirado por</p>
+                  <p className="font-semibold text-foreground select-none">{data.withdrawn_by}</p>
+                </div>
+              )}
+              {data.exit_date && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Data de Saída</p>
+                  <p className="font-semibold text-foreground select-none">
+                    {format(new Date(data.exit_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
