@@ -133,27 +133,29 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
 
   const fetchNextOsNumber = async () => {
     try {
+      // Buscar número inicial das configurações
+      const { data: settingsData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'os_starting_number_informatica')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      
+      const startingNumber = settingsData ? parseInt(settingsData.value) : 1;
+
+      // Buscar maior número de OS existente
       const { data: ordersData } = await supabase
         .from('service_orders_informatica')
         .select('os_number')
         .order('os_number', { ascending: false })
         .limit(1);
 
-      let nextOsNumber = 1;
+      let nextOsNumber = startingNumber;
       
-      if (!ordersData || ordersData.length === 0) {
-        const { data: settingsData } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'os_starting_number_informatica')
-          .eq('user_id', user?.id)
-          .maybeSingle();
-        
-        if (settingsData) {
-          nextOsNumber = parseInt(settingsData.value);
-        }
-      } else {
-        nextOsNumber = ordersData[0].os_number + 1;
+      if (ordersData && ordersData.length > 0) {
+        const highestExisting = ordersData[0].os_number + 1;
+        // Usar o maior entre o número inicial configurado e o próximo sequencial
+        nextOsNumber = Math.max(startingNumber, highestExisting);
       }
 
       form.setValue('os_number', nextOsNumber);
