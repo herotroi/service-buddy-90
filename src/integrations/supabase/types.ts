@@ -342,6 +342,7 @@ export type Database = {
           equipment_location_id: string | null
           exit_date: string | null
           id: string
+          media_files: Json | null
           more_details: string | null
           observations: string | null
           os_number: number
@@ -369,6 +370,7 @@ export type Database = {
           equipment_location_id?: string | null
           exit_date?: string | null
           id?: string
+          media_files?: Json | null
           more_details?: string | null
           observations?: string | null
           os_number?: number
@@ -396,6 +398,7 @@ export type Database = {
           equipment_location_id?: string | null
           exit_date?: string | null
           id?: string
+          media_files?: Json | null
           more_details?: string | null
           observations?: string | null
           os_number?: number

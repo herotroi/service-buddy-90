@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { TriStateCheckbox, TriStateValue } from '@/components/ui/tri-state-checkbox';
 import { PatternLock } from '@/components/PatternLock';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
@@ -1151,9 +1151,46 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             Fotos e Vídeos
           </h3>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="media-upload" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-6 hover:border-primary transition-colors text-center">
+            {/* Botões de captura da câmera */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Label htmlFor="camera-photo" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
+                  <input
+                    id="camera-photo"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Tirar Foto</span>
+                  </div>
+                </div>
+              </Label>
+
+              <Label htmlFor="camera-video" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
+                  <input
+                    id="camera-video"
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Video className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Gravar Vídeo</span>
+                  </div>
+                </div>
+              </Label>
+
+              <Label htmlFor="media-upload" className="cursor-pointer md:col-span-2">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
                   <input
                     id="media-upload"
                     type="file"
@@ -1163,32 +1200,29 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     disabled={uploadingMedia}
                     className="hidden"
                   />
-                  <div className="flex flex-col items-center gap-2 w-full">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="w-full">
-                      <p className="font-medium text-center">
-                        {uploadingMedia ? 'Processando e enviando...' : 'Adicionar fotos ou vídeos'}
-                      </p>
-                      <p className="text-sm text-muted-foreground text-center">
-                        {uploadingMedia 
-                          ? currentFileName 
-                          : 'Imagens serão comprimidas automaticamente'}
-                      </p>
-                      {uploadingMedia && uploadProgress > 0 && (
-                        <div className="mt-3 w-full max-w-md mx-auto space-y-2">
-                          <Progress value={uploadProgress} className="h-2" />
-                          <p className="text-xs text-center text-muted-foreground">
-                            {uploadProgress}% completo
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Plus className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Escolher da Galeria</span>
                   </div>
                 </div>
               </Label>
             </div>
+
+            {/* Progress */}
+            {uploadingMedia && (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <p className="font-medium text-center mb-2">Processando e enviando...</p>
+                <p className="text-sm text-muted-foreground text-center mb-3">{currentFileName}</p>
+                {uploadProgress > 0 && (
+                  <div className="w-full max-w-md mx-auto space-y-2">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-xs text-center text-muted-foreground">
+                      {uploadProgress}% completo
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {mediaFiles.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
