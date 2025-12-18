@@ -162,7 +162,7 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                 <img 
                   src={profile.logo_url} 
                   alt="Logo" 
-                  className="w-72 h-72 object-contain"
+                  className="w-36 h-36 object-contain"
                 />
               )}
               <div>
