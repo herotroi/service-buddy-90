@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TriStateCheckbox, TriStateValue } from '@/components/ui/tri-state-checkbox';
 import { PatternLock } from '@/components/PatternLock';
+import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
@@ -85,6 +86,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video' | null>(null);
 
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
     table: 'service_orders',
@@ -400,6 +402,63 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     } catch (error: any) {
       toast.error('Erro ao remover arquivo');
       console.error(error);
+    }
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    setUploadingMedia(true);
+    setCurrentFileName(file.name);
+    setUploadProgress(0);
+    
+    try {
+      const originalSize = formatFileSize(file.size);
+      const processedFile = await processMediaFile(file, (progress) => {
+        setUploadProgress(progress);
+      });
+      const compressedSize = formatFileSize(processedFile.size);
+      
+      console.log(`Arquivo da câmera processado: ${file.name} (${originalSize} → ${compressedSize})`);
+
+      setUploadProgress(70);
+      const fileExt = file.type.startsWith('video/') ? 
+        file.name.split('.').pop() : 'jpg';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${orderId || 'temp'}/${fileName}`;
+
+      setUploadProgress(80);
+      const { error: uploadError } = await supabase.storage
+        .from('service-orders-media')
+        .upload(filePath, processedFile, {
+          contentType: processedFile.type,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+      
+      setUploadProgress(90);
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('service-orders-media')
+        .getPublicUrl(filePath);
+
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
+      setMediaFiles(prev => [...prev, {
+        url: publicUrl,
+        path: filePath,
+        type: mediaType,
+        name: file.name,
+      }]);
+      
+      setUploadProgress(100);
+      toast.success(mediaType === 'video' ? 'Vídeo gravado com sucesso' : 'Foto capturada com sucesso');
+    } catch (error: any) {
+      toast.error('Erro ao processar arquivo da câmera');
+      console.error(error);
+    } finally {
+      setUploadingMedia(false);
+      setUploadProgress(0);
+      setCurrentFileName('');
     }
   };
 
@@ -1153,41 +1212,29 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           <div className="space-y-4">
             {/* Botões de captura da câmera */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Label htmlFor="camera-photo" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
-                  <input
-                    id="camera-photo"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleMediaUpload}
-                    disabled={uploadingMedia}
-                    className="hidden"
-                  />
-                  <div className="flex flex-col items-center gap-2">
-                    <Camera className="w-8 h-8 text-primary" />
-                    <span className="text-sm font-medium">Tirar Foto</span>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setCameraMode('photo')}
+                disabled={uploadingMedia}
+                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Camera className="w-8 h-8 text-primary" />
+                  <span className="text-sm font-medium">Tirar Foto</span>
                 </div>
-              </Label>
+              </button>
 
-              <Label htmlFor="camera-video" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center">
-                  <input
-                    id="camera-video"
-                    type="file"
-                    accept="video/*"
-                    capture="environment"
-                    onChange={handleMediaUpload}
-                    disabled={uploadingMedia}
-                    className="hidden"
-                  />
-                  <div className="flex flex-col items-center gap-2">
-                    <Video className="w-8 h-8 text-primary" />
-                    <span className="text-sm font-medium">Gravar Vídeo</span>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setCameraMode('video')}
+                disabled={uploadingMedia}
+                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Video className="w-8 h-8 text-primary" />
+                  <span className="text-sm font-medium">Gravar Vídeo</span>
                 </div>
-              </Label>
+              </button>
 
               <Label htmlFor="media-upload" className="cursor-pointer md:col-span-2">
                 <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
@@ -1269,6 +1316,13 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           </Button>
         </div>
       </form>
+
+      <CameraCapture
+        open={cameraMode !== null}
+        onClose={() => setCameraMode(null)}
+        onCapture={handleCameraCapture}
+        mode={cameraMode || 'photo'}
+      />
     </Form>
   );
 };
