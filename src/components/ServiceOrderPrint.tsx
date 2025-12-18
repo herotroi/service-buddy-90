@@ -196,115 +196,91 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           {/* Checklist */}
           <div className="p-4 border-b-2 border-black">
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-              {orderData.checklist_houve_queda !== null && (
-                <div className="flex justify-between">
-                  <span>Houve queda?</span>
-                  <span>
-                    ({orderData.checklist_houve_queda === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_houve_queda === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_face_id !== null && (
-                <div className="flex justify-between">
-                  <span>Face ID (IPHONE)</span>
-                  <span>
-                    ({orderData.checklist_face_id === true ? 'X' : ' '}) On 
-                    ({orderData.checklist_face_id === false ? 'X' : ' '}) Off
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_carrega !== null && (
-                <div className="flex justify-between">
-                  <span>Carrega</span>
-                  <span>
-                    ({orderData.checklist_carrega === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_carrega === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_tela_quebrada !== null && (
-                <div className="flex justify-between">
-                  <span>Tela quebrada</span>
-                  <span>
-                    ({orderData.checklist_tela_quebrada === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_tela_quebrada === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_vidro_trincado !== null && (
-                <div className="flex justify-between">
-                  <span>Vidro trincado</span>
-                  <span>
-                    ({orderData.checklist_vidro_trincado === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_vidro_trincado === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_manchas_tela !== null && (
-                <div className="flex justify-between">
-                  <span>Manchas na tela</span>
-                  <span>
-                    ({orderData.checklist_manchas_tela === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_manchas_tela === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_carcaca_torta !== null && (
-                <div className="flex justify-between">
-                  <span>Carcaça torta</span>
-                  <span>
-                    ({orderData.checklist_carcaca_torta === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_carcaca_torta === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_riscos_tampa !== null && (
-                <div className="flex justify-between">
-                  <span>Riscos na tampa traseira</span>
-                  <span>
-                    ({orderData.checklist_riscos_tampa === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_riscos_tampa === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_riscos_laterais !== null && (
-                <div className="flex justify-between">
-                  <span>Riscos nas laterais</span>
-                  <span>
-                    ({orderData.checklist_riscos_laterais === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_riscos_laterais === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_vidro_camera !== null && (
-                <div className="flex justify-between">
-                  <span>Vidro da câmera trincado/quebrado</span>
-                  <span>
-                    ({orderData.checklist_vidro_camera === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_vidro_camera === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
-              {(orderData.checklist_acompanha_chip !== null || orderData.checklist_acompanha_sd !== null || orderData.checklist_acompanha_capa !== null) && (
-                <div className="flex justify-between col-span-2">
-                  <span>Acompanha acessórios</span>
-                  <span>
-                    ({orderData.checklist_acompanha_chip === true ? 'X' : ' '}) Chip 
-                    ({orderData.checklist_acompanha_sd === true ? 'X' : ' '}) SD 
-                    ({orderData.checklist_acompanha_capa === true ? 'X' : ' '}) Capa
-                  </span>
-                </div>
-              )}
-              {orderData.checklist_esta_ligado !== null && (
-                <div className="flex justify-between">
-                  <span>Está ligado</span>
-                  <span>
-                    ({orderData.checklist_esta_ligado === true ? 'X' : ' '}) SIM 
-                    ({orderData.checklist_esta_ligado === false ? 'X' : ' '}) Não
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span>Houve queda?</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_houve_queda === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_houve_queda === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Carrega</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_carrega === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_carrega === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tela quebrada</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_tela_quebrada === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_tela_quebrada === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Vidro trincado</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_vidro_trincado === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_vidro_trincado === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Manchas na tela</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_manchas_tela === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_manchas_tela === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Carcaça torta</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_carcaca_torta === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_carcaca_torta === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Riscos na tampa traseira</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_riscos_tampa === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_riscos_tampa === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Riscos nas laterais</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_riscos_laterais === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_riscos_laterais === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Vidro da câmera trincado/quebrado</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_vidro_camera === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_vidro_camera === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Face ID (IPHONE)</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_face_id === true ? 'X' : ' '}</span>) On 
+                  (<span className="text-orange-500">{orderData.checklist_face_id === false ? 'X' : ' '}</span>) Off
+                </span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Acompanha acessórios</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_chip === true ? 'X' : ' '}</span>) Chip 
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_sd === true ? 'X' : ' '}</span>) SD 
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_capa === true ? 'X' : ' '}</span>) Capa
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Está ligado</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_esta_ligado === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_esta_ligado === false ? 'X' : ' '}</span>) Não
+                </span>
+              </div>
             </div>
           </div>
 
