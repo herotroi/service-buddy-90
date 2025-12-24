@@ -7,14 +7,14 @@ export const SectorTabs = () => {
 
   return (
     <Tabs value={sector} onValueChange={(value) => setSector(value as Sector)} className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="celulares" className="flex items-center gap-2">
-          <Smartphone className="h-4 w-4" />
-          Celulares
+      <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2">
+        <TabsTrigger value="celulares" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+          <Smartphone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">Celulares</span>
         </TabsTrigger>
-        <TabsTrigger value="informatica" className="flex items-center gap-2">
-          <Monitor className="h-4 w-4" />
-          Informática
+        <TabsTrigger value="informatica" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+          <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">Informática</span>
         </TabsTrigger>
       </TabsList>
     </Tabs>

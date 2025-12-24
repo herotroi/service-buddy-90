@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const getTextColor = (backgroundColor: string) => {
   const hex = backgroundColor.replace('#', '');
@@ -79,6 +81,7 @@ interface Filters {
 }
 
 export const ServiceOrdersInformaticaTable = () => {
+  const isMobile = useIsMobile();
   const [orders, setOrders] = useState<ServiceOrderInformatica[]>([]);
   const [situations, setSituations] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -263,8 +266,8 @@ export const ServiceOrdersInformaticaTable = () => {
   return (
     <div className="space-y-4">
       {/* Barra de busca e filtros */}
-      <div className="space-y-4">
-        <div className="flex gap-3">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -274,25 +277,27 @@ export const ServiceOrdersInformaticaTable = () => {
               className="pl-10 transition-all"
             />
           </div>
-          <Button
-            onClick={() => setShowNewOrderDrawer(true)}
-            className="shrink-0"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova OS
-          </Button>
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            onClick={() => setShowFilters(!showFilters)}
-            className="shrink-0"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowNewOrderDrawer(true)}
+              className="flex-1 sm:flex-none shrink-0"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="sm:inline">Nova OS</span>
+            </Button>
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              className="shrink-0"
+            >
+              <Filter className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Filtros</span>
+            </Button>
+          </div>
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg animate-in slide-in-from-top-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg animate-in slide-in-from-top-2">
             <Select value={filters.situation} onValueChange={(value) => setFilters({ ...filters, situation: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Situação" />
@@ -348,7 +353,7 @@ export const ServiceOrdersInformaticaTable = () => {
       </div>
 
       {/* Estatísticas */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
           Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
           <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
@@ -368,133 +373,138 @@ export const ServiceOrdersInformaticaTable = () => {
         </Select>
       </div>
 
-      {/* Tabela */}
-      <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold">OS</TableHead>
-                <TableHead className="font-semibold">Data</TableHead>
-                <TableHead className="font-semibold">Cliente</TableHead>
-                <TableHead className="font-semibold">Equipamento</TableHead>
-                <TableHead className="font-semibold">Situação</TableHead>
-                <TableHead className="font-semibold">Local</TableHead>
-                <TableHead className="font-semibold">Valor</TableHead>
-                <TableHead className="font-semibold text-center">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                    Nenhuma ordem de serviço encontrada
-                  </TableCell>
+      {/* Cards para Mobile */}
+      {isMobile ? (
+        <div className="space-y-3">
+          {paginatedOrders.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhuma ordem de serviço encontrada
+            </div>
+          ) : (
+            paginatedOrders.map((order) => (
+              <Card key={order.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                      <span className="font-mono font-bold text-primary text-lg">#{order.os_number}</span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        {format(new Date(order.entry_date), 'dd/MM/yy', { locale: ptBR })}
+                      </span>
+                    </div>
+                    {order.situation && (
+                      <Badge 
+                        style={{ 
+                          backgroundColor: order.situation.color,
+                          color: getTextColor(order.situation.color)
+                        }}
+                        className="shadow-sm text-xs"
+                      >
+                        {order.situation.name}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-1.5 mb-3">
+                    <p className="font-medium truncate">{order.client_name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{order.equipment}</p>
+                    {order.value && (
+                      <p className="text-sm font-medium text-primary">R$ {order.value.toFixed(2)}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-end gap-1 pt-2 border-t">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setViewOrderId(order.id)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setEditOrderId(order.id)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => setDeleteOrder({ id: order.id, os_number: order.os_number, client_name: order.client_name })}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">OS</TableHead>
+                  <TableHead className="font-semibold">Data</TableHead>
+                  <TableHead className="font-semibold">Cliente</TableHead>
+                  <TableHead className="font-semibold">Equipamento</TableHead>
+                  <TableHead className="font-semibold">Situação</TableHead>
+                  <TableHead className="font-semibold">Local</TableHead>
+                  <TableHead className="font-semibold">Valor</TableHead>
+                  <TableHead className="font-semibold text-center">Ações</TableHead>
                 </TableRow>
-              ) : (
-                paginatedOrders.map((order) => (
-                  <TableRow key={order.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-mono font-bold text-primary">
-                      #{order.os_number}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{order.client_name}</div>
-                        <div className="text-xs text-muted-foreground">{order.contact}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{order.equipment}</TableCell>
-                    <TableCell>
-                      {order.situation && (
-                        <Badge 
-                          style={{ 
-                            backgroundColor: order.situation.color,
-                            color: getTextColor(order.situation.color)
-                          }}
-                          className="shadow-sm"
-                        >
-                          {order.situation.name}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {order.equipment_location && (
-                        <Badge 
-                          variant="outline"
-                          style={{ 
-                            borderColor: order.equipment_location.color,
-                            color: order.equipment_location.color
-                          }}
-                        >
-                          {order.equipment_location.name}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {order.value ? `R$ ${order.value.toFixed(2)}` : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => setViewOrderId(order.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={() => setEditOrderId(order.id)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteOrder({ id: order.id, os_number: order.os_number, client_name: order.client_name })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {paginatedOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                      Nenhuma ordem de serviço encontrada
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  paginatedOrders.map((order) => (
+                    <TableRow key={order.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-mono font-bold text-primary">#{order.os_number}</TableCell>
+                      <TableCell className="text-sm">{format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{order.client_name}</div>
+                          <div className="text-xs text-muted-foreground">{order.contact}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm max-w-[200px] truncate">{order.equipment}</TableCell>
+                      <TableCell>
+                        {order.situation && (
+                          <Badge style={{ backgroundColor: order.situation.color, color: getTextColor(order.situation.color) }} className="shadow-sm">
+                            {order.situation.name}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {order.equipment_location && (
+                          <Badge variant="outline" style={{ borderColor: order.equipment_location.color, color: order.equipment_location.color }}>
+                            {order.equipment_location.name}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{order.value ? `R$ ${order.value.toFixed(2)}` : '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewOrderId(order.id)}><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditOrderId(order.id)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteOrder({ id: order.id, os_number: order.os_number, client_name: order.client_name })}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-            disabled={pagination.page === 1}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Anterior
+          <Button variant="outline" size="sm" onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })} disabled={pagination.page === 1}>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline ml-1">Anterior</span>
           </Button>
-          <span className="text-sm text-muted-foreground">
-            Página {pagination.page} de {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-            disabled={pagination.page === totalPages}
-          >
-            Próxima
-            <ChevronRight className="h-4 w-4 ml-1" />
+          <span className="text-sm text-muted-foreground px-2">{pagination.page} / {totalPages}</span>
+          <Button variant="outline" size="sm" onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })} disabled={pagination.page === totalPages}>
+            <span className="hidden sm:inline mr-1">Próxima</span>
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}
