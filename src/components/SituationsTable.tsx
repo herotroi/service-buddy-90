@@ -5,8 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Search, Pencil, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Função para calcular contraste e definir cor do texto
 const getTextColor = (backgroundColor: string) => {
@@ -46,6 +48,7 @@ interface Situation {
 
 export const SituationsTable = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [situations, setSituations] = useState<Situation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -149,7 +152,7 @@ export const SituationsTable = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -159,33 +162,24 @@ export const SituationsTable = () => {
             className="pl-10"
           />
         </div>
-        <Button onClick={() => setShowDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Situação
+        <Button onClick={() => setShowDialog(true)} className="shrink-0">
+          <Plus className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Nova Situação</span>
+          <span className="sm:hidden">Nova</span>
         </Button>
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="font-semibold">Nome</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold text-center">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSituations.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
-                  Nenhuma situação encontrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredSituations.map((situation) => (
-                <TableRow key={situation.id} className="hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-medium">{situation.name}</TableCell>
-                  <TableCell>
+      {isMobile ? (
+        <div className="space-y-3">
+          {filteredSituations.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Nenhuma situação encontrada
+            </div>
+          ) : (
+            filteredSituations.map((situation) => (
+              <Card key={situation.id}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <Badge 
                       style={{ 
                         backgroundColor: situation.color,
@@ -195,33 +189,89 @@ export const SituationsTable = () => {
                     >
                       {situation.name}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => handleEdit(situation)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteItem({ id: situation.id, name: situation.name })}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-9 w-9"
+                      onClick={() => handleEdit(situation)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-9 w-9 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteItem({ id: situation.id, name: situation.name })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card overflow-hidden shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">Nome</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold text-center">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredSituations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
+                    Nenhuma situação encontrada
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                filteredSituations.map((situation) => (
+                  <TableRow key={situation.id} className="hover:bg-muted/50 transition-colors">
+                    <TableCell className="font-medium">{situation.name}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        style={{ 
+                          backgroundColor: situation.color,
+                          color: getTextColor(situation.color)
+                        }}
+                        className="shadow-sm"
+                      >
+                        {situation.name}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => handleEdit(situation)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteItem({ id: situation.id, name: situation.name })}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Dialog de Criar/Editar */}
       <Dialog open={showDialog} onOpenChange={(open) => {

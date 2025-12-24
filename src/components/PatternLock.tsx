@@ -180,11 +180,10 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       <div
         ref={containerRef}
-        className="relative p-8 bg-muted/20 rounded-xl border border-border w-fit mx-auto select-none touch-none"
-        style={{ width: '330px', height: '330px' }}
+        className="relative p-4 sm:p-8 bg-muted/20 rounded-xl border border-border w-full max-w-[280px] sm:max-w-[330px] mx-auto select-none touch-none aspect-square"
       >
         {renderLines()}
         <div className="grid grid-cols-3 gap-0 w-full h-full">
