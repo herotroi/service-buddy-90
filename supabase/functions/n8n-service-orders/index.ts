@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { 
+  getClientIP, 
+  checkRateLimit, 
+  recordFailedAttempt, 
+  resetRateLimit,
+  createRateLimitResponse 
+} from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,22 +17,38 @@ const N8N_API_KEY = Deno.env.get('N8N_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const FUNCTION_NAME = 'n8n-service-orders';
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const clientIP = getClientIP(req);
+
   try {
+    // Check rate limit before authentication
+    const rateLimitResult = checkRateLimit(clientIP, FUNCTION_NAME);
+    if (!rateLimitResult.allowed) {
+      console.warn(`Rate limit exceeded for ${clientIP} on ${FUNCTION_NAME}`);
+      return createRateLimitResponse(rateLimitResult);
+    }
+
     // Validate API key
     const apiKey = req.headers.get('x-api-key');
     if (!apiKey || apiKey !== N8N_API_KEY) {
-      console.error('Invalid or missing API key');
+      // Record failed authentication attempt
+      recordFailedAttempt(clientIP, FUNCTION_NAME);
+      console.error(`Invalid or missing API key from ${clientIP}`);
       return new Response(
         JSON.stringify({ error: 'Unauthorized - Invalid API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Reset rate limit on successful authentication
+    resetRateLimit(clientIP, FUNCTION_NAME);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const body = await req.json();
