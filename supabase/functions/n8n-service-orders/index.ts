@@ -69,15 +69,26 @@ serve(async (req) => {
 
     switch (action) {
       case 'list': {
-        let query = supabase
-          .from(table)
-          .select(`
+        // Build select query based on table type
+        const selectQuery = table === 'service_orders_informatica' 
+          ? `
+            *,
+            situation:situacao_informatica(id, name, color),
+            withdrawal_situation:retirada_informatica(id, name, color),
+            received_by:employees!service_orders_informatica_received_by_id_fkey(id, name),
+            equipment_location:local_equipamento(id, name, color)
+          `
+          : `
             *,
             situation:situations(id, name, color),
             withdrawal_situation:withdrawal_situations(id, name, color),
             received_by:employees!service_orders_received_by_id_fkey(id, name),
             technician:employees!service_orders_technician_id_fkey(id, name)
-          `)
+          `;
+
+        let query = supabase
+          .from(table)
+          .select(selectQuery)
           .eq('deleted', false)
           .order('created_at', { ascending: false });
 
@@ -123,21 +134,75 @@ serve(async (req) => {
           );
         }
 
-        const { data: order, error } = await supabase
-          .from(table)
-          .select(`
+        const getSelectQuery = table === 'service_orders_informatica'
+          ? `
+            *,
+            situation:situacao_informatica(id, name, color),
+            withdrawal_situation:retirada_informatica(id, name, color),
+            received_by:employees!service_orders_informatica_received_by_id_fkey(id, name),
+            equipment_location:local_equipamento(id, name, color)
+          `
+          : `
             *,
             situation:situations(id, name, color),
             withdrawal_situation:withdrawal_situations(id, name, color),
             received_by:employees!service_orders_received_by_id_fkey(id, name),
             technician:employees!service_orders_technician_id_fkey(id, name)
-          `)
+          `;
+
+        const { data: order, error } = await supabase
+          .from(table)
+          .select(getSelectQuery)
           .eq('id', id)
           .eq('deleted', false)
           .maybeSingle();
 
         if (error) throw error;
         result = { success: true, data: order };
+        break;
+      }
+
+      case 'create': {
+        if (!data || typeof data !== 'object') {
+          return new Response(
+            JSON.stringify({ error: 'Data object is required for create action' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Validate required fields based on table type
+        if (table === 'service_orders') {
+          if (!data.client_name || !data.device_model || !data.reported_defect || !data.user_id) {
+            return new Response(
+              JSON.stringify({ 
+                error: 'Required fields missing: client_name, device_model, reported_defect, user_id' 
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } else if (table === 'service_orders_informatica') {
+          if (!data.client_name || !data.equipment || !data.defect || !data.user_id) {
+            return new Response(
+              JSON.stringify({ 
+                error: 'Required fields missing: client_name, equipment, defect, user_id' 
+              }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
+        // Remove fields that are auto-generated
+        const { id: _id, os_number, created_at, updated_at, tracking_token, ...insertData } = data;
+
+        const { data: created, error } = await supabase
+          .from(table)
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        console.log(`n8n-service-orders: created new order with id=${created.id}, os_number=${created.os_number}`);
+        result = { success: true, data: created };
         break;
       }
 
@@ -157,7 +222,7 @@ serve(async (req) => {
         }
 
         // Remove fields that shouldn't be updated directly
-        const { id: _id, created_at, user_id, ...updateData } = data;
+        const { id: _id, created_at, user_id, os_number, ...updateData } = data;
 
         const { data: updated, error } = await supabase
           .from(table)
@@ -168,6 +233,27 @@ serve(async (req) => {
 
         if (error) throw error;
         result = { success: true, data: updated };
+        break;
+      }
+
+      case 'delete': {
+        if (!id) {
+          return new Response(
+            JSON.stringify({ error: 'ID is required for delete action' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Soft delete
+        const { data: deleted, error } = await supabase
+          .from(table)
+          .update({ deleted: true, updated_at: new Date().toISOString() })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = { success: true, data: deleted };
         break;
       }
 
@@ -207,9 +293,46 @@ serve(async (req) => {
         break;
       }
 
+      case 'get_employees': {
+        let query = supabase
+          .from('employees')
+          .select('*')
+          .eq('deleted', false);
+
+        if (filters?.user_id) {
+          query = query.eq('user_id', filters.user_id);
+        }
+        if (filters?.type) {
+          query = query.eq('type', filters.type);
+        }
+
+        const { data: employees, error } = await query;
+        if (error) throw error;
+        result = { success: true, data: employees };
+        break;
+      }
+
+      case 'get_equipment_locations': {
+        let query = supabase
+          .from('local_equipamento')
+          .select('*')
+          .eq('deleted', false);
+
+        if (filters?.user_id) {
+          query = query.eq('user_id', filters.user_id);
+        }
+
+        const { data: locations, error } = await query;
+        if (error) throw error;
+        result = { success: true, data: locations };
+        break;
+      }
+
       default:
         return new Response(
-          JSON.stringify({ error: 'Invalid action. Use: list, get, update, get_situations, get_withdrawal_situations' }),
+          JSON.stringify({ 
+            error: 'Invalid action. Use: list, get, create, update, delete, get_situations, get_withdrawal_situations, get_employees, get_equipment_locations' 
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
