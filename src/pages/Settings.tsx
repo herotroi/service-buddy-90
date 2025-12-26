@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import N8nDocumentation from '@/components/N8nDocumentation';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -561,6 +562,8 @@ const Settings = () => {
               )}
             </CardContent>
           </Card>
+
+          <N8nDocumentation />
         </TabsContent>
       </Tabs>
     </div>
