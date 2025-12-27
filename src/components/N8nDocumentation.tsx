@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Copy, Check, FileText, Code, Database, Users, Package, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
+import jsPDF from 'jspdf';
 
 const N8nDocumentation = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const copyToClipboard = (text: string, section: string) => {
     navigator.clipboard.writeText(text);
@@ -22,9 +24,287 @@ const N8nDocumentation = () => {
     });
   };
 
-  const generateMarkdownDoc = () => {
+  const generatePdfDoc = () => {
+    setIsGeneratingPdf(true);
     const userId = user?.id || 'SEU_USER_ID';
     
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      const maxWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      const addTitle = (text: string, size: number = 16) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(size);
+        doc.setFont('helvetica', 'bold');
+        doc.text(text, margin, y);
+        y += size * 0.5 + 3;
+      };
+
+      const addText = (text: string, size: number = 10) => {
+        doc.setFontSize(size);
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line: string) => {
+          if (y > 280) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(line, margin, y);
+          y += size * 0.4 + 1;
+        });
+      };
+
+      const addCode = (code: string) => {
+        doc.setFontSize(8);
+        doc.setFont('courier', 'normal');
+        const lines = code.split('\n');
+        lines.forEach((line: string) => {
+          if (y > 280) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(line.substring(0, 90), margin + 2, y);
+          y += 4;
+        });
+        y += 2;
+      };
+
+      const addSpace = (space: number = 5) => {
+        y += space;
+      };
+
+      // Title
+      addTitle('Documentação da API n8n - Ordens de Serviço', 18);
+      addSpace(10);
+
+      // General Info
+      addTitle('Informações Gerais', 14);
+      addText('URL da Edge Function:');
+      addCode('https://rpssrnpgogwqwijksygq.supabase.co/functions/v1/n8n-service-orders');
+      addSpace(3);
+      addText('Método: POST');
+      addSpace(3);
+      addText('Headers Obrigatórios:');
+      addCode(`{
+  "Content-Type": "application/json",
+  "x-api-key": "SUA_N8N_API_KEY"
+}`);
+      addSpace(3);
+      addText(`Seu User ID: ${userId}`);
+      addSpace(10);
+
+      // Tables
+      addTitle('Tabelas Disponíveis', 14);
+      addText('• service_orders - Ordens de serviço do setor Celulares');
+      addText('• service_orders_informatica - Ordens de serviço do setor Informática');
+      addSpace(10);
+
+      // Actions
+      addTitle('Ações Disponíveis', 14);
+      addText('• list - Listar ordens de serviço com filtros');
+      addText('• get - Obter uma ordem específica por ID');
+      addText('• create - Criar nova ordem de serviço');
+      addText('• update - Atualizar ordem existente');
+      addText('• delete - Excluir ordem (soft delete)');
+      addText('• get_situations - Listar situações disponíveis');
+      addText('• get_withdrawal_situations - Listar situações de retirada');
+      addText('• get_employees - Listar funcionários');
+      addText('• get_equipment_locations - Listar locais de equipamento (Informática)');
+      addSpace(10);
+
+      // List Action
+      doc.addPage();
+      y = 20;
+      addTitle('1. LISTAR ORDENS DE SERVIÇO', 14);
+      addText('Requisição Básica:');
+      addCode(`{
+  "action": "list",
+  "table": "service_orders",
+  "filters": {
+    "user_id": "${userId}"
+  }
+}`);
+      addSpace(5);
+      addText('Com Filtros Avançados:');
+      addCode(`{
+  "action": "list",
+  "table": "service_orders",
+  "filters": {
+    "user_id": "${userId}",
+    "situation_id": "uuid-da-situacao",
+    "date_from": "2024-01-01T00:00:00Z",
+    "date_to": "2024-12-31T23:59:59Z",
+    "client_name": "João",
+    "os_number": 123,
+    "limit": 50
+  }
+}`);
+      addSpace(5);
+      addText('Filtros Disponíveis:');
+      addText('• user_id (obrigatório) - ID do usuário');
+      addText('• situation_id - Filtrar por situação');
+      addText('• withdrawal_situation_id - Situação de retirada');
+      addText('• date_from - Data inicial (ISO 8601)');
+      addText('• date_to - Data final (ISO 8601)');
+      addText('• client_name - Busca parcial por nome');
+      addText('• os_number - Número exato da OS');
+      addText('• limit - Limite de resultados');
+      addSpace(10);
+
+      // Get Action
+      addTitle('2. OBTER ORDEM ESPECÍFICA', 14);
+      addCode(`{
+  "action": "get",
+  "table": "service_orders",
+  "id": "uuid-da-ordem"
+}`);
+      addSpace(10);
+
+      // Create Action - Celulares
+      doc.addPage();
+      y = 20;
+      addTitle('3. CRIAR ORDEM DE SERVIÇO', 14);
+      addText('Celulares (service_orders) - Campos obrigatórios: user_id, client_name, device_model, reported_defect');
+      addSpace(3);
+      addCode(`{
+  "action": "create",
+  "table": "service_orders",
+  "data": {
+    "user_id": "${userId}",
+    "client_name": "Maria Santos",
+    "contact": "(11) 98765-4321",
+    "device_model": "Samsung Galaxy S24",
+    "device_password": "1234",
+    "reported_defect": "Não carrega e tela com manchas",
+    "situation_id": "uuid-da-situacao",
+    "received_by_id": "uuid-do-funcionario",
+    "value": 250.00
+  }
+}`);
+      addSpace(5);
+
+      // Create Action - Informatica
+      addText('Informática (service_orders_informatica) - Campos obrigatórios: user_id, client_name, equipment, defect');
+      addSpace(3);
+      addCode(`{
+  "action": "create",
+  "table": "service_orders_informatica",
+  "data": {
+    "user_id": "${userId}",
+    "client_name": "Empresa XYZ",
+    "contact": "(11) 3333-4444",
+    "equipment": "Notebook Dell Inspiron 15",
+    "defect": "Não liga",
+    "accessories": "Carregador original",
+    "situation_id": "uuid-da-situacao",
+    "value": 450.00
+  }
+}`);
+      addSpace(10);
+
+      // Update Action
+      doc.addPage();
+      y = 20;
+      addTitle('4. ATUALIZAR ORDEM DE SERVIÇO', 14);
+      addCode(`{
+  "action": "update",
+  "table": "service_orders",
+  "id": "uuid-da-ordem",
+  "data": {
+    "situation_id": "novo-uuid-situacao",
+    "value": 400.00,
+    "technician_id": "uuid-do-tecnico"
+  }
+}`);
+      addSpace(10);
+
+      // Delete Action
+      addTitle('5. EXCLUIR ORDEM DE SERVIÇO', 14);
+      addCode(`{
+  "action": "delete",
+  "table": "service_orders",
+  "id": "uuid-da-ordem"
+}`);
+      addText('Nota: A exclusão é do tipo "soft delete" - o registro é apenas marcado como deleted: true.');
+      addSpace(10);
+
+      // Auxiliary Actions
+      addTitle('6. AÇÕES AUXILIARES', 14);
+      addSpace(3);
+      addText('Listar Situações:');
+      addCode(`{
+  "action": "get_situations",
+  "table": "service_orders",
+  "filters": { "user_id": "${userId}" }
+}`);
+      addSpace(3);
+      addText('Listar Situações de Retirada:');
+      addCode(`{
+  "action": "get_withdrawal_situations",
+  "table": "service_orders",
+  "filters": { "user_id": "${userId}" }
+}`);
+      addSpace(3);
+      addText('Listar Funcionários:');
+      addCode(`{
+  "action": "get_employees",
+  "filters": { "user_id": "${userId}" }
+}`);
+      addSpace(3);
+      addText('Listar Locais de Equipamento (Informática):');
+      addCode(`{
+  "action": "get_equipment_locations",
+  "filters": { "user_id": "${userId}" }
+}`);
+      addSpace(10);
+
+      // Error Codes
+      doc.addPage();
+      y = 20;
+      addTitle('CÓDIGOS DE ERRO', 14);
+      addText('• 400 - Requisição inválida (campos faltando, ação inválida)');
+      addText('• 401 - Não autorizado (x-api-key inválido ou ausente)');
+      addText('• 404 - Recurso não encontrado');
+      addText('• 405 - Método não permitido (use POST)');
+      addText('• 500 - Erro interno do servidor');
+      addSpace(10);
+
+      // N8N Configuration
+      addTitle('CONFIGURAÇÃO NO N8N', 14);
+      addText('1. Adicione um nó HTTP Request');
+      addText('2. Configure o método como POST');
+      addText('3. Adicione a URL da Edge Function');
+      addText('4. Em Headers, adicione Content-Type: application/json e x-api-key: SUA_CHAVE');
+      addText('5. Em Body, selecione JSON e adicione o payload desejado');
+      addText('6. Para usar dados dinâmicos, use expressões como {{ $json.campo }}');
+
+      // Save PDF
+      doc.save('documentacao-api-n8n.pdf');
+      
+      toast({
+        title: 'PDF Gerado!',
+        description: 'O documento foi baixado com sucesso',
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: 'Erro ao gerar PDF',
+        description: 'Ocorreu um erro ao gerar o documento',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const generateMarkdownDoc = () => {
+    const userId = user?.id || 'SEU_USER_ID';
     return `# Documentação da API n8n - Ordens de Serviço
 
 ## Informações Gerais
@@ -619,21 +899,7 @@ Para dúvidas ou problemas, verifique:
   };
 
   const downloadDocumentation = () => {
-    const doc = generateMarkdownDoc();
-    const blob = new Blob([doc], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `documentacao-api-n8n-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Download iniciado!',
-      description: 'A documentação foi baixada em formato Markdown',
-    });
+    generatePdfDoc();
   };
 
   const userId = user?.id || 'SEU_USER_ID';
@@ -671,9 +937,9 @@ Para dúvidas ou problemas, verifique:
               Guia completo para integração com n8n via Edge Function
             </CardDescription>
           </div>
-          <Button onClick={downloadDocumentation} className="gap-2">
+          <Button onClick={downloadDocumentation} className="gap-2" disabled={isGeneratingPdf}>
             <Download className="h-4 w-4" />
-            Baixar Documentação
+            {isGeneratingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
           </Button>
         </div>
       </CardHeader>
