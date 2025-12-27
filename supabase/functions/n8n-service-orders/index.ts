@@ -7,10 +7,17 @@ import {
   resetRateLimit,
   createRateLimitResponse 
 } from "../_shared/rate-limiter.ts";
+import { 
+  escapeILIKE, 
+  isValidUUID, 
+  isValidDate, 
+  sanitizeString, 
+  getSafeErrorMessage 
+} from "../_shared/security-utils.ts";
 
+// Server-to-server only - no CORS needed for browser requests
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Content-Type': 'application/json',
 };
 
 const N8N_API_KEY = Deno.env.get('N8N_API_KEY');
@@ -92,31 +99,77 @@ serve(async (req) => {
           .eq('deleted', false)
           .order('created_at', { ascending: false });
 
-        // Apply filters
+        // Apply filters with proper validation and sanitization
         if (filters) {
           if (filters.user_id) {
+            if (!isValidUUID(filters.user_id)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid user_id format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
             query = query.eq('user_id', filters.user_id);
           }
           if (filters.situation_id) {
+            if (!isValidUUID(filters.situation_id)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid situation_id format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
             query = query.eq('situation_id', filters.situation_id);
           }
           if (filters.withdrawal_situation_id) {
+            if (!isValidUUID(filters.withdrawal_situation_id)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid withdrawal_situation_id format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
             query = query.eq('withdrawal_situation_id', filters.withdrawal_situation_id);
           }
           if (filters.date_from) {
+            if (!isValidDate(filters.date_from)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid date_from format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
             query = query.gte('entry_date', filters.date_from);
           }
           if (filters.date_to) {
+            if (!isValidDate(filters.date_to)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid date_to format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
             query = query.lte('entry_date', filters.date_to);
           }
           if (filters.client_name) {
-            query = query.ilike('client_name', `%${filters.client_name}%`);
+            const sanitizedName = sanitizeString(filters.client_name, 100);
+            const escapedName = escapeILIKE(sanitizedName);
+            query = query.ilike('client_name', `%${escapedName}%`);
           }
           if (filters.os_number) {
-            query = query.eq('os_number', filters.os_number);
+            const osNum = parseInt(filters.os_number, 10);
+            if (isNaN(osNum)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid os_number format' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
+            query = query.eq('os_number', osNum);
           }
           if (filters.limit) {
-            query = query.limit(filters.limit);
+            const limitNum = parseInt(filters.limit, 10);
+            if (isNaN(limitNum) || limitNum < 1 || limitNum > 1000) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid limit: must be between 1 and 1000' }),
+                { status: 400, headers: corsHeaders }
+              );
+            }
+            query = query.limit(limitNum);
           }
         }
 
@@ -345,10 +398,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('n8n-service-orders error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const safeMessage = getSafeErrorMessage(error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: safeMessage }),
+      { status: 500, headers: corsHeaders }
     );
   }
 });

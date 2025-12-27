@@ -7,10 +7,11 @@ import {
   resetRateLimit,
   createRateLimitResponse 
 } from "../_shared/rate-limiter.ts";
+import { getSafeErrorMessage } from "../_shared/security-utils.ts";
 
+// Server-to-server only - no CORS needed for browser requests
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Content-Type': 'application/json',
 };
 
 const N8N_API_KEY = Deno.env.get('N8N_API_KEY');
@@ -224,10 +225,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('n8n-notifications error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const safeMessage = getSafeErrorMessage(error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: safeMessage }),
+      { status: 500, headers: corsHeaders }
     );
   }
 });
