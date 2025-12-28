@@ -164,7 +164,7 @@ export const ServiceOrdersTable = () => {
             technician:employees!service_orders_technician_id_fkey(name),
             received_by:employees!service_orders_received_by_id_fkey(name)
           `)
-          .order('os_number', { ascending: false }),
+          .order('created_at', { ascending: false }),
         supabase.from('situations').select('*'),
         supabase.from('employees').select('*').eq('type', 'Técnico'),
         supabase.from('withdrawal_situations').select('*'),
