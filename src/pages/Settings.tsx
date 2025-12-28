@@ -33,6 +33,7 @@ const Settings = () => {
   const [osStartNumber, setOsStartNumber] = useState('1');
   const [osStartNumberInformatica, setOsStartNumberInformatica] = useState('1');
   const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
+  const [printQrCodeInformaticaEnabled, setPrintQrCodeInformaticaEnabled] = useState(true);
 
   // Mask functions
   const maskPhone = (value: string) => {
@@ -96,10 +97,12 @@ const Settings = () => {
         const osStart = data.find(s => s.key === 'os_starting_number');
         const osStartInfo = data.find(s => s.key === 'os_starting_number_informatica');
         const printQr = data.find(s => s.key === 'print_qr_code_enabled');
+        const printQrInfo = data.find(s => s.key === 'print_qr_code_informatica_enabled');
         
         if (osStart) setOsStartNumber(osStart.value);
         if (osStartInfo) setOsStartNumberInformatica(osStartInfo.value);
         if (printQr) setPrintQrCodeEnabled(printQr.value === 'true');
+        if (printQrInfo) setPrintQrCodeInformaticaEnabled(printQrInfo.value === 'true');
       }
       return data;
     },
@@ -146,7 +149,7 @@ const Settings = () => {
 
   // Update settings mutation
   const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: { osStart: string; osStartInfo: string; printQr: boolean }) => {
+    mutationFn: async (settings: { osStart: string; osStartInfo: string; printQr: boolean; printQrInfo: boolean }) => {
       const numValueCelulares = parseInt(settings.osStart, 10);
       const numValueInformatica = parseInt(settings.osStartInfo, 10);
       
@@ -161,6 +164,7 @@ const Settings = () => {
         { key: 'os_starting_number', value: settings.osStart, user_id: user?.id },
         { key: 'os_starting_number_informatica', value: settings.osStartInfo, user_id: user?.id },
         { key: 'print_qr_code_enabled', value: settings.printQr.toString(), user_id: user?.id },
+        { key: 'print_qr_code_informatica_enabled', value: settings.printQrInfo.toString(), user_id: user?.id },
       ];
 
       for (const setting of settingsToUpsert) {
@@ -252,6 +256,7 @@ const Settings = () => {
       osStart: osStartNumber,
       osStartInfo: osStartNumberInformatica,
       printQr: printQrCodeEnabled,
+      printQrInfo: printQrCodeInformaticaEnabled,
     });
   };
 
@@ -531,15 +536,29 @@ const Settings = () => {
                     
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label htmlFor="printQrCode">QR Code na Impressão</Label>
+                        <Label htmlFor="printQrCode">QR Code na Impressão - Celulares</Label>
                         <p className="text-xs text-muted-foreground">
-                          Exibir QR code de acompanhamento nas ordens de serviço impressas
+                          Exibir QR code de acompanhamento nas ordens de serviço de celulares
                         </p>
                       </div>
                       <Switch
                         id="printQrCode"
                         checked={printQrCodeEnabled}
                         onCheckedChange={setPrintQrCodeEnabled}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="printQrCodeInformatica">QR Code na Impressão - Informática</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Exibir QR code de acompanhamento nas ordens de serviço de informática
+                        </p>
+                      </div>
+                      <Switch
+                        id="printQrCodeInformatica"
+                        checked={printQrCodeInformaticaEnabled}
+                        onCheckedChange={setPrintQrCodeInformaticaEnabled}
                       />
                     </div>
                   </div>
