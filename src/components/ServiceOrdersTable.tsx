@@ -676,8 +676,19 @@ export const ServiceOrdersTable = () => {
       {/* Drawer para visualizar OS */}
       <Drawer open={!!viewOrderId} onOpenChange={() => setViewOrderId(null)}>
         <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="border-b pb-4">
+          <DrawerHeader className="border-b pb-4 flex flex-row items-center justify-between">
             <DrawerTitle className="text-2xl">Visualizar Ordem de Serviço</DrawerTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPrintOrderId(viewOrderId);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir
+            </Button>
           </DrawerHeader>
           <div className="overflow-y-auto px-6 pb-6">
             {viewOrderId && (() => {
