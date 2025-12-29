@@ -94,10 +94,17 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
     currentOrderId: orderId,
   });
   
+  const getLocalDateTime = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
   const form = useForm<FormData>({
     defaultValues: {
       os_number: 1,
-      entry_date: new Date().toISOString().slice(0, 16),
+      entry_date: getLocalDateTime(),
       client_name: '',
       client_cpf: '',
       client_address: '',
