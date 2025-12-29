@@ -21,6 +21,16 @@ const getTextColor = (backgroundColor: string) => {
   return luminance > 0.5 ? '#000000' : '#ffffff';
 };
 
+// Função para gerar cor de fundo suave baseada na cor da situação
+const getSoftBackgroundColor = (color: string | undefined): string | undefined => {
+  if (!color) return undefined;
+  const hex = color.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.08)`;
+};
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -384,7 +394,7 @@ export const ServiceOrdersInformaticaTable = () => {
             </div>
           ) : (
             paginatedOrders.map((order) => (
-              <Card key={order.id} className="overflow-hidden">
+              <Card key={order.id} className="overflow-hidden" style={{ backgroundColor: getSoftBackgroundColor(order.situation?.color) }}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div>
@@ -458,7 +468,7 @@ export const ServiceOrdersInformaticaTable = () => {
                   </TableRow>
                 ) : (
                   paginatedOrders.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-muted/50 transition-colors">
+                    <TableRow key={order.id} className="hover:bg-muted/50 transition-colors" style={{ backgroundColor: getSoftBackgroundColor(order.situation?.color) }}>
                       <TableCell className="font-mono font-bold text-primary">#{order.os_number}</TableCell>
                       <TableCell className="text-sm">{format(new Date(order.entry_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                       <TableCell>
