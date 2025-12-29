@@ -19,6 +19,7 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
   const checkOsNumberExists = async (osNumber: number): Promise<ExistingOrder | null> => {
     try {
       if (table === 'service_orders') {
+        // RLS já filtra automaticamente pelo user_id do usuário logado
         let query = supabase
           .from('service_orders')
           .select('id, os_number, client_name, device_model')
@@ -39,6 +40,7 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
           device_info: data.device_model || 'Não especificado',
         };
       } else {
+        // RLS já filtra automaticamente pelo user_id do usuário logado
         let query = supabase
           .from('service_orders_informatica')
           .select('id, os_number, client_name, equipment')
