@@ -51,10 +51,13 @@ interface ServiceOrder {
   os_number: number;
   entry_date: string;
   client_name: string;
+  client_cpf: string | null;
+  client_address: string | null;
   contact: string;
   other_contacts: string | null;
   device_model: string;
   device_password: string | null;
+  device_pattern: string | null;
   reported_defect: string;
   client_message: string | null;
   value: number | null;
@@ -65,6 +68,21 @@ interface ServiceOrder {
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
   media_files: any;
+  // Checklist fields
+  checklist_houve_queda: boolean | null;
+  checklist_face_id: boolean | null;
+  checklist_carrega: boolean | null;
+  checklist_tela_quebrada: boolean | null;
+  checklist_vidro_trincado: boolean | null;
+  checklist_manchas_tela: boolean | null;
+  checklist_carcaca_torta: boolean | null;
+  checklist_riscos_tampa: boolean | null;
+  checklist_riscos_laterais: boolean | null;
+  checklist_vidro_camera: boolean | null;
+  checklist_acompanha_chip: boolean | null;
+  checklist_acompanha_sd: boolean | null;
+  checklist_acompanha_capa: boolean | null;
+  checklist_esta_ligado: boolean | null;
   situation: {
     id: string;
     name: string;
@@ -695,12 +713,18 @@ export const ServiceOrdersTable = () => {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Contato</p>
                         <p className="text-lg">{order.contact || '-'}</p>
                       </div>
-                      {order.other_contacts && (
-                        <div className="md:col-span-2">
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Outros Contatos</p>
-                          <p className="text-lg">{order.other_contacts}</p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Outros Contatos</p>
+                        <p className="text-lg">{order.other_contacts || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">CPF</p>
+                        <p className="text-lg">{order.client_cpf || '-'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Endereço</p>
+                        <p className="text-lg">{order.client_address || '-'}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -712,23 +736,57 @@ export const ServiceOrdersTable = () => {
                         <p className="text-sm font-medium text-muted-foreground mb-1">Modelo do Aparelho</p>
                         <p className="text-lg">{order.device_model}</p>
                       </div>
-                      {order.device_password && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Senha de Texto</p>
-                          <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password}</p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Senha de Texto</p>
+                        <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password || '-'}</p>
+                      </div>
                     </div>
-                    {(order as any).device_pattern && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Padrão de 9 Pontos</p>
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Padrão de 9 Pontos</p>
+                      {order.device_pattern ? (
                         <PatternLock
-                          value={(order as any).device_pattern}
+                          value={order.device_pattern}
                           onChange={() => {}}
                           disabled={true}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <p className="text-lg">-</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Checklist Técnico */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Checklist Técnico</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {[
+                        { key: 'checklist_houve_queda', label: 'Houve queda?' },
+                        { key: 'checklist_face_id', label: 'Face ID funcionando' },
+                        { key: 'checklist_carrega', label: 'Carrega' },
+                        { key: 'checklist_tela_quebrada', label: 'Tela quebrada' },
+                        { key: 'checklist_vidro_trincado', label: 'Vidro trincado' },
+                        { key: 'checklist_manchas_tela', label: 'Manchas na tela' },
+                        { key: 'checklist_carcaca_torta', label: 'Carcaça torta' },
+                        { key: 'checklist_riscos_tampa', label: 'Riscos na tampa' },
+                        { key: 'checklist_riscos_laterais', label: 'Riscos laterais' },
+                        { key: 'checklist_vidro_camera', label: 'Vidro câmera quebrado' },
+                        { key: 'checklist_acompanha_chip', label: 'Acompanha chip' },
+                        { key: 'checklist_acompanha_sd', label: 'Acompanha SD' },
+                        { key: 'checklist_acompanha_capa', label: 'Acompanha capa' },
+                        { key: 'checklist_esta_ligado', label: 'Está ligado' },
+                      ].map((item) => {
+                        const value = order[item.key as keyof ServiceOrder];
+                        const displayValue = value === null ? '—' : value === true ? 'S' : 'N';
+                        const bgColor = value === null ? 'bg-muted' : value === true ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30';
+                        const textColor = value === null ? 'text-muted-foreground' : value === true ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400';
+                        return (
+                          <div key={item.key} className={`flex items-center justify-between p-2 rounded-md border ${bgColor}`}>
+                            <span className="text-sm">{item.label}</span>
+                            <span className={`font-bold ${textColor}`}>{displayValue}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Defeito e Mensagem */}
