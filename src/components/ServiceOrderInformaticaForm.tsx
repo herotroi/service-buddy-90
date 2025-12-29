@@ -157,7 +157,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
 
   const fetchNextOsNumber = async () => {
     try {
-      // Buscar número inicial das configurações
+      // Buscar número inicial das configurações do usuário
       const { data: settingsData } = await supabase
         .from('system_settings')
         .select('value')
@@ -167,10 +167,11 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       
       const startingNumber = settingsData ? parseInt(settingsData.value) : 1;
 
-      // Buscar maior número de OS existente
+      // Buscar maior número de OS existente DO USUÁRIO (RLS já filtra automaticamente)
       const { data: ordersData } = await supabase
         .from('service_orders_informatica')
         .select('os_number')
+        .eq('deleted', false)
         .order('os_number', { ascending: false })
         .limit(1);
 
