@@ -683,6 +683,7 @@ export const ServiceOrdersTable = () => {
               size="sm"
               onClick={() => {
                 setPrintOrderId(viewOrderId);
+                setViewOrderId(null);
               }}
               className="flex items-center gap-2"
             >
