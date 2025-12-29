@@ -97,7 +97,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const form = useForm<FormData>({
     defaultValues: {
       os_number: 1,
-      entry_date: new Date().toISOString().split('T')[0],
+      entry_date: new Date().toISOString().slice(0, 16),
       client_name: '',
       client_cpf: '',
       client_address: '',
@@ -176,7 +176,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
       form.reset({
         os_number: data.os_number,
-        entry_date: new Date(data.entry_date).toISOString().split('T')[0],
+        entry_date: new Date(data.entry_date).toISOString().slice(0, 16),
         client_name: data.client_name,
         client_cpf: data.client_cpf || '',
         client_address: (data as any).client_address || '',
@@ -674,9 +674,9 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               rules={{ required: 'Data de entrada é obrigatória' }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data de Entrada *</FormLabel>
+                  <FormLabel>Data e Hora de Entrada *</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="datetime-local" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
