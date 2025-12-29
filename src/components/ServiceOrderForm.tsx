@@ -1020,19 +1020,21 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="part_order_date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data da Encomenda de Peça</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {orderId && (
+              <FormField
+                control={form.control}
+                name="part_order_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data da Encomenda de Peça</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
