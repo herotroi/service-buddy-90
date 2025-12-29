@@ -795,14 +795,12 @@ export const ServiceOrdersTable = () => {
                     <div className="space-y-4">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground mb-2">Defeito Relatado</p>
-                        <p className="text-base bg-muted p-4 rounded-md">{order.reported_defect}</p>
+                        <p className="text-base bg-muted p-4 rounded-md">{order.reported_defect || '-'}</p>
                       </div>
-                      {order.client_message && (
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground mb-2">Mensagem para o Cliente</p>
-                          <p className="text-base bg-muted p-4 rounded-md">{order.client_message}</p>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Mensagem para o Cliente</p>
+                        <p className="text-base bg-muted p-4 rounded-md">{order.client_message || '-'}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -896,9 +894,9 @@ export const ServiceOrdersTable = () => {
                   </div>
 
                   {/* Fotos e Vídeos */}
-                  {order.media_files && Array.isArray(order.media_files) && (order.media_files as any[]).length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Fotos e Vídeos</h3>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Fotos e Vídeos</h3>
+                    {order.media_files && Array.isArray(order.media_files) && (order.media_files as any[]).length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {((order.media_files as unknown as MediaFile[]) || []).map((file, index) => {
                           // Garantir que a URL seja pública e válida
@@ -939,8 +937,10 @@ export const ServiceOrdersTable = () => {
                           );
                         })}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-muted-foreground">Nenhum arquivo anexado</p>
+                    )}
+                  </div>
                 </div>
               );
             })()}
