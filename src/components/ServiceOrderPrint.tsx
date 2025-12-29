@@ -131,7 +131,7 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -142,7 +142,7 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
   }
 
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-auto">
+    <div className="fixed inset-0 bg-background z-[100] overflow-auto">
       {/* Print Controls - Hidden when printing */}
       <div className="print:hidden sticky top-0 bg-background border-b p-4 flex justify-between items-center">
         <h2 className="text-lg font-semibold">Visualização de Impressão</h2>
