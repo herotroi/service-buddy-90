@@ -382,6 +382,26 @@ export const ServiceOrdersTable = () => {
               <Filter className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Filtros</span>
             </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setFilters({
+                  search: '',
+                  situation: 'all',
+                  technician: 'all',
+                  withdrawal: 'all',
+                  startDate: '',
+                  endDate: '',
+                });
+                setSortBy('entry_date');
+                setSortOrder('desc');
+                setPagination({ page: 1, perPage: 10 });
+              }}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title="Limpar filtros"
+            >
+              <span className="text-sm">Limpar</span>
+            </Button>
           </div>
         </div>
 
