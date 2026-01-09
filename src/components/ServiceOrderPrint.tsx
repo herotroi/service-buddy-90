@@ -111,7 +111,6 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
     const printContent = document.getElementById('print-content');
     if (!printContent) return;
 
-    // Create a hidden iframe for printing
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.width = '0';
@@ -142,17 +141,16 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
               font-family: Arial, sans-serif;
               background: white;
               color: black;
-              padding: 10mm;
+              font-size: 11px;
             }
             @page {
               size: A4;
-              margin: 10mm;
+              margin: 8mm;
             }
-            @media print {
-              body {
-                padding: 0;
-              }
-            }
+            table { font-size: 10px; }
+            h1 { font-size: 16px; }
+            h2 { font-size: 13px; }
+            p, span, td, th { font-size: 10px; }
           </style>
         </head>
         <body>
@@ -162,20 +160,10 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
     `);
     iframeDoc.close();
 
-    // Wait for iframe content to load
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        // Remove iframe after printing
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1000);
-      }, 250);
-    };
-
-    // Trigger load event manually for browsers that need it
-    setTimeout(() => {
+    let printed = false;
+    const doPrint = () => {
+      if (printed) return;
+      printed = true;
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
       setTimeout(() => {
@@ -183,7 +171,10 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           document.body.removeChild(iframe);
         }
       }, 1000);
-    }, 500);
+    };
+
+    iframe.onload = () => setTimeout(doPrint, 100);
+    setTimeout(doPrint, 500);
   };
 
   const getAddress = () => {
