@@ -111,3 +111,52 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles - force white background and black text for proper printing */
+@media print {
+  html, body {
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  /* Ensure print content is visible */
+  .print-content {
+    display: block !important;
+    visibility: visible !important;
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  /* Force colors in print */
+  .text-black {
+    color: black !important;
+  }
+  
+  .bg-white {
+    background-color: white !important;
+  }
+  
+  .border-black {
+    border-color: black !important;
+  }
+  
+  .text-red-600 {
+    color: #dc2626 !important;
+  }
+  
+  .text-orange-500 {
+    color: #f97316 !important;
+  }
+  
+  /* Reset dark mode styles for print */
+  .dark * {
+    background-color: white !important;
+    color: black !important;
+  }
+}
