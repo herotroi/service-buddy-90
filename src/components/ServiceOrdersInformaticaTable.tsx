@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -94,6 +95,7 @@ interface Filters {
 
 export const ServiceOrdersInformaticaTable = () => {
   const isMobile = useIsMobile();
+  const { session } = useAuth();
   const [orders, setOrders] = useState<ServiceOrderInformatica[]>([]);
   const [situations, setSituations] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
@@ -121,6 +123,8 @@ export const ServiceOrdersInformaticaTable = () => {
   });
 
   useEffect(() => {
+    if (!session) return;
+    
     fetchData();
 
     const channel = supabase
@@ -147,7 +151,7 @@ export const ServiceOrdersInformaticaTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [session]);
 
   const fetchData = async () => {
     try {

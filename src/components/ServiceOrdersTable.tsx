@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -121,6 +122,7 @@ interface Filters {
 
 export const ServiceOrdersTable = () => {
   const isMobile = useIsMobile();
+  const { session } = useAuth();
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [situations, setSituations] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
@@ -165,13 +167,17 @@ export const ServiceOrdersTable = () => {
     }
   };
 
-  // Fetch orders when applied filters, pagination or sorting changes
+  // Fetch orders when session is ready and filters change
   useEffect(() => {
-    fetchOrders();
-  }, [pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters]);
+    if (session) {
+      fetchOrders();
+    }
+  }, [session, pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters]);
 
-  // Fetch filter options on mount
+  // Fetch filter options when session is ready
   useEffect(() => {
+    if (!session) return;
+    
     fetchFilterOptions();
 
     // Configurar realtime para service_orders
@@ -195,7 +201,7 @@ export const ServiceOrdersTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [session]);
 
   const fetchFilterOptions = async () => {
     try {
