@@ -404,7 +404,7 @@ export const ServiceOrdersTable = () => {
                 };
                 setFilters(clearedFilters);
                 setAppliedFilters(clearedFilters);
-                setSortBy('entry_date');
+                setSortBy('os_number');
                 setSortOrder('desc');
                 setPagination({ page: 1, perPage: 10 });
               }}
