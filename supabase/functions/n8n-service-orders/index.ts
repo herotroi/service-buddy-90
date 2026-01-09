@@ -223,27 +223,6 @@ serve(async (req) => {
           );
         }
 
-        // Validate required fields based on table type
-        if (table === 'service_orders') {
-          if (!data.client_name || !data.device_model || !data.reported_defect || !data.user_id) {
-            return new Response(
-              JSON.stringify({ 
-                error: 'Required fields missing: client_name, device_model, reported_defect, user_id' 
-              }),
-              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        } else if (table === 'service_orders_informatica') {
-          if (!data.client_name || !data.equipment || !data.defect || !data.user_id) {
-            return new Response(
-              JSON.stringify({ 
-                error: 'Required fields missing: client_name, equipment, defect, user_id' 
-              }),
-              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-        }
-        }
-
         // Keep all fields as sent, only remove id if provided (to prevent conflicts)
         const { id: _id, ...insertData } = data;
         
@@ -253,9 +232,43 @@ serve(async (req) => {
           delete insertData.os;
         }
         
+        // Trim all string fields to remove whitespace and newlines
+        for (const [key, value] of Object.entries(insertData)) {
+          if (typeof value === 'string') {
+            insertData[key] = value.trim();
+          }
+        }
+        
         // Convert empty strings to null for timestamp fields
-        const timestampFields = ['entry_date', 'exit_date', 'created_at', 'updated_at'];
+        const timestampFields = ['entry_date', 'exit_date', 'created_at', 'updated_at', 'service_date', 'part_order_date'];
         for (const field of timestampFields) {
+          if (insertData[field] === '') {
+            insertData[field] = null;
+          }
+        }
+        
+        // Convert numeric fields - if not a valid number, set to null
+        const numericFields = ['value'];
+        for (const field of numericFields) {
+          if (insertData[field] !== undefined && insertData[field] !== null) {
+            const numValue = parseFloat(insertData[field]);
+            insertData[field] = isNaN(numValue) ? null : numValue;
+          }
+        }
+        
+        // Convert boolean fields from string to boolean
+        const booleanFields = ['mensagem_finalizada', 'mensagem_entregue', 'deleted', 'client_notified'];
+        for (const field of booleanFields) {
+          if (insertData[field] !== undefined) {
+            if (typeof insertData[field] === 'string') {
+              insertData[field] = insertData[field].toLowerCase() === 'true';
+            }
+          }
+        }
+        
+        // Convert empty strings to null for UUID fields
+        const uuidFields = ['situation_id', 'withdrawal_situation_id', 'received_by_id', 'technician_id', 'user_id', 'equipment_location_id'];
+        for (const field of uuidFields) {
           if (insertData[field] === '') {
             insertData[field] = null;
           }
