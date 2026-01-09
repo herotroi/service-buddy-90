@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CameraCapture } from '@/components/CameraCapture';
+
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
@@ -64,7 +64,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
-  const [cameraMode, setCameraMode] = useState<'photo' | 'video' | null>(null);
+  
 
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
     table: 'service_orders_informatica',
@@ -888,29 +888,41 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           <div className="space-y-4">
             {/* Botões de captura da câmera */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button
-                type="button"
-                onClick={() => setCameraMode('photo')}
-                disabled={uploadingMedia}
-                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Camera className="w-8 h-8 text-primary" />
-                  <span className="text-sm font-medium">Tirar Foto</span>
+              <Label htmlFor="camera-photo-info" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer">
+                  <input
+                    id="camera-photo-info"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Tirar Foto</span>
+                  </div>
                 </div>
-              </button>
+              </Label>
 
-              <button
-                type="button"
-                onClick={() => setCameraMode('video')}
-                disabled={uploadingMedia}
-                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Video className="w-8 h-8 text-primary" />
-                  <span className="text-sm font-medium">Gravar Vídeo</span>
+              <Label htmlFor="camera-video-info" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer">
+                  <input
+                    id="camera-video-info"
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingMedia}
+                    className="hidden"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <Video className="w-8 h-8 text-primary" />
+                    <span className="text-sm font-medium">Gravar Vídeo</span>
+                  </div>
                 </div>
-              </button>
+              </Label>
 
               <Label htmlFor="media-upload-info" className="cursor-pointer md:col-span-2">
                 <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
@@ -995,12 +1007,6 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         </div>
       </form>
 
-      <CameraCapture
-        open={cameraMode !== null}
-        onClose={() => setCameraMode(null)}
-        onCapture={handleCameraCapture}
-        mode={cameraMode || 'photo'}
-      />
     </Form>
   );
 };
