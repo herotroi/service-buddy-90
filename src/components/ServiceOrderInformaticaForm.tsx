@@ -887,9 +887,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           </h3>
           <div className="space-y-4">
             {/* Botões de captura da câmera */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <Label htmlFor="camera-photo-info" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-3 sm:p-4 hover:border-primary transition-colors text-center cursor-pointer">
                   <input
                     id="camera-photo-info"
                     type="file"
@@ -899,15 +899,15 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                     disabled={uploadingMedia}
                     className="hidden"
                   />
-                  <div className="flex flex-col items-center gap-2">
-                    <Camera className="w-8 h-8 text-primary" />
-                    <span className="text-sm font-medium">Tirar Foto</span>
+                  <div className="flex flex-col items-center gap-1 sm:gap-2">
+                    <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Tirar Foto</span>
                   </div>
                 </div>
               </Label>
 
               <Label htmlFor="camera-video-info" className="cursor-pointer">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-3 sm:p-4 hover:border-primary transition-colors text-center cursor-pointer">
                   <input
                     id="camera-video-info"
                     type="file"
@@ -917,9 +917,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                     disabled={uploadingMedia}
                     className="hidden"
                   />
-                  <div className="flex flex-col items-center gap-2">
-                    <Video className="w-8 h-8 text-primary" />
-                    <span className="text-sm font-medium">Gravar Vídeo</span>
+                  <div className="flex flex-col items-center gap-1 sm:gap-2">
+                    <Video className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Gravar Vídeo</span>
                   </div>
                 </div>
               </Label>
@@ -928,16 +928,16 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                 type="button"
                 onClick={() => setCameraMode('photo')}
                 disabled={uploadingMedia}
-                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
+                className="border-2 border-dashed border-border rounded-lg p-3 sm:p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
               >
-                <div className="flex flex-col items-center gap-2">
-                  <Monitor className="w-8 h-8 text-primary" />
-                  <span className="text-sm font-medium">Usar Webcam</span>
+                <div className="flex flex-col items-center gap-1 sm:gap-2">
+                  <Monitor className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                  <span className="text-xs sm:text-sm font-medium">Usar Webcam</span>
                 </div>
               </button>
 
-              <Label htmlFor="media-upload-info" className="cursor-pointer md:col-span-2">
-                <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
+              <Label htmlFor="media-upload-info" className="cursor-pointer">
+                <div className="border-2 border-dashed border-border rounded-lg p-3 sm:p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
                   <input
                     id="media-upload-info"
                     type="file"
@@ -947,9 +947,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                     disabled={uploadingMedia}
                     className="hidden"
                   />
-                  <div className="flex flex-col items-center gap-2">
-                    <Plus className="w-8 h-8 text-primary" />
-                    <span className="text-sm font-medium">Escolher da Galeria</span>
+                  <div className="flex flex-col items-center gap-1 sm:gap-2">
+                    <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Galeria</span>
                   </div>
                 </div>
               </Label>
@@ -1008,11 +1008,11 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         </div>
 
         {/* Botões */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onCancel}>
+        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {orderId ? 'Salvar Alterações' : 'Criar OS'}
           </Button>
