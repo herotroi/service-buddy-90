@@ -10,8 +10,23 @@ interface PatternLockProps {
 export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => {
   const [pattern, setPattern] = useState<number[]>(value ? value.split(',').map(Number) : []);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [containerSize, setContainerSize] = useState(280);
   const containerRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Atualizar tamanho do container
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const size = containerRef.current.offsetWidth;
+        setContainerSize(size);
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
 
   // Sincronizar apenas quando não estiver desenhando e o valor externo mudar
   useEffect(() => {
@@ -107,11 +122,9 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   const getPosition = (index: number) => {
     const row = Math.floor(index / 3);
     const col = index % 3;
-    // p-8 = 32px padding + grid position
-    // Total container é 330px, grid interno é 266px (330 - 64px padding)
-    // Cada célula do grid = 266/3 ≈ 88.67px
-    const padding = 32;
-    const gridSize = 266; // 330 - (32*2)
+    // Calcular baseado no tamanho real do container
+    const padding = containerSize * 0.097; // ~32px em 330px
+    const gridSize = containerSize - (padding * 2);
     const cellSize = gridSize / 3;
     return {
       x: padding + col * cellSize + cellSize / 2,
@@ -122,10 +135,14 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   const renderLines = () => {
     if (pattern.length < 2) return null;
 
+    // Calcular tamanho do círculo baseado no container
+    const circleRadius = containerSize * 0.0485; // ~16px em 330px
+    const arrowSize = containerSize * 0.018; // ~6px em 330px
+
     return (
       <svg
         className="absolute top-0 left-0 pointer-events-none"
-        style={{ width: '330px', height: '330px' }}
+        style={{ width: containerSize, height: containerSize }}
       >
         <defs>
           <marker
@@ -151,10 +168,6 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const unitX = dx / length;
           const unitY = dy / length;
           
-          // Círculo tem w-8 h-8 = 32px, raio = 16px
-          const circleRadius = 16;
-          const arrowSize = 6;
-          
           // Começa na borda do círculo de origem
           const startX = start.x + unitX * circleRadius;
           const startY = start.y + unitY * circleRadius;
@@ -170,7 +183,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               x2={endX}
               y2={endY}
               stroke="hsl(var(--primary))"
-              strokeWidth="3.5"
+              strokeWidth="3"
               markerEnd="url(#arrowhead)"
             />
           );
@@ -180,10 +193,10 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="flex flex-col gap-4">
       <div
         ref={containerRef}
-        className="relative p-4 sm:p-8 bg-muted/20 rounded-xl border border-border w-full max-w-[280px] sm:max-w-[330px] mx-auto select-none touch-none aspect-square"
+        className="relative p-6 sm:p-8 bg-muted/20 rounded-xl border border-border w-full max-w-[280px] mx-auto select-none touch-none aspect-square"
       >
         {renderLines()}
         <div className="grid grid-cols-3 gap-0 w-full h-full">
@@ -199,7 +212,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
                 <div
                   ref={(el) => (dotsRef.current[index] = el)}
                   className={cn(
-                    "w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-xs z-10",
+                    "w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-sm z-10",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-lg scale-110"
                       : "bg-background border-2 border-muted-foreground/20 hover:border-primary/40 text-muted-foreground hover:scale-105",
@@ -220,7 +233,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
         </div>
       </div>
       
-      <div className="flex items-center gap-3 justify-center">
+      <div className="flex items-center gap-3 justify-center flex-wrap">
         <button
           type="button"
           onClick={handleClear}
