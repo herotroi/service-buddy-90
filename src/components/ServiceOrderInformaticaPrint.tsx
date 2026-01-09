@@ -257,25 +257,20 @@ export const ServiceOrderInformaticaPrint = ({ orderId, onClose }: ServiceOrderI
           body * {
             visibility: hidden;
           }
-          #root {
+          .print\\:hidden {
+            display: none !important;
+          }
+          #root,
+          #root * {
             visibility: visible;
           }
           .fixed {
             position: relative !important;
             overflow: visible !important;
           }
-          .print\\:hidden {
-            display: none !important;
-          }
-          .print\\:p-4 {
-            padding: 1rem !important;
-          }
-          .print\\:max-w-none {
-            max-width: none !important;
-          }
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 5mm;
           }
         }
       `}</style>
