@@ -227,7 +227,8 @@ export const ServiceOrdersTable = () => {
           withdrawal_situation:withdrawal_situations(name, color),
           technician:employees!service_orders_technician_id_fkey(name),
           received_by:employees!service_orders_received_by_id_fkey(name)
-        `, { count: 'exact' });
+        `, { count: 'exact' })
+        .eq('deleted', false);
 
       // Apply filters server-side
       if (debouncedFilters.search) {
@@ -289,10 +290,14 @@ export const ServiceOrdersTable = () => {
 
       if (error) throw error;
 
+      // Atualizar lista local imediatamente
       setOrders(orders.filter(order => order.id !== deleteOrder.id));
       setTotalCount(prev => prev - 1);
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
+      
+      // Recarregar dados do servidor para garantir consistência
+      fetchOrders();
     } catch (error: any) {
       toast.error('Erro ao excluir OS');
       console.error(error);

@@ -236,9 +236,13 @@ export const ServiceOrdersInformaticaTable = () => {
 
       if (error) throw error;
 
+      // Atualizar lista local imediatamente
       setOrders(orders.filter(order => order.id !== deleteOrder.id));
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
+      
+      // Recarregar dados do servidor para garantir consistência
+      fetchData();
     } catch (error: any) {
       toast.error('Erro ao excluir OS');
       console.error(error);
