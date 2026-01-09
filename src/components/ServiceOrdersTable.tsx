@@ -252,12 +252,11 @@ export const ServiceOrdersTable = () => {
       const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
       query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
 
-      // If searching, fetch more records to filter client-side for OS partial match
+      // If searching, fetch all records to filter client-side for OS partial match
+      // Otherwise use server-side pagination
       if (hasSearch) {
-        // Fetch up to 5000 records when searching to ensure we find all matches
         query = query.limit(5000);
       } else {
-        // Apply pagination only when not searching
         const from = (pagination.page - 1) * pagination.perPage;
         const to = from + pagination.perPage - 1;
         query = query.range(from, to);
@@ -273,15 +272,10 @@ export const ServiceOrdersTable = () => {
       if (hasSearch) {
         const searchLower = searchTerm.toLowerCase();
         filteredData = filteredData.filter(order => {
-          // Check OS number (partial match - contains)
           const osMatch = order.os_number?.toString().includes(searchTerm);
-          // Check device model
           const modelMatch = order.device_model?.toLowerCase().includes(searchLower);
-          // Check client name
           const nameMatch = order.client_name?.toLowerCase().includes(searchLower);
-          // Check reported defect
           const defectMatch = order.reported_defect?.toLowerCase().includes(searchLower);
-          
           return osMatch || modelMatch || nameMatch || defectMatch;
         });
       }
@@ -294,8 +288,18 @@ export const ServiceOrdersTable = () => {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
-      setOrders(filteredData);
-      setTotalCount(hasSearch ? filteredData.length : (count || 0));
+      // For search results, apply client-side pagination
+      if (hasSearch) {
+        const totalFiltered = filteredData.length;
+        const from = (pagination.page - 1) * pagination.perPage;
+        const to = from + pagination.perPage;
+        const paginatedData = filteredData.slice(from, to);
+        setOrders(paginatedData);
+        setTotalCount(totalFiltered);
+      } else {
+        setOrders(filteredData);
+        setTotalCount(count || 0);
+      }
     } catch (error: any) {
       toast.error('Erro ao carregar dados');
       console.error(error);
