@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer } from 'lucide-react';
+import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -143,6 +143,9 @@ export const ServiceOrdersTable = () => {
     page: 1,
     perPage: 10,
   });
+
+  const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('entry_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     fetchData();
@@ -299,21 +302,40 @@ export const ServiceOrdersTable = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.os_number.toString().includes(filters.search) ||
-      order.client_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      order.device_model.toLowerCase().includes(filters.search.toLowerCase());
+  const filteredOrders = orders
+    .filter(order => {
+      const matchesSearch = 
+        order.os_number.toString().includes(filters.search) ||
+        order.client_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        order.device_model.toLowerCase().includes(filters.search.toLowerCase());
 
-    const matchesSituation = filters.situation === 'all' || order.situation?.id === filters.situation;
-    const matchesTechnician = filters.technician === 'all' || order.technician?.name === filters.technician;
-    const matchesWithdrawal = filters.withdrawal === 'all' || order.withdrawal_situation?.name === filters.withdrawal;
+      const matchesSituation = filters.situation === 'all' || order.situation?.id === filters.situation;
+      const matchesTechnician = filters.technician === 'all' || order.technician?.name === filters.technician;
+      const matchesWithdrawal = filters.withdrawal === 'all' || order.withdrawal_situation?.name === filters.withdrawal;
 
-    const matchesDate = (!filters.startDate || new Date(order.entry_date) >= new Date(filters.startDate)) &&
-                       (!filters.endDate || new Date(order.entry_date) <= new Date(filters.endDate));
+      const matchesDate = (!filters.startDate || new Date(order.entry_date) >= new Date(filters.startDate)) &&
+                         (!filters.endDate || new Date(order.entry_date) <= new Date(filters.endDate));
 
-    return matchesSearch && matchesSituation && matchesTechnician && matchesWithdrawal && matchesDate;
-  });
+      return matchesSearch && matchesSituation && matchesTechnician && matchesWithdrawal && matchesDate;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'entry_date':
+          comparison = new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime();
+          break;
+        case 'client_name':
+          comparison = a.client_name.localeCompare(b.client_name);
+          break;
+        case 'os_number':
+          comparison = a.os_number - b.os_number;
+          break;
+        case 'situation':
+          comparison = (a.situation?.name || '').localeCompare(b.situation?.name || '');
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   const paginatedOrders = filteredOrders.slice(
     (pagination.page - 1) * pagination.perPage,
@@ -420,25 +442,50 @@ export const ServiceOrdersTable = () => {
         )}
       </div>
 
-      {/* Estatísticas */}
+      {/* Estatísticas e Ordenação */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
           Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
           <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
         </span>
-        <Select
-          value={pagination.perPage.toString()}
-          onValueChange={(value) => setPagination({ ...pagination, perPage: Number(value), page: 1 })}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10 por página</SelectItem>
-            <SelectItem value="25">25 por página</SelectItem>
-            <SelectItem value="50">50 por página</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-wrap">
+          <Select
+            value={sortBy}
+            onValueChange={(value: 'entry_date' | 'client_name' | 'os_number' | 'situation') => setSortBy(value)}
+          >
+            <SelectTrigger className="w-40">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="entry_date">Data de Entrada</SelectItem>
+              <SelectItem value="client_name">Nome</SelectItem>
+              <SelectItem value="os_number">Número OS</SelectItem>
+              <SelectItem value="situation">Situação</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="h-9"
+          >
+            {sortOrder === 'asc' ? '↑ Crescente' : '↓ Decrescente'}
+          </Button>
+          <Select
+            value={pagination.perPage.toString()}
+            onValueChange={(value) => setPagination({ ...pagination, perPage: Number(value), page: 1 })}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10 por página</SelectItem>
+              <SelectItem value="25">25 por página</SelectItem>
+              <SelectItem value="50">50 por página</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Cards para Mobile */}
