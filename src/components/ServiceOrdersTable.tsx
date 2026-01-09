@@ -886,6 +886,19 @@ export const ServiceOrdersTable = () => {
                   {/* Checklist Técnico */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Checklist Técnico</h3>
+                    
+                    {/* Chip e Cartão de Memória */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center justify-between p-3 rounded-md border bg-muted/50">
+                        <span className="text-sm font-medium">Chip</span>
+                        <span className="font-medium">{order.device_chip || '-'}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-md border bg-muted/50">
+                        <span className="text-sm font-medium">Tamanho do Cartão de Memória</span>
+                        <span className="font-medium">{order.memory_card_size || '-'}</span>
+                      </div>
+                    </div>
+                    
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {[
                         { key: 'checklist_houve_queda', label: 'Houve queda?' },
