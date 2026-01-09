@@ -351,15 +351,17 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           .print\\:hidden {
             display: none !important;
           }
-          #root {
+          #root,
+          #root * {
             visibility: visible;
           }
           .fixed {
-            position: relative;
+            position: relative !important;
+            overflow: visible !important;
           }
           @page {
             size: A4;
-            margin: 10mm;
+            margin: 5mm;
           }
         }
       `}</style>
