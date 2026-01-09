@@ -265,15 +265,20 @@ export const ServiceOrderInformaticaPrint = ({ orderId, onClose }: ServiceOrderI
                 <p className="text-xs mt-1">Nos siga no Instagram</p>
               </div>
             </div>
-            <div className="flex gap-8">
-              <div className="text-center">
-                <div className="w-48 border-t border-black pt-1">
-                  <p className="text-sm">Cliente</p>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm font-bold">Confirmação de Retirada!</p>
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <div className="h-16" />
+                  <div className="w-48 border-t border-black pt-1">
+                    <p className="text-sm">Cliente</p>
+                  </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className="w-48 border-t border-black pt-1">
-                  <p className="text-sm">Responsável</p>
+                <div className="text-center">
+                  <div className="h-16" />
+                  <div className="w-48 border-t border-black pt-1">
+                    <p className="text-sm">Responsável</p>
+                  </div>
                 </div>
               </div>
             </div>
