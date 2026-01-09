@@ -240,11 +240,13 @@ export const ServiceOrdersTable = () => {
         const isNumeric = /^\d+$/.test(searchTerm);
         
         if (isNumeric) {
-          // For numeric search, we need to fetch all and filter client-side for partial OS matching
-          // or use a range-based approach: find OS numbers that start with the search term
-          const minOs = parseInt(searchTerm + '0'.repeat(6 - searchTerm.length)) || 0;
-          const maxOs = parseInt(searchTerm + '9'.repeat(6 - searchTerm.length)) || 999999;
-          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%,and(os_number.gte.${minOs},os_number.lte.${maxOs})`);
+          const searchNum = parseInt(searchTerm);
+          // For numeric search: find exact match OR numbers that start with the search term
+          // e.g., searching "1246" should find 1246, 12460-12469, etc.
+          const minOs = searchNum * 10;
+          const maxOs = (searchNum + 1) * 10 - 1;
+          // Include exact match and range for "starts with"
+          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%,os_number.eq.${searchNum},and(os_number.gte.${minOs},os_number.lte.${maxOs})`);
         } else {
           // For text search, just search name and model
           query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%`);
