@@ -479,16 +479,16 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <p style={{ fontSize: '14px', fontWeight: 'bold', color: 'black' }}>Confirmação de Retirada!</p>
+              <p style={{ fontSize: '16px', fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>Confirmação de Retirada!</p>
               <div style={{ display: 'flex', gap: '64px' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ height: '64px' }} />
+                  <div style={{ height: '48px' }} />
                   <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
                     Cliente
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ height: '64px' }} />
+                  <div style={{ height: '48px' }} />
                   <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
                     Empresa
                   </div>
