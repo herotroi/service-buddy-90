@@ -10,9 +10,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-
+import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Camera, Video } from 'lucide-react';
+import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
 import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
@@ -64,7 +64,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
-  
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video' | null>(null);
 
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
     table: 'service_orders_informatica',
@@ -887,7 +887,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           </h3>
           <div className="space-y-4">
             {/* Botões de captura da câmera */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Label htmlFor="camera-photo-info" className="cursor-pointer">
                 <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer">
                   <input
@@ -923,6 +923,18 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                   </div>
                 </div>
               </Label>
+
+              <button
+                type="button"
+                onClick={() => setCameraMode('photo')}
+                disabled={uploadingMedia}
+                className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center cursor-pointer disabled:opacity-50"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Monitor className="w-8 h-8 text-primary" />
+                  <span className="text-sm font-medium">Usar Webcam</span>
+                </div>
+              </button>
 
               <Label htmlFor="media-upload-info" className="cursor-pointer md:col-span-2">
                 <div className="border-2 border-dashed border-border rounded-lg p-4 hover:border-primary transition-colors text-center h-full flex items-center justify-center">
@@ -1007,6 +1019,12 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         </div>
       </form>
 
+      <CameraCapture
+        open={cameraMode !== null}
+        onClose={() => setCameraMode(null)}
+        onCapture={handleCameraCapture}
+        mode={cameraMode || 'photo'}
+      />
     </Form>
   );
 };
