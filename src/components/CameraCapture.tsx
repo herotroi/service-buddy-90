@@ -15,50 +15,12 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const isStartingRef = useRef(false);
   
   const [isRecording, setIsRecording] = useState(false);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const startCamera = useCallback(async () => {
-    try {
-      setError(null);
-      setCameraReady(false);
-      
-      // Stop existing stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: facingMode,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        },
-        audio: mode === 'video'
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraReady(true);
-      }
-    } catch (err: any) {
-      console.error('Erro ao acessar câmera:', err);
-      if (err.name === 'NotAllowedError') {
-        setError('Permissão para câmera negada. Por favor, permita o acesso à câmera.');
-      } else if (err.name === 'NotFoundError') {
-        setError('Nenhuma câmera encontrada no dispositivo.');
-      } else {
-        setError('Erro ao acessar a câmera. Tente novamente.');
-      }
-    }
-  }, [facingMode, mode]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -70,16 +32,120 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
     }
     setCameraReady(false);
     setIsRecording(false);
+    isStartingRef.current = false;
   }, []);
 
+  const startCamera = useCallback(async () => {
+    // Prevent multiple simultaneous starts
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
+    
+    try {
+      setError(null);
+      setCameraReady(false);
+      
+      // Stop existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+
+      // Wait a bit for cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: mode === 'video'
+      };
+
+      console.log('Requesting camera access...');
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Check if component is still mounted/open
+      if (!isStartingRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          const video = videoRef.current;
+          if (!video) {
+            reject(new Error('Video element not found'));
+            return;
+          }
+          
+          const onCanPlay = () => {
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('error', onError);
+            resolve();
+          };
+          
+          const onError = () => {
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('error', onError);
+            reject(new Error('Video error'));
+          };
+          
+          video.addEventListener('canplay', onCanPlay);
+          video.addEventListener('error', onError);
+        });
+        
+        try {
+          await videoRef.current.play();
+          console.log('Camera started successfully');
+          setCameraReady(true);
+        } catch (playError: any) {
+          // Ignore AbortError as it's often just from quick unmount
+          if (playError.name !== 'AbortError') {
+            throw playError;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Erro ao acessar câmera:', err);
+      if (err.name === 'NotAllowedError') {
+        setError('Permissão para câmera negada. Por favor, permita o acesso à câmera nas configurações do navegador.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Nenhuma câmera encontrada no dispositivo.');
+      } else if (err.name === 'NotReadableError') {
+        setError('A câmera está sendo usada por outro aplicativo.');
+      } else if (err.name !== 'AbortError') {
+        setError('Erro ao acessar a câmera. Verifique as permissões do navegador.');
+      }
+    } finally {
+      isStartingRef.current = false;
+    }
+  }, [facingMode, mode]);
+
   // Start camera when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      startCamera();
+      // Small delay to ensure dialog is rendered
+      const timer = setTimeout(() => {
+        startCamera();
+      }, 200);
+      return () => clearTimeout(timer);
     } else {
       stopCamera();
     }
-  }, [open, startCamera, stopCamera]);
+  }, [open]);
+
+  // Handle facingMode change
+  useEffect(() => {
+    if (open && cameraReady) {
+      startCamera();
+    }
+  }, [facingMode]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -91,13 +157,6 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
   const switchCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   };
-
-  // Restart camera when facingMode changes
-  useEffect(() => {
-    if (open && cameraReady) {
-      startCamera();
-    }
-  }, [facingMode]);
 
   const takePhoto = () => {
     if (!videoRef.current || !cameraReady) return;
@@ -173,8 +232,11 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
         
         <div className="relative bg-black aspect-video">
           {error ? (
-            <div className="absolute inset-0 flex items-center justify-center text-white text-center p-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center p-4 gap-4">
               <p>{error}</p>
+              <Button variant="secondary" onClick={startCamera}>
+                Tentar Novamente
+              </Button>
             </div>
           ) : (
             <video
@@ -187,8 +249,9 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
           )}
           
           {!cameraReady && !error && (
-            <div className="absolute inset-0 flex items-center justify-center text-white">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <p className="text-sm">Iniciando câmera...</p>
             </div>
           )}
 
