@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface PatternLockProps {
@@ -10,8 +10,33 @@ interface PatternLockProps {
 export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => {
   const [pattern, setPattern] = useState<number[]>(value ? value.split(',').map(Number) : []);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Atualizar tamanho do container
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerSize({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    
+    // Observar mudanças no container
+    const observer = new ResizeObserver(updateSize);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      observer.disconnect();
+    };
+  }, []);
 
   // Sincronizar apenas quando não estiver desenhando e o valor externo mudar
   useEffect(() => {
@@ -21,13 +46,16 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     }
   }, [value, isDrawing]);
 
-  const addToPattern = (index: number) => {
-    if (!pattern.includes(index)) {
-      const newPattern = [...pattern, index];
-      setPattern(newPattern);
-      onChange(newPattern.join(','));
-    }
-  };
+  const addToPattern = useCallback((index: number) => {
+    setPattern(prev => {
+      if (!prev.includes(index)) {
+        const newPattern = [...prev, index];
+        onChange(newPattern.join(','));
+        return newPattern;
+      }
+      return prev;
+    });
+  }, [onChange]);
 
   const handleStart = (index: number) => {
     if (disabled) return;
@@ -37,7 +65,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     onChange(newPattern.join(','));
   };
 
-  const handleMove = (e: MouseEvent | TouchEvent) => {
+  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isDrawing || disabled) return;
 
     let clientX: number, clientY: number;
@@ -62,18 +90,14 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
         Math.pow(clientX - centerX, 2) + Math.pow(clientY - centerY, 2)
       );
       
-      // Raio de detecção aumentado (40px para facilitar o arraste)
-      const hitRadius = 40;
+      // Raio de detecção aumentado (35px para facilitar o arraste)
+      const hitRadius = 35;
       
       if (distance <= hitRadius) {
         addToPattern(index);
       }
     });
-  };
-
-  const handleEnd = () => {
-    setIsDrawing(false);
-  };
+  }, [isDrawing, disabled, addToPattern]);
 
   const handleClear = () => {
     setPattern([]);
@@ -92,7 +116,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
     };
 
     window.addEventListener('mousemove', handleGlobalMove as any);
-    window.addEventListener('touchmove', handleGlobalMove as any);
+    window.addEventListener('touchmove', handleGlobalMove as any, { passive: false });
     window.addEventListener('mouseup', handleGlobalEnd);
     window.addEventListener('touchend', handleGlobalEnd);
 
@@ -102,30 +126,38 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
       window.removeEventListener('mouseup', handleGlobalEnd);
       window.removeEventListener('touchend', handleGlobalEnd);
     };
-  }, [isDrawing, pattern, disabled]);
+  }, [isDrawing, handleMove]);
 
-  const getPosition = (index: number) => {
+  // Calcular posições baseadas no tamanho real do container
+  const getPosition = useCallback((index: number) => {
     const row = Math.floor(index / 3);
     const col = index % 3;
-    // p-8 = 32px padding + grid position
-    // Total container é 330px, grid interno é 266px (330 - 64px padding)
-    // Cada célula do grid = 266/3 ≈ 88.67px
-    const padding = 32;
-    const gridSize = 266; // 330 - (32*2)
+    
+    // Usar tamanho real do container
+    const size = containerSize.width || 280;
+    const padding = size * 0.12; // ~12% de padding
+    const gridSize = size - (padding * 2);
     const cellSize = gridSize / 3;
+    
     return {
       x: padding + col * cellSize + cellSize / 2,
       y: padding + row * cellSize + cellSize / 2,
     };
-  };
+  }, [containerSize.width]);
 
   const renderLines = () => {
-    if (pattern.length < 2) return null;
+    if (pattern.length < 2 || containerSize.width === 0) return null;
+
+    const size = containerSize.width;
+    // Tamanho do círculo proporcional ao container
+    const circleRadius = size * 0.05; // ~5% do container
+    const arrowSize = 6;
 
     return (
       <svg
         className="absolute top-0 left-0 pointer-events-none"
-        style={{ width: '330px', height: '330px' }}
+        style={{ width: size, height: size }}
+        viewBox={`0 0 ${size} ${size}`}
       >
         <defs>
           <marker
@@ -151,10 +183,6 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
           const unitX = dx / length;
           const unitY = dy / length;
           
-          // Círculo tem w-8 h-8 = 32px, raio = 16px
-          const circleRadius = 16;
-          const arrowSize = 6;
-          
           // Começa na borda do círculo de origem
           const startX = start.x + unitX * circleRadius;
           const startY = start.y + unitY * circleRadius;
@@ -170,7 +198,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
               x2={endX}
               y2={endY}
               stroke="hsl(var(--primary))"
-              strokeWidth="3.5"
+              strokeWidth="3"
               markerEnd="url(#arrowhead)"
             />
           );
@@ -180,10 +208,10 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="flex flex-col gap-3 sm:gap-4">
       <div
         ref={containerRef}
-        className="relative p-4 sm:p-8 bg-muted/20 rounded-xl border border-border w-full max-w-[280px] sm:max-w-[330px] mx-auto select-none touch-none aspect-square"
+        className="relative p-3 sm:p-6 bg-muted/20 rounded-xl border border-border w-full max-w-[240px] sm:max-w-[300px] mx-auto select-none touch-none aspect-square"
       >
         {renderLines()}
         <div className="grid grid-cols-3 gap-0 w-full h-full">
@@ -199,7 +227,7 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
                 <div
                   ref={(el) => (dotsRef.current[index] = el)}
                   className={cn(
-                    "w-8 h-8 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-xs z-10",
+                    "w-7 h-7 sm:w-9 sm:h-9 rounded-full transition-all cursor-pointer flex items-center justify-center font-semibold text-xs z-10",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-lg scale-110"
                       : "bg-background border-2 border-muted-foreground/20 hover:border-primary/40 text-muted-foreground hover:scale-105",
@@ -220,18 +248,18 @@ export const PatternLock = ({ value, onChange, disabled }: PatternLockProps) => 
         </div>
       </div>
       
-      <div className="flex items-center gap-3 justify-center">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center text-center">
         <button
           type="button"
           onClick={handleClear}
           disabled={disabled || pattern.length === 0}
-          className="text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="text-xs sm:text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Limpar padrão
         </button>
         {pattern.length > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {pattern.length} {pattern.length === 1 ? 'ponto' : 'pontos'} selecionados
+          <span className="text-xs sm:text-sm text-muted-foreground">
+            {pattern.length} {pattern.length === 1 ? 'ponto' : 'pontos'}
           </span>
         )}
       </div>
