@@ -147,127 +147,104 @@ export const ServiceOrderInformaticaPrint = ({ orderId, onClose }: ServiceOrderI
       {/* Print Content */}
       <div 
         ref={printRef} 
-        className="max-w-[210mm] mx-auto bg-white text-black p-8 print:p-4 print:max-w-none"
-        style={{ fontFamily: 'Arial, sans-serif' }}
+        className="max-w-[210mm] mx-auto bg-white text-black p-4 print:p-2 print:max-w-none"
+        style={{ fontFamily: 'Arial, sans-serif', fontSize: '11px' }}
       >
         {/* Header */}
-        <div className="border-2 border-black">
+        <div className="border border-black">
           {/* Logo and Company Info */}
-          <div className="flex justify-between items-start p-4 border-b-2 border-black">
-            <div className="flex items-start gap-4">
+          <div className="flex justify-between items-start p-2 border-b border-black">
+            <div className="flex items-start gap-2">
               {profile?.logo_url && (
                 <img 
                   src={profile.logo_url} 
                   alt="Logo" 
-                  className="w-36 h-36 object-contain"
+                  className="w-16 h-16 object-contain"
                 />
               )}
-              <div>
-                <h1 className="text-xl font-bold">{profile?.full_name || 'Empresa'}</h1>
-                {profile?.phone && <p className="text-sm">Fone: {profile.phone}</p>}
-                {getAddress() && <p className="text-sm">{getAddress()}</p>}
-                {profile?.cnpj && <p className="text-sm">CNPJ: {profile.cnpj}</p>}
+              <div className="text-xs">
+                <h1 className="text-sm font-bold">{profile?.full_name || 'Empresa'}</h1>
+                {profile?.phone && <p>Fone: {profile.phone}</p>}
+                {getAddress() && <p className="max-w-[280px]">{getAddress()}</p>}
+                {profile?.cnpj && <p>CNPJ: {profile.cnpj}</p>}
               </div>
             </div>
-            <div className="text-right border-2 border-black p-2">
-              <p className="text-sm font-bold">ORDEM DE SERVIÇO</p>
-              <p className="text-xs text-gray-600">INFORMÁTICA</p>
-              <p className="text-2xl font-bold text-blue-600">Nº {orderData.os_number}</p>
+            <div className="text-right border border-black p-1">
+              <p className="text-xs font-bold">ORDEM DE SERVIÇO</p>
+              <p className="text-[9px] text-gray-600">INFORMÁTICA</p>
+              <p className="text-lg font-bold text-blue-600">Nº {orderData.os_number}</p>
             </div>
           </div>
 
-          {/* Client Info */}
-          <div className="p-4 space-y-2 border-b-2 border-black">
-            <div className="grid grid-cols-1 gap-1">
-              <p><strong>Nome do Cliente:</strong> {orderData.client_name}</p>
-              <div className="flex gap-8">
-                <p><strong>Telefone p/ contato:</strong> {orderData.contact || '_________________'}</p>
-                {orderData.other_contacts && (
-                  <p><strong>Outro contato:</strong> {orderData.other_contacts}</p>
-                )}
-              </div>
-              <p><strong>Data de Entrada:</strong> {format(new Date(orderData.entry_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-            </div>
+          {/* Client Info - Compact */}
+          <div className="p-2 border-b border-black text-xs">
+            <p><strong>Cliente:</strong> {orderData.client_name} | <strong>Tel:</strong> {orderData.contact || '___________'} {orderData.other_contacts && `| ${orderData.other_contacts}`}</p>
+            <p><strong>Entrada:</strong> {format(new Date(orderData.entry_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
           </div>
 
-          {/* Equipment Info */}
-          <div className="p-4 border-b-2 border-black">
-            <div className="grid grid-cols-1 gap-2">
-              <p><strong>Equipamento:</strong> {orderData.equipment}</p>
-              <p><strong>Acessórios:</strong> {orderData.accessories || 'Nenhum'}</p>
-              <p><strong>Senha:</strong> {orderData.senha || '_____________'}</p>
-            </div>
+          {/* Equipment Info - Compact */}
+          <div className="p-2 border-b border-black text-xs">
+            <p><strong>Equipamento:</strong> {orderData.equipment} | <strong>Acessórios:</strong> {orderData.accessories || 'Nenhum'} | <strong>Senha:</strong> {orderData.senha || '______'}</p>
           </div>
 
-          {/* Defect */}
-          <div className="p-4 border-b-2 border-black">
-            <p className="font-bold mb-2">DEFEITO RELATADO:</p>
-            <p className="min-h-[60px] border-b border-gray-400 pb-2">
-              {orderData.defect}
-            </p>
+          {/* Defect - Compact */}
+          <div className="p-2 border-b border-black text-xs">
+            <p><strong>DEFEITO:</strong> {orderData.defect}</p>
           </div>
 
-          {/* More Details */}
+          {/* More Details - Compact */}
           {orderData.more_details && (
-            <div className="p-4 border-b-2 border-black">
-              <p className="font-bold mb-2">MAIS DETALHES:</p>
-              <p className="min-h-[40px] border-b border-gray-400 pb-2">
-                {orderData.more_details}
-              </p>
+            <div className="p-2 border-b border-black text-xs">
+              <p><strong>DETALHES:</strong> {orderData.more_details}</p>
             </div>
           )}
 
-          {/* Observations */}
+          {/* Observations - Compact */}
           {orderData.observations && (
-            <div className="p-4 border-b-2 border-black">
-              <p className="font-bold mb-2">OBSERVAÇÕES:</p>
-              <p className="min-h-[40px] border-b border-gray-400 pb-2">
-                {orderData.observations}
-              </p>
+            <div className="p-2 border-b border-black text-xs">
+              <p><strong>OBS:</strong> {orderData.observations}</p>
             </div>
           )}
 
-          {/* Value */}
-          <div className="p-4 border-b-2 border-black flex justify-between items-center">
+          {/* Value - Compact */}
+          <div className="p-2 border-b border-black text-xs">
             <p><strong>Orçamento R$</strong> {orderData.value?.toFixed(2) || '_____________'}</p>
           </div>
 
-          {/* Approval */}
-          <div className="p-4 border-b-2 border-black">
-            <div className="flex gap-8 mb-4">
-              <p>APROVADO PELO CLIENTE ( )</p>
+          {/* Approval - Compact */}
+          <div className="p-2 border-b border-black">
+            <div className="flex gap-6 mb-1 text-xs">
+              <p>APROVADO ( )</p>
               <p>NÃO APROVADO ( )</p>
             </div>
-            <div className="text-xs space-y-1">
-              <p>Item I: O equipamento aprovado ou não aprovado o serviço pelo cliente não poderá ser retirado por terceiros sem aviso prévio do proprietário ou sem a 2ª via da ordem do serviço.</p>
-              <p>Item II: A assistência técnica oferece 90 dias de garantia das peças trocadas após a entrega do equipamento, mas não poderá haver violação do lacre de segurança. A garantia não cobre danos causados por ação física (mal uso) quedas ou contato com líquido.</p>
-              <p>Item III: O cliente é total responsável pela procedência do equipamento, estando a assistência técnica isenta de qualquer responsabilidade da origem da mesma.</p>
-              <p>Item IV: A assistência técnica não é responsável pelos arquivos contidos no equipamento (fotos, vídeos, documentos), pois os arquivos podem ser removidos em algum serviço e, o backup deve ser realizado pelo cliente.</p>
-              <p>Item V: Após a confirmação do conserto ou reparo do equipamento, o cliente terá 30 dias para retirada do mesmo, caso contrário, será removido a peça colocada, para sanar as despesas da assistência técnica.</p>
-              <p>Item VI: Declaro estar de acordo com os itens acima e concordo com as descrições listadas pelo atendente e condições do equipamento.</p>
+            <div className="text-[8px] space-y-0 leading-tight">
+              <p><strong>I:</strong> O equipamento não poderá ser retirado por terceiros sem aviso prévio do proprietário ou 2ª via da OS.</p>
+              <p><strong>II:</strong> Garantia de 90 dias das peças trocadas. Não cobre danos por mal uso, quedas ou líquidos.</p>
+              <p><strong>III:</strong> O cliente é responsável pela procedência do equipamento.</p>
+              <p><strong>IV:</strong> Não somos responsáveis por arquivos. Backup é responsabilidade do cliente.</p>
+              <p><strong>V:</strong> Prazo de 30 dias para retirada após confirmação do conserto.</p>
+              <p><strong>VI:</strong> Declaro estar de acordo com os itens acima.</p>
             </div>
           </div>
 
-          {/* QR Code and Signatures */}
-          <div className="p-4 flex justify-between items-end">
+          {/* QR Code and Signatures - Compact */}
+          <div className="p-2 flex justify-between items-end">
             {printQrCodeEnabled ? (
               <div className="text-center">
-                <QRCodeSVG value={trackingUrl} size={80} />
-                <p className="text-xs mt-1">Acompanhe seu serviço</p>
+                <QRCodeSVG value={trackingUrl} size={50} />
+                <p className="text-[8px]">Acompanhe</p>
               </div>
             ) : (
               <div />
             )}
             <div className="flex gap-8">
               <div className="text-center">
-                <div className="w-48 border-t border-black pt-1">
-                  <p className="text-sm">Cliente</p>
-                </div>
+                <div className="h-8" />
+                <div className="border-t border-black w-32 pt-0.5 text-[10px]">Cliente</div>
               </div>
               <div className="text-center">
-                <div className="w-48 border-t border-black pt-1">
-                  <p className="text-sm">Responsável</p>
-                </div>
+                <div className="h-8" />
+                <div className="border-t border-black w-32 pt-0.5 text-[10px]">Responsável</div>
               </div>
             </div>
           </div>
