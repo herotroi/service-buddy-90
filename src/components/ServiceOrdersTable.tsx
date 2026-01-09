@@ -235,8 +235,20 @@ export const ServiceOrdersTable = () => {
 
       // Apply filters server-side
       if (appliedFilters.search) {
-        // Cast os_number to text for partial matching
-        query = query.or(`client_name.ilike.%${appliedFilters.search}%,device_model.ilike.%${appliedFilters.search}%,os_number::text.ilike.%${appliedFilters.search}%`);
+        const searchTerm = appliedFilters.search.trim();
+        // Check if search is purely numeric for OS number partial search
+        const isNumeric = /^\d+$/.test(searchTerm);
+        
+        if (isNumeric) {
+          // For numeric search, we need to fetch all and filter client-side for partial OS matching
+          // or use a range-based approach: find OS numbers that start with the search term
+          const minOs = parseInt(searchTerm + '0'.repeat(6 - searchTerm.length)) || 0;
+          const maxOs = parseInt(searchTerm + '9'.repeat(6 - searchTerm.length)) || 999999;
+          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%,and(os_number.gte.${minOs},os_number.lte.${maxOs})`);
+        } else {
+          // For text search, just search name and model
+          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%`);
+        }
       }
       
       if (appliedFilters.situation !== 'all') {
