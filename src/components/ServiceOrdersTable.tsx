@@ -151,24 +151,24 @@ export const ServiceOrdersTable = () => {
   const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('os_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Debounce search to avoid too many requests
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  // Search state - only applied when button is clicked
+  const [appliedFilters, setAppliedFilters] = useState(filters);
   
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedFilters(filters);
-      // Reset to page 1 when filters change
-      if (JSON.stringify(filters) !== JSON.stringify(debouncedFilters)) {
-        setPagination(prev => ({ ...prev, page: 1 }));
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [filters]);
+  const handleSearch = () => {
+    setAppliedFilters(filters);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
 
-  // Fetch orders when filters, pagination or sorting changes
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  // Fetch orders when applied filters, pagination or sorting changes
   useEffect(() => {
     fetchOrders();
-  }, [pagination.page, pagination.perPage, sortBy, sortOrder, debouncedFilters]);
+  }, [pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters]);
 
   // Fetch filter options on mount
   useEffect(() => {
@@ -234,20 +234,21 @@ export const ServiceOrdersTable = () => {
         .eq('deleted', false);
 
       // Apply filters server-side
-      if (debouncedFilters.search) {
-        query = query.or(`client_name.ilike.%${debouncedFilters.search}%,device_model.ilike.%${debouncedFilters.search}%,os_number.eq.${parseInt(debouncedFilters.search) || 0}`);
+      if (appliedFilters.search) {
+        // Cast os_number to text for partial matching
+        query = query.or(`client_name.ilike.%${appliedFilters.search}%,device_model.ilike.%${appliedFilters.search}%,os_number::text.ilike.%${appliedFilters.search}%`);
       }
       
-      if (debouncedFilters.situation !== 'all') {
-        query = query.eq('situation_id', debouncedFilters.situation);
+      if (appliedFilters.situation !== 'all') {
+        query = query.eq('situation_id', appliedFilters.situation);
       }
       
-      if (debouncedFilters.startDate) {
-        query = query.gte('entry_date', debouncedFilters.startDate);
+      if (appliedFilters.startDate) {
+        query = query.gte('entry_date', appliedFilters.startDate);
       }
       
-      if (debouncedFilters.endDate) {
-        query = query.lte('entry_date', debouncedFilters.endDate + 'T23:59:59');
+      if (appliedFilters.endDate) {
+        query = query.lte('entry_date', appliedFilters.endDate + 'T23:59:59');
       }
 
       // Apply sorting
@@ -265,11 +266,11 @@ export const ServiceOrdersTable = () => {
 
       // Filter by technician and withdrawal client-side (join fields)
       let filteredData = data || [];
-      if (debouncedFilters.technician !== 'all') {
-        filteredData = filteredData.filter(o => o.technician?.name === debouncedFilters.technician);
+      if (appliedFilters.technician !== 'all') {
+        filteredData = filteredData.filter(o => o.technician?.name === appliedFilters.technician);
       }
-      if (debouncedFilters.withdrawal !== 'all') {
-        filteredData = filteredData.filter(o => o.withdrawal_situation?.name === debouncedFilters.withdrawal);
+      if (appliedFilters.withdrawal !== 'all') {
+        filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
       setOrders(filteredData);
@@ -337,10 +338,19 @@ export const ServiceOrdersTable = () => {
               placeholder="Buscar por OS, nome ou modelo..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              onKeyDown={handleKeyPress}
               className="pl-10 transition-all"
             />
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={handleSearch}
+              variant="secondary"
+              className="shrink-0"
+            >
+              <Search className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Pesquisar</span>
+            </Button>
             <Button
               onClick={() => setShowNewOrderDrawer(true)}
               className="flex-1 sm:flex-none shrink-0"
@@ -359,14 +369,16 @@ export const ServiceOrdersTable = () => {
             <Button
               variant="ghost"
               onClick={() => {
-                setFilters({
+                const clearedFilters = {
                   search: '',
                   situation: 'all',
                   technician: 'all',
                   withdrawal: 'all',
                   startDate: '',
                   endDate: '',
-                });
+                };
+                setFilters(clearedFilters);
+                setAppliedFilters(clearedFilters);
                 setSortBy('entry_date');
                 setSortOrder('desc');
                 setPagination({ page: 1, perPage: 10 });
