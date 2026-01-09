@@ -161,108 +161,165 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
       {/* Print Content */}
       <div 
         ref={printRef} 
-        className="max-w-[210mm] mx-auto bg-white text-black p-4 print:p-2 print:max-w-none"
-        style={{ fontFamily: 'Arial, sans-serif', fontSize: '11px' }}
+        className="max-w-[210mm] mx-auto bg-white text-black p-8 print:p-4 print:max-w-none"
+        style={{ fontFamily: 'Arial, sans-serif' }}
       >
         {/* Header */}
-        <div className="border border-black">
+        <div className="border-2 border-black">
           {/* Logo and Company Info */}
-          <div className="flex justify-between items-start p-2 border-b border-black">
-            <div className="flex items-start gap-2">
+          <div className="flex justify-between items-start p-4 border-b-2 border-black">
+            <div className="flex items-start gap-4">
               {profile?.logo_url && (
                 <img 
                   src={profile.logo_url} 
                   alt="Logo" 
-                  className="w-16 h-16 object-contain"
+                  className="w-36 h-36 object-contain"
                 />
               )}
-              <div className="text-xs">
-                <h1 className="text-sm font-bold">{profile?.full_name || 'Empresa'}</h1>
-                {profile?.phone && <p>Fone: {profile.phone}</p>}
-                {getAddress() && <p className="max-w-[280px]">{getAddress()}</p>}
-                {profile?.cnpj && <p>CNPJ: {profile.cnpj}</p>}
+              <div>
+                <h1 className="text-xl font-bold">{profile?.full_name || 'Empresa'}</h1>
+                {profile?.phone && <p className="text-sm">Fone: {profile.phone}</p>}
+                {getAddress() && <p className="text-sm">{getAddress()}</p>}
+                {profile?.cnpj && <p className="text-sm">CNPJ: {profile.cnpj}</p>}
               </div>
             </div>
-            <div className="text-right border border-black p-1">
-              <p className="text-xs font-bold">ORDEM DE SERVIÇO</p>
-              <p className="text-lg font-bold text-red-600">Nº {orderData.os_number}</p>
+            <div className="text-right border-2 border-black p-2">
+              <p className="text-sm font-bold">ORDEM DE SERVIÇO</p>
+              <p className="text-2xl font-bold text-red-600">Nº {orderData.os_number}</p>
             </div>
           </div>
 
           {/* Client Info */}
-          <div className="p-2 border-b border-black text-xs">
-            <p><strong>Cliente:</strong> {orderData.client_name} | <strong>CPF:</strong> {orderData.client_cpf || '___________'} | <strong>Tel:</strong> {orderData.contact || orderData.other_contacts || '___________'}</p>
-            {orderData.client_address && <p><strong>Endereço:</strong> {orderData.client_address}</p>}
-            <p><strong>Aparelho:</strong> {orderData.device_model}</p>
+          <div className="p-4 space-y-2 border-b-2 border-black">
+            <div className="grid grid-cols-1 gap-1">
+              <p><strong>Nome do Cliente:</strong> {orderData.client_name}</p>
+              <div className="flex gap-8">
+                <p><strong>CPF:</strong> {orderData.client_cpf || '_________________'}</p>
+                <p><strong>Telefone p/ contato:</strong> {orderData.contact || orderData.other_contacts || '_________________'}</p>
+              </div>
+              {orderData.client_address && (
+                <p><strong>Endereço:</strong> {orderData.client_address}</p>
+              )}
+              <p><strong>Aparelho:</strong> {orderData.device_model}</p>
+            </div>
           </div>
 
-          {/* Checklist - Compact 3 columns */}
-          <div className="p-2 border-b border-black">
-            <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px]">
+          {/* Checklist */}
+          <div className="p-4 border-b-2 border-black">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Houve queda?</span>
-                <span>({orderData.checklist_houve_queda ? 'X' : ' '}) S ({!orderData.checklist_houve_queda && orderData.checklist_houve_queda !== null ? 'X' : ' '}) N</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_houve_queda === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_houve_queda === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Carrega</span>
-                <span>({orderData.checklist_carrega ? 'X' : ' '}) S ({!orderData.checklist_carrega && orderData.checklist_carrega !== null ? 'X' : ' '}) N</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_carrega === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_carrega === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Tela quebrada</span>
-                <span>({orderData.checklist_tela_quebrada ? 'X' : ' '}) S ({!orderData.checklist_tela_quebrada && orderData.checklist_tela_quebrada !== null ? 'X' : ' '}) N</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_tela_quebrada === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_tela_quebrada === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Vidro trincado</span>
-                <span>({orderData.checklist_vidro_trincado ? 'X' : ' '}) S ({!orderData.checklist_vidro_trincado && orderData.checklist_vidro_trincado !== null ? 'X' : ' '}) N</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_vidro_trincado === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_vidro_trincado === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Manchas tela</span>
-                <span>({orderData.checklist_manchas_tela ? 'X' : ' '}) S ({!orderData.checklist_manchas_tela && orderData.checklist_manchas_tela !== null ? 'X' : ' '}) N</span>
+                <span>Manchas na tela</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_manchas_tela === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_manchas_tela === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Carcaça torta</span>
-                <span>({orderData.checklist_carcaca_torta ? 'X' : ' '}) S ({!orderData.checklist_carcaca_torta && orderData.checklist_carcaca_torta !== null ? 'X' : ' '}) N</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_carcaca_torta === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_carcaca_torta === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Riscos tampa</span>
-                <span>({orderData.checklist_riscos_tampa ? 'X' : ' '}) S ({!orderData.checklist_riscos_tampa && orderData.checklist_riscos_tampa !== null ? 'X' : ' '}) N</span>
+                <span>Riscos na tampa traseira</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_riscos_tampa === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_riscos_tampa === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Riscos laterais</span>
-                <span>({orderData.checklist_riscos_laterais ? 'X' : ' '}) S ({!orderData.checklist_riscos_laterais && orderData.checklist_riscos_laterais !== null ? 'X' : ' '}) N</span>
+                <span>Riscos nas laterais</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_riscos_laterais === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_riscos_laterais === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Vidro câmera</span>
-                <span>({orderData.checklist_vidro_camera ? 'X' : ' '}) S ({!orderData.checklist_vidro_camera && orderData.checklist_vidro_camera !== null ? 'X' : ' '}) N</span>
+                <span>Vidro da câmera trincado/quebrado</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_vidro_camera === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_vidro_camera === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
               <div className="flex justify-between">
-                <span>Face ID</span>
-                <span>({orderData.checklist_face_id ? 'X' : ' '}) On ({!orderData.checklist_face_id && orderData.checklist_face_id !== null ? 'X' : ' '}) Off</span>
+                <span>Face ID (IPHONE)</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_face_id === true ? 'X' : ' '}</span>) On 
+                  (<span className="text-orange-500">{orderData.checklist_face_id === false ? 'X' : ' '}</span>) Off
+                </span>
+              </div>
+              <div className="flex justify-between col-span-2">
+                <span>Acompanha acessórios</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_chip === true ? 'X' : ' '}</span>) Chip 
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_sd === true ? 'X' : ' '}</span>) SD 
+                  (<span className="text-orange-500">{orderData.checklist_acompanha_capa === true ? 'X' : ' '}</span>) Capa
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Está ligado</span>
-                <span>({orderData.checklist_esta_ligado ? 'X' : ' '}) S ({!orderData.checklist_esta_ligado && orderData.checklist_esta_ligado !== null ? 'X' : ' '}) N</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Acessórios</span>
-                <span>({orderData.checklist_acompanha_chip ? 'X' : ' '}) Chip ({orderData.checklist_acompanha_sd ? 'X' : ' '}) SD ({orderData.checklist_acompanha_capa ? 'X' : ' '}) Capa</span>
+                <span>
+                  (<span className="text-orange-500">{orderData.checklist_esta_ligado === true ? 'X' : ' '}</span>) SIM 
+                  (<span className="text-orange-500">{orderData.checklist_esta_ligado === false ? 'X' : ' '}</span>) Não
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Defect - Compact */}
-          <div className="p-2 border-b border-black text-xs">
-            <p><strong>DEFEITO:</strong> {orderData.reported_defect}</p>
+          {/* Defect */}
+          <div className="p-4 border-b-2 border-black">
+            <p className="font-bold mb-2">DEFEITOS RELATADOS PELO CLIENTE:</p>
+            <p className="min-h-[60px] border-b border-gray-400 pb-2">
+              {orderData.reported_defect}
+            </p>
           </div>
 
-          {/* Password, Pattern and Value - Compact row */}
-          <div className="p-2 border-b border-black flex justify-between items-center text-xs">
-            <div className="flex items-center gap-4">
-              <p><strong>SENHA:</strong> {orderData.device_password || '______'}</p>
-              <div className="flex items-center gap-1">
+          {/* Password and Value */}
+          <div className="p-4 border-b-2 border-black flex justify-between items-center">
+            <div className="flex items-center gap-8">
+              <p><strong>SENHA TEXTO:</strong> {orderData.device_password || '_____________'}</p>
+              {/* Pattern Lock visual representation */}
+              <div className="flex items-center gap-3">
                 <p><strong>PADRÃO:</strong></p>
                 {orderData.device_pattern ? (
-                  <svg width="50" height="50" viewBox="0 0 80 80" className="border border-black rounded">
+                  <svg width="80" height="80" viewBox="0 0 80 80" className="border border-black rounded">
+                    {/* Grid lines for reference */}
+                    {[20, 40, 60].map(pos => (
+                      <g key={pos}>
+                        <line x1={pos} y1="5" x2={pos} y2="75" stroke="#ddd" strokeWidth="0.5" />
+                        <line x1="5" y1={pos} x2="75" y2={pos} stroke="#ddd" strokeWidth="0.5" />
+                      </g>
+                    ))}
+                    {/* Connection lines */}
                     {(() => {
                       const points = orderData.device_pattern.split(',').map(Number);
                       const getPos = (n: number) => ({ x: (n % 3) * 25 + 15, y: Math.floor(n / 3) * 25 + 15 });
@@ -270,10 +327,19 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                         const from = getPos(point);
                         const to = getPos(points[idx + 1]);
                         return (
-                          <line key={`line-${idx}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="black" strokeWidth="2" />
+                          <line
+                            key={`line-${idx}`}
+                            x1={from.x}
+                            y1={from.y}
+                            x2={to.x}
+                            y2={to.y}
+                            stroke="black"
+                            strokeWidth="2"
+                          />
                         );
                       });
                     })()}
+                    {/* Dots with numbers */}
                     {[0,1,2,3,4,5,6,7,8].map(n => {
                       const x = (n % 3) * 25 + 15;
                       const y = Math.floor(n / 3) * 25 + 15;
@@ -281,63 +347,82 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                       const order = orderData.device_pattern?.split(',').indexOf(n.toString());
                       return (
                         <g key={n}>
-                          <circle cx={x} cy={y} r="7" fill={isSelected ? 'black' : 'white'} stroke="black" strokeWidth="1" />
-                          {isSelected && order !== undefined && order >= 0 && (
-                            <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fontSize="7" fontWeight="bold" fill="white">
-                              {order + 1}
-                            </text>
-                          )}
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="8"
+                            fill={isSelected ? 'black' : 'white'}
+                            stroke="black"
+                            strokeWidth="1.5"
+                          />
+                          <text
+                            x={x}
+                            y={y + 1}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fontSize="8"
+                            fontWeight="bold"
+                            fill={isSelected ? 'white' : 'black'}
+                          >
+                            {isSelected && order !== undefined && order >= 0 ? order + 1 : ''}
+                          </text>
                         </g>
                       );
                     })}
                   </svg>
-                ) : <span>-</span>}
+                ) : (
+                  <span className="text-gray-500">Não definido</span>
+                )}
               </div>
             </div>
-            <p><strong>Orçamento R$</strong> {orderData.value?.toFixed(2) || '_______'}</p>
+            <p><strong>Orçamento R$</strong> {orderData.value?.toFixed(2) || '_____________'}</p>
           </div>
 
-          {/* Approval - Compact */}
-          <div className="p-2 border-b border-black">
-            <div className="flex gap-6 mb-1 text-xs">
-              <p>APROVADO ( )</p>
+          {/* Approval */}
+          <div className="p-4 border-b-2 border-black">
+            <div className="flex gap-8 mb-4">
+              <p>APROVADO PELO CLIENTE ( )</p>
               <p>NÃO APROVADO ( )</p>
             </div>
-            <div className="text-[8px] space-y-0 leading-tight">
-              <p><strong>I:</strong> O aparelho não poderá ser retirado por terceiros sem aviso prévio do proprietário ou 2ª via da OS.</p>
-              <p><strong>II:</strong> Garantia de 90 dias das peças trocadas. Não cobre danos por mal uso, quedas ou líquidos.</p>
-              <p><strong>III:</strong> O cliente é responsável pela procedência do aparelho.</p>
-              <p><strong>IV:</strong> Não somos responsáveis por arquivos. Backup é responsabilidade do cliente.</p>
-              <p><strong>V:</strong> Prazo de 30 dias para retirada após confirmação do conserto.</p>
-              <p><strong>VI:</strong> Declaro estar de acordo com os itens acima.</p>
+            <div className="text-xs space-y-1">
+              <p>Item I: O aparelho aprovado ou não aprovado o serviço pelo cliente não poderá ser retirado por terceiros sem aviso prévio do proprietário ou sem a 2ª via da ordem do serviço.</p>
+              <p>Item II: A assistência técnica oferece 90 dias de garantia das peças trocadas após a entrega do aparelho, mas não poderá haver violação do lacre de segurança. A garantia não cobre danos causados por ação física (mal uso) quedas ou contato com líquido.</p>
+              <p>Item III: O cliente é total responsável pela procedência do aparelho, estando a assistência técnica isenta de qualquer responsabilidade da origem da mesma.</p>
+              <p>Item IV: A assistência técnica não é responsável pelos arquivos contidos no aparelho (fotos, vídeos, contatos), pois os arquivos podem ser removidos em algum serviço e, o backup deve ser realizado pelo cliente.</p>
+              <p>Item V: Após A confirmação do conserto ou reparo do aparelho, o cliente terá 30 dias para retirada do mesmo, caso contrário, será removido a peça colocada, para sanar as despesas da assistência técnica.</p>
+              <p>Item VI: Declaro estar de acordo com os itens acima e concordo com as descrições listadas pelo atendente e condições do aparelho.</p>
             </div>
           </div>
 
-          {/* QR Code and Signatures - Compact */}
-          <div className="p-2 flex justify-between items-end">
+          {/* QR Code and Signatures */}
+          <div className="p-4 flex justify-between items-end">
             {printQrCodeEnabled ? (
               <div className="text-center">
-                <QRCodeSVG value={trackingUrl} size={50} />
-                <p className="text-[8px]">Acompanhe</p>
+                <QRCodeSVG value={trackingUrl} size={80} />
+                <p className="text-xs mt-1">Acompanhe seu serviço</p>
               </div>
             ) : (
-              <div className="w-12" />
+              <div className="w-20" />
             )}
-            <div className="flex gap-8">
+            <div className="flex gap-16">
               <div className="text-center">
-                <div className="h-8" />
-                <div className="border-t border-black w-32 pt-0.5 text-[10px]">Cliente</div>
+                <div className="h-16" />
+                <div className="border-t border-black w-48 pt-1">
+                  Cliente
+                </div>
               </div>
               <div className="text-center">
-                <div className="h-8" />
-                <div className="border-t border-black w-32 pt-0.5 text-[10px]">Empresa</div>
+                <div className="h-16" />
+                <div className="border-t border-black w-48 pt-1">
+                  Empresa
+                </div>
               </div>
             </div>
           </div>
 
           {/* Date */}
-          <div className="p-1 text-center border-t border-black text-[10px]">
-            Entrada: {format(new Date(orderData.entry_date), "dd/MM/yyyy", { locale: ptBR })}
+          <div className="p-2 text-center border-t-2 border-black text-sm">
+            Data de Entrada: {format(new Date(orderData.entry_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </div>
         </div>
       </div>
@@ -351,17 +436,15 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
           .print\\:hidden {
             display: none !important;
           }
-          #root,
-          #root * {
+          #root {
             visibility: visible;
           }
           .fixed {
-            position: relative !important;
-            overflow: visible !important;
+            position: relative;
           }
           @page {
             size: A4;
-            margin: 5mm;
+            margin: 10mm;
           }
         }
       `}</style>
