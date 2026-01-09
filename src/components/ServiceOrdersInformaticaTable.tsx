@@ -162,7 +162,7 @@ export const ServiceOrdersInformaticaTable = () => {
             received_by:employees!service_orders_informatica_received_by_id_fkey(name),
             equipment_location:local_equipamento(name, color)
           `)
-          .order('created_at', { ascending: false }),
+          .order('os_number', { ascending: false }),
         supabase.from('situacao_informatica').select('*'),
         supabase.from('local_equipamento').select('*'),
         supabase.from('retirada_informatica').select('*'),

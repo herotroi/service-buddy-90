@@ -145,7 +145,7 @@ export const ServiceOrdersTable = () => {
   });
   const [totalCount, setTotalCount] = useState(0);
 
-  const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('entry_date');
+  const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('os_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Debounce search to avoid too many requests
