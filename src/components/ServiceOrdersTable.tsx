@@ -141,14 +141,35 @@ export const ServiceOrdersTable = () => {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    perPage: 10,
+    perPage: 50,
   });
+  const [totalCount, setTotalCount] = useState(0);
 
   const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('entry_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Debounce search to avoid too many requests
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+  
   useEffect(() => {
-    fetchData();
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters);
+      // Reset to page 1 when filters change
+      if (JSON.stringify(filters) !== JSON.stringify(debouncedFilters)) {
+        setPagination(prev => ({ ...prev, page: 1 }));
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
+  // Fetch orders when filters, pagination or sorting changes
+  useEffect(() => {
+    fetchOrders();
+  }, [pagination.page, pagination.perPage, sortBy, sortOrder, debouncedFilters]);
+
+  // Fetch filter options on mount
+  useEffect(() => {
+    fetchFilterOptions();
 
     // Configurar realtime para service_orders
     const channel = supabase
@@ -162,16 +183,8 @@ export const ServiceOrdersTable = () => {
         },
         (payload) => {
           console.log('Realtime update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Buscar a ordem completa com relações
-            fetchSingleOrder(payload.new.id);
-          } else if (payload.eventType === 'UPDATE') {
-            // Buscar a ordem atualizada com relações
-            fetchSingleOrder(payload.new.id);
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
-          }
+          // Refetch current page on any change
+          fetchOrders();
         }
       )
       .subscribe();
@@ -181,46 +194,9 @@ export const ServiceOrdersTable = () => {
     };
   }, []);
 
-  const fetchAllOrders = async () => {
-    // Buscar todos os registros em lotes para superar limite de 1000
-    const batchSize = 1000;
-    let allOrders: ServiceOrder[] = [];
-    let from = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { data, error } = await supabase
-        .from('service_orders')
-        .select(`
-          *,
-          situation:situations(id, name, color),
-          withdrawal_situation:withdrawal_situations(name, color),
-          technician:employees!service_orders_technician_id_fkey(name),
-          received_by:employees!service_orders_received_by_id_fkey(name)
-        `)
-        .order('created_at', { ascending: false })
-        .range(from, from + batchSize - 1);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        allOrders = [...allOrders, ...data];
-        from += batchSize;
-        hasMore = data.length === batchSize;
-      } else {
-        hasMore = false;
-      }
-    }
-
-    return allOrders;
-  };
-
-  const fetchData = async () => {
+  const fetchFilterOptions = async () => {
     try {
-      setLoading(true);
-      
-      const [ordersData, situationsData, techniciansData, withdrawalData] = await Promise.all([
-        fetchAllOrders(),
+      const [situationsData, techniciansData, withdrawalData] = await Promise.all([
         supabase.from('situations').select('*'),
         supabase.from('employees').select('*').eq('type', 'Técnico'),
         supabase.from('withdrawal_situations').select('*'),
@@ -230,21 +206,20 @@ export const ServiceOrdersTable = () => {
       if (techniciansData.error) throw techniciansData.error;
       if (withdrawalData.error) throw withdrawalData.error;
 
-      setOrders(ordersData || []);
       setSituations(situationsData.data || []);
       setTechnicians(techniciansData.data || []);
       setWithdrawalSituations(withdrawalData.data || []);
     } catch (error: any) {
-      toast.error('Erro ao carregar dados');
-      console.error(error);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar opções de filtro:', error);
     }
   };
 
-  const fetchSingleOrder = async (orderId: string) => {
+  const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      // Build query with server-side filtering and pagination
+      let query = supabase
         .from('service_orders')
         .select(`
           *,
@@ -252,35 +227,56 @@ export const ServiceOrdersTable = () => {
           withdrawal_situation:withdrawal_situations(name, color),
           technician:employees!service_orders_technician_id_fkey(name),
           received_by:employees!service_orders_received_by_id_fkey(name)
-        `)
-        .eq('id', orderId)
-        .maybeSingle();
+        `, { count: 'exact' });
+
+      // Apply filters server-side
+      if (debouncedFilters.search) {
+        query = query.or(`client_name.ilike.%${debouncedFilters.search}%,device_model.ilike.%${debouncedFilters.search}%,os_number.eq.${parseInt(debouncedFilters.search) || 0}`);
+      }
+      
+      if (debouncedFilters.situation !== 'all') {
+        query = query.eq('situation_id', debouncedFilters.situation);
+      }
+      
+      if (debouncedFilters.startDate) {
+        query = query.gte('entry_date', debouncedFilters.startDate);
+      }
+      
+      if (debouncedFilters.endDate) {
+        query = query.lte('entry_date', debouncedFilters.endDate + 'T23:59:59');
+      }
+
+      // Apply sorting
+      const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
+      query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
+
+      // Apply pagination
+      const from = (pagination.page - 1) * pagination.perPage;
+      const to = from + pagination.perPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
 
       if (error) throw error;
 
-      // Se não encontrou (pode ter sido soft-deleted), remover da lista
-      if (!data) {
-        setOrders(prev => prev.filter(o => o.id !== orderId));
-        return;
+      // Filter by technician and withdrawal client-side (join fields)
+      let filteredData = data || [];
+      if (debouncedFilters.technician !== 'all') {
+        filteredData = filteredData.filter(o => o.technician?.name === debouncedFilters.technician);
+      }
+      if (debouncedFilters.withdrawal !== 'all') {
+        filteredData = filteredData.filter(o => o.withdrawal_situation?.name === debouncedFilters.withdrawal);
       }
 
-      setOrders(prev => {
-        const index = prev.findIndex(o => o.id === orderId);
-        if (index !== -1) {
-          // Atualizar ordem existente
-          const newOrders = [...prev];
-          newOrders[index] = data;
-          return newOrders;
-        } else {
-          // Adicionar nova ordem
-          return [data, ...prev];
-        }
-      });
+      setOrders(filteredData);
+      setTotalCount(count || 0);
     } catch (error: any) {
-      console.error('Erro ao buscar ordem:', error);
+      toast.error('Erro ao carregar dados');
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
-
 
   const handleDelete = async () => {
     if (!deleteOrder) return;
@@ -294,6 +290,7 @@ export const ServiceOrdersTable = () => {
       if (error) throw error;
 
       setOrders(orders.filter(order => order.id !== deleteOrder.id));
+      setTotalCount(prev => prev - 1);
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
     } catch (error: any) {
@@ -302,47 +299,8 @@ export const ServiceOrdersTable = () => {
     }
   };
 
-  const filteredOrders = orders
-    .filter(order => {
-      const matchesSearch = 
-        order.os_number.toString().includes(filters.search) ||
-        order.client_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        order.device_model.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesSituation = filters.situation === 'all' || order.situation?.id === filters.situation;
-      const matchesTechnician = filters.technician === 'all' || order.technician?.name === filters.technician;
-      const matchesWithdrawal = filters.withdrawal === 'all' || order.withdrawal_situation?.name === filters.withdrawal;
-
-      const matchesDate = (!filters.startDate || new Date(order.entry_date) >= new Date(filters.startDate)) &&
-                         (!filters.endDate || new Date(order.entry_date) <= new Date(filters.endDate));
-
-      return matchesSearch && matchesSituation && matchesTechnician && matchesWithdrawal && matchesDate;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case 'entry_date':
-          comparison = new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime();
-          break;
-        case 'client_name':
-          comparison = a.client_name.localeCompare(b.client_name);
-          break;
-        case 'os_number':
-          comparison = a.os_number - b.os_number;
-          break;
-        case 'situation':
-          comparison = (a.situation?.name || '').localeCompare(b.situation?.name || '');
-          break;
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-
-  const paginatedOrders = filteredOrders.slice(
-    (pagination.page - 1) * pagination.perPage,
-    pagination.page * pagination.perPage
-  );
-
-  const totalPages = Math.ceil(filteredOrders.length / pagination.perPage);
+  // Orders are already filtered and sorted server-side, just use them directly
+  const totalPages = Math.ceil(totalCount / pagination.perPage);
 
   if (loading) {
     return (
@@ -465,8 +423,8 @@ export const ServiceOrdersTable = () => {
       {/* Estatísticas e Ordenação */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
-          Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
-          <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
+          Mostrando <span className="font-medium text-foreground">{orders.length}</span> de{' '}
+          <span className="font-medium text-foreground">{totalCount}</span> OS
         </span>
         <div className="flex gap-2 flex-wrap">
           <Select
@@ -511,12 +469,12 @@ export const ServiceOrdersTable = () => {
       {/* Cards para Mobile */}
       {isMobile ? (
         <div className="space-y-3">
-          {paginatedOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               Nenhuma ordem de serviço encontrada
             </div>
           ) : (
-            paginatedOrders.map((order) => (
+            orders.map((order) => (
               <Card key={order.id} className="overflow-hidden" style={{ backgroundColor: getSoftBackgroundColor(order.situation?.color) }}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -604,14 +562,14 @@ export const ServiceOrdersTable = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedOrders.length === 0 ? (
+                {orders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                       Nenhuma ordem de serviço encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedOrders.map((order) => (
+                  orders.map((order) => (
                     <TableRow key={order.id} className="hover:bg-muted/50 transition-colors" style={{ backgroundColor: getSoftBackgroundColor(order.situation?.color) }}>
                       <TableCell className="font-mono font-bold text-primary">
                         #{order.os_number}
@@ -755,7 +713,7 @@ export const ServiceOrdersTable = () => {
               <ServiceOrderForm 
                 onSuccess={() => {
                   setShowNewOrderDrawer(false);
-                  fetchData();
+                  fetchOrders();
                 }}
                 onCancel={() => setShowNewOrderDrawer(false)}
               />
@@ -1063,7 +1021,7 @@ export const ServiceOrdersTable = () => {
                 orderId={editOrderId || undefined}
                 onSuccess={() => {
                   setEditOrderId(null);
-                  fetchData();
+                  fetchOrders();
                 }}
                 onCancel={() => setEditOrderId(null)}
               />
