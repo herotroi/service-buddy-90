@@ -849,48 +849,6 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="device_brand"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Marca</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Apple, Samsung, Motorola" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="device_chip"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Chip</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Claro, Vivo, Tim, Oi" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="memory_card_size"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tamanho do Cartão de Memória</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: 32GB, 64GB, 128GB" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="md:col-span-2">
               <FormItem>
                 <FormLabel>Senha do Aparelho</FormLabel>
@@ -975,6 +933,37 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 )}
               />
             ))}
+          </div>
+          
+          {/* Campos descritivos do checklist */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <FormField
+              control={form.control}
+              name="device_chip"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chip</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Claro, Vivo, Tim, Oi" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="memory_card_size"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tamanho do Cartão de Memória</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: 32GB, 64GB, 128GB" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 
