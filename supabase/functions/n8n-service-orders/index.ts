@@ -244,43 +244,35 @@ serve(async (req) => {
           }
         }
 
-        // Remove fields that are auto-generated (including 'os' which n8n might send by mistake)
-        const { id: _id, os, os_number, created_at, updated_at, tracking_token, ...insertData } = data;
-
-        // Retry logic for os_number collisions
-        let retries = 5;
-        let created = null;
-        let lastError = null;
-
-        while (retries > 0) {
-          const { data: insertResult, error: insertError } = await supabase
-            .from(table)
-            .insert(insertData)
-            .select()
-            .single();
-
-          if (!insertError) {
-            created = insertResult;
-            break;
-          }
-
-          // If it's a duplicate key error on os_number, retry
-          if (insertError.code === '23505' && insertError.message?.includes('os_number')) {
-            retries--;
-            lastError = insertError;
-            console.warn(`n8n-service-orders: os_number collision, retrying... (${retries} attempts left)`);
-            // Small delay before retry
-            await new Promise(resolve => setTimeout(resolve, 100));
-            continue;
-          }
-
-          // Other errors should be thrown immediately
-          throw insertError;
+        // Remove only truly auto-generated fields, but keep os_number if provided
+        const { id: _id, created_at, updated_at, tracking_token, ...restData } = data;
+        
+        // Normalize 'os' field to 'os_number' if sent by n8n
+        const insertData = { ...restData };
+        if (insertData.os !== undefined && insertData.os_number === undefined) {
+          insertData.os_number = insertData.os;
         }
+        delete insertData.os; // Remove 'os' field as it's not in the schema
 
-        if (!created) {
-          console.error('n8n-service-orders: Failed to create order after retries', lastError);
-          throw new Error('Não foi possível criar a ordem de serviço após várias tentativas devido a conflito de número. Por favor, tente novamente.');
+        const { data: created, error } = await supabase
+          .from(table)
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) {
+          // Provide clear error message for duplicate os_number
+          if (error.code === '23505' && error.message?.includes('os_number')) {
+            console.error(`n8n-service-orders: Duplicate os_number ${insertData.os_number}`, error);
+            return new Response(
+              JSON.stringify({ 
+                error: `O número de OS ${insertData.os_number} já existe para este usuário. Escolha outro número.`,
+                code: 'DUPLICATE_OS_NUMBER'
+              }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          throw error;
         }
 
         console.log(`n8n-service-orders: created new order with id=${created.id}, os_number=${created.os_number}`);
