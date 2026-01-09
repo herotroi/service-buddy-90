@@ -49,6 +49,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ServiceOrderInformatica {
   id: string;
   os_number: number;
+  deleted: boolean;
   senha: string | null;
   entry_date: string;
   client_name: string;
@@ -162,6 +163,7 @@ export const ServiceOrdersInformaticaTable = () => {
             received_by:employees!service_orders_informatica_received_by_id_fkey(name),
             equipment_location:local_equipamento(name, color)
           `)
+          .eq('deleted', false)
           .order('os_number', { ascending: false }),
         supabase.from('situacao_informatica').select('*'),
         supabase.from('local_equipamento').select('*'),
@@ -197,6 +199,7 @@ export const ServiceOrdersInformaticaTable = () => {
           equipment_location:local_equipamento(name, color)
         `)
         .eq('id', orderId)
+        .eq('deleted', false)
         .maybeSingle();
 
       if (error) throw error;
@@ -243,6 +246,9 @@ export const ServiceOrdersInformaticaTable = () => {
   };
 
   const filteredOrders = orders.filter(order => {
+    // Filtrar itens deletados
+    if (order.deleted) return false;
+
     const matchesSearch = 
       order.os_number.toString().includes(filters.search) ||
       order.client_name.toLowerCase().includes(filters.search.toLowerCase()) ||
