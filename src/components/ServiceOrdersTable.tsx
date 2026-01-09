@@ -178,32 +178,56 @@ export const ServiceOrdersTable = () => {
     };
   }, []);
 
+  const fetchAllOrders = async () => {
+    // Buscar todos os registros em lotes para superar limite de 1000
+    const batchSize = 1000;
+    let allOrders: ServiceOrder[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('service_orders')
+        .select(`
+          *,
+          situation:situations(id, name, color),
+          withdrawal_situation:withdrawal_situations(name, color),
+          technician:employees!service_orders_technician_id_fkey(name),
+          received_by:employees!service_orders_received_by_id_fkey(name)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, from + batchSize - 1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allOrders = [...allOrders, ...data];
+        from += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return allOrders;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       
       const [ordersData, situationsData, techniciansData, withdrawalData] = await Promise.all([
-        supabase
-          .from('service_orders')
-          .select(`
-            *,
-            situation:situations(id, name, color),
-            withdrawal_situation:withdrawal_situations(name, color),
-            technician:employees!service_orders_technician_id_fkey(name),
-            received_by:employees!service_orders_received_by_id_fkey(name)
-          `)
-          .order('created_at', { ascending: false }),
+        fetchAllOrders(),
         supabase.from('situations').select('*'),
         supabase.from('employees').select('*').eq('type', 'Técnico'),
         supabase.from('withdrawal_situations').select('*'),
       ]);
 
-      if (ordersData.error) throw ordersData.error;
       if (situationsData.error) throw situationsData.error;
       if (techniciansData.error) throw techniciansData.error;
       if (withdrawalData.error) throw withdrawalData.error;
 
-      setOrders(ordersData.data || []);
+      setOrders(ordersData || []);
       setSituations(situationsData.data || []);
       setTechnicians(techniciansData.data || []);
       setWithdrawalSituations(withdrawalData.data || []);
