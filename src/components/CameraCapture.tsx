@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Camera, Video, X, SwitchCamera, Circle, Square } from 'lucide-react';
@@ -72,19 +72,32 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
     setIsRecording(false);
   }, []);
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  // Start camera when dialog opens
+  React.useEffect(() => {
+    if (open) {
       startCamera();
     } else {
+      stopCamera();
+    }
+  }, [open, startCamera, stopCamera]);
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
       stopCamera();
       onClose();
     }
   };
 
-  const switchCamera = async () => {
+  const switchCamera = () => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-    await startCamera();
   };
+
+  // Restart camera when facingMode changes
+  useEffect(() => {
+    if (open && cameraReady) {
+      startCamera();
+    }
+  }, [facingMode]);
 
   const takePhoto = () => {
     if (!videoRef.current || !cameraReady) return;
