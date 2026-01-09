@@ -605,14 +605,15 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 console.error('Erro ao mover arquivo:', moveError);
                 updatedFiles.push(file);
               } else {
-                const { data: { publicUrl } } = supabase.storage
+                // Use createSignedUrl for private bucket instead of getPublicUrl
+                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
                   .from('service-orders-media')
-                  .getPublicUrl(newPath);
+                  .createSignedUrl(newPath, 3600); // 1 hour expiration
 
                 updatedFiles.push({
                   ...file,
                   path: newPath,
-                  url: publicUrl,
+                  url: signedUrlError ? file.url : signedUrlData.signedUrl,
                 });
               }
             } else {
