@@ -250,14 +250,18 @@ export const ServiceOrderInformaticaPrint = ({ orderId, onClose }: ServiceOrderI
 
           {/* QR Code and Signatures */}
           <div className="p-4 flex justify-between items-end">
-            {printQrCodeEnabled ? (
+            <div className="flex gap-6 items-end">
+              {printQrCodeEnabled && (
+                <div className="text-center">
+                  <QRCodeSVG value={trackingUrl} size={80} />
+                  <p className="text-xs mt-1">Acompanhe seu serviço</p>
+                </div>
+              )}
               <div className="text-center">
-                <QRCodeSVG value={trackingUrl} size={80} />
-                <p className="text-xs mt-1">Acompanhe seu serviço</p>
+                <QRCodeSVG value="https://www.instagram.com/tecnocenter.oficial/" size={80} />
+                <p className="text-xs mt-1">Nos siga no Instagram</p>
               </div>
-            ) : (
-              <div />
-            )}
+            </div>
             <div className="flex gap-8">
               <div className="text-center">
                 <div className="w-48 border-t border-black pt-1">

@@ -463,14 +463,18 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
 
           {/* QR Code and Signatures */}
           <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            {printQrCodeEnabled ? (
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-end' }}>
+              {printQrCodeEnabled && (
+                <div style={{ textAlign: 'center' }}>
+                  <QRCodeSVG value={trackingUrl} size={80} />
+                  <p style={{ fontSize: '12px', marginTop: '4px', color: 'black' }}>Acompanhe seu serviço</p>
+                </div>
+              )}
               <div style={{ textAlign: 'center' }}>
-                <QRCodeSVG value={trackingUrl} size={80} />
-                <p style={{ fontSize: '12px', marginTop: '4px', color: 'black' }}>Acompanhe seu serviço</p>
+                <QRCodeSVG value="https://www.instagram.com/tecnocenter.oficial/" size={80} />
+                <p style={{ fontSize: '12px', marginTop: '4px', color: 'black' }}>Nos siga no Instagram</p>
               </div>
-            ) : (
-              <div style={{ width: '80px' }} />
-            )}
+            </div>
             <div style={{ display: 'flex', gap: '64px' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ height: '64px' }} />
