@@ -221,7 +221,10 @@ export const ServiceOrdersTable = () => {
     try {
       setLoading(true);
       
-      // Build query with server-side filtering and pagination
+      const searchTerm = appliedFilters.search?.trim() || '';
+      const hasSearch = searchTerm.length > 0;
+      
+      // Build query with server-side filtering
       let query = supabase
         .from('service_orders')
         .select(`
@@ -232,26 +235,6 @@ export const ServiceOrdersTable = () => {
           received_by:employees!service_orders_received_by_id_fkey(name)
         `, { count: 'exact' })
         .eq('deleted', false);
-
-      // Apply filters server-side
-      if (appliedFilters.search) {
-        const searchTerm = appliedFilters.search.trim();
-        // Check if search is purely numeric for OS number partial search
-        const isNumeric = /^\d+$/.test(searchTerm);
-        
-        if (isNumeric) {
-          const searchNum = parseInt(searchTerm);
-          // For numeric search: find exact match OR numbers that start with the search term
-          // e.g., searching "1246" should find 1246, 12460-12469, etc.
-          const minOs = searchNum * 10;
-          const maxOs = (searchNum + 1) * 10 - 1;
-          // Include exact match and range for "starts with"
-          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%,os_number.eq.${searchNum},and(os_number.gte.${minOs},os_number.lte.${maxOs})`);
-        } else {
-          // For text search, just search name and model
-          query = query.or(`client_name.ilike.%${searchTerm}%,device_model.ilike.%${searchTerm}%`);
-        }
-      }
       
       if (appliedFilters.situation !== 'all') {
         query = query.eq('situation_id', appliedFilters.situation);
@@ -269,17 +252,41 @@ export const ServiceOrdersTable = () => {
       const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
       query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
 
-      // Apply pagination
-      const from = (pagination.page - 1) * pagination.perPage;
-      const to = from + pagination.perPage - 1;
-      query = query.range(from, to);
+      // If searching, fetch more records to filter client-side for OS partial match
+      if (hasSearch) {
+        // Fetch up to 5000 records when searching to ensure we find all matches
+        query = query.limit(5000);
+      } else {
+        // Apply pagination only when not searching
+        const from = (pagination.page - 1) * pagination.perPage;
+        const to = from + pagination.perPage - 1;
+        query = query.range(from, to);
+      }
 
       const { data, error, count } = await query;
 
       if (error) throw error;
 
-      // Filter by technician and withdrawal client-side (join fields)
       let filteredData = data || [];
+      
+      // Apply search filter client-side for partial OS number matching
+      if (hasSearch) {
+        const searchLower = searchTerm.toLowerCase();
+        filteredData = filteredData.filter(order => {
+          // Check OS number (partial match - contains)
+          const osMatch = order.os_number?.toString().includes(searchTerm);
+          // Check device model
+          const modelMatch = order.device_model?.toLowerCase().includes(searchLower);
+          // Check client name
+          const nameMatch = order.client_name?.toLowerCase().includes(searchLower);
+          // Check reported defect
+          const defectMatch = order.reported_defect?.toLowerCase().includes(searchLower);
+          
+          return osMatch || modelMatch || nameMatch || defectMatch;
+        });
+      }
+      
+      // Filter by technician and withdrawal client-side (join fields)
       if (appliedFilters.technician !== 'all') {
         filteredData = filteredData.filter(o => o.technician?.name === appliedFilters.technician);
       }
@@ -288,7 +295,7 @@ export const ServiceOrdersTable = () => {
       }
 
       setOrders(filteredData);
-      setTotalCount(count || 0);
+      setTotalCount(hasSearch ? filteredData.length : (count || 0));
     } catch (error: any) {
       toast.error('Erro ao carregar dados');
       console.error(error);
