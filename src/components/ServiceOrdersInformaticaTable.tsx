@@ -226,26 +226,34 @@ export const ServiceOrdersInformaticaTable = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteOrder) return;
+    if (!deleteOrder) {
+      console.log('handleDelete: deleteOrder is null');
+      return;
+    }
+
+    console.log('handleDelete: Deleting order', deleteOrder.id);
 
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('service_orders_informatica')
         .update({ deleted: true })
-        .eq('id', deleteOrder.id);
+        .eq('id', deleteOrder.id)
+        .select();
+
+      console.log('handleDelete: Response', { error, data });
 
       if (error) throw error;
 
       // Atualizar lista local imediatamente
-      setOrders(orders.filter(order => order.id !== deleteOrder.id));
+      setOrders(prev => prev.filter(order => order.id !== deleteOrder.id));
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
       
       // Recarregar dados do servidor para garantir consistência
       fetchData();
     } catch (error: any) {
-      toast.error('Erro ao excluir OS');
-      console.error(error);
+      toast.error('Erro ao excluir OS: ' + error.message);
+      console.error('handleDelete error:', error);
     }
   };
 
