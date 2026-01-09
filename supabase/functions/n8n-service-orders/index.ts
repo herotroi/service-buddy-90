@@ -244,16 +244,45 @@ serve(async (req) => {
           }
         }
 
-        // Remove fields that are auto-generated
-        const { id: _id, os_number, created_at, updated_at, tracking_token, ...insertData } = data;
+        // Remove fields that are auto-generated (including 'os' which n8n might send by mistake)
+        const { id: _id, os, os_number, created_at, updated_at, tracking_token, ...insertData } = data;
 
-        const { data: created, error } = await supabase
-          .from(table)
-          .insert(insertData)
-          .select()
-          .single();
+        // Retry logic for os_number collisions
+        let retries = 5;
+        let created = null;
+        let lastError = null;
 
-        if (error) throw error;
+        while (retries > 0) {
+          const { data: insertResult, error: insertError } = await supabase
+            .from(table)
+            .insert(insertData)
+            .select()
+            .single();
+
+          if (!insertError) {
+            created = insertResult;
+            break;
+          }
+
+          // If it's a duplicate key error on os_number, retry
+          if (insertError.code === '23505' && insertError.message?.includes('os_number')) {
+            retries--;
+            lastError = insertError;
+            console.warn(`n8n-service-orders: os_number collision, retrying... (${retries} attempts left)`);
+            // Small delay before retry
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+          }
+
+          // Other errors should be thrown immediately
+          throw insertError;
+        }
+
+        if (!created) {
+          console.error('n8n-service-orders: Failed to create order after retries', lastError);
+          throw new Error('Não foi possível criar a ordem de serviço após várias tentativas devido a conflito de número. Por favor, tente novamente.');
+        }
+
         console.log(`n8n-service-orders: created new order with id=${created.id}, os_number=${created.os_number}`);
         result = { success: true, data: created };
         break;
