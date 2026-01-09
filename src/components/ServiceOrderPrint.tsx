@@ -431,28 +431,48 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
       {/* Print Styles */}
       <style>{`
         @media print {
-          /* Hide everything except print content */
-          body > *:not(#root) {
-            display: none !important;
+          /* Hide EVERYTHING first */
+          html, body {
+            visibility: hidden !important;
+            background: white !important;
           }
           
+          /* Hide all elements in root */
+          #root > * {
+            display: none !important;
+            visibility: hidden !important;
+          }
+          
+          /* Show only the print container */
+          .print-container {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background-color: white !important;
+            z-index: 99999 !important;
+          }
+          
+          /* Hide the print controls (buttons) */
           .print-controls {
             display: none !important;
+            visibility: hidden !important;
           }
           
-          .print-container {
-            position: static !important;
-            overflow: visible !important;
-            background-color: white !important;
-          }
-          
+          /* Show the print content */
           #print-content {
+            display: block !important;
+            visibility: visible !important;
             max-width: none !important;
             padding: 0 !important;
             margin: 0 !important;
+            background-color: white !important;
           }
           
           #print-content * {
+            visibility: visible !important;
             color-adjust: exact !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
