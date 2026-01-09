@@ -244,15 +244,14 @@ serve(async (req) => {
           }
         }
 
-        // Remove only truly auto-generated fields, but keep os_number if provided
-        const { id: _id, created_at, updated_at, tracking_token, ...restData } = data;
+        // Keep all fields as sent, only remove id if provided (to prevent conflicts)
+        const { id: _id, ...insertData } = data;
         
-        // Normalize 'os' field to 'os_number' if sent by n8n
-        const insertData = { ...restData };
+        // Normalize 'os' field to 'os_number' if sent
         if (insertData.os !== undefined && insertData.os_number === undefined) {
           insertData.os_number = insertData.os;
+          delete insertData.os;
         }
-        delete insertData.os; // Remove 'os' field as it's not in the schema
 
         const { data: created, error } = await supabase
           .from(table)
@@ -260,20 +259,7 @@ serve(async (req) => {
           .select()
           .single();
 
-        if (error) {
-          // Provide clear error message for duplicate os_number
-          if (error.code === '23505' && error.message?.includes('os_number')) {
-            console.error(`n8n-service-orders: Duplicate os_number ${insertData.os_number}`, error);
-            return new Response(
-              JSON.stringify({ 
-                error: `O número de OS ${insertData.os_number} já existe para este usuário. Escolha outro número.`,
-                code: 'DUPLICATE_OS_NUMBER'
-              }),
-              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-          throw error;
-        }
+        if (error) throw error;
 
         console.log(`n8n-service-orders: created new order with id=${created.id}, os_number=${created.os_number}`);
         result = { success: true, data: created };
