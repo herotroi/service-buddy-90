@@ -167,6 +167,9 @@ export const ServiceOrderInformaticaPrint = ({ orderId, onClose }: ServiceOrderI
                 {profile?.phone && <p className="text-sm">Fone: {profile.phone}</p>}
                 {getAddress() && <p className="text-sm">{getAddress()}</p>}
                 {profile?.cnpj && <p className="text-sm">CNPJ: {profile.cnpj}</p>}
+                <p className="text-xs font-bold mt-2">
+                  Muito obrigado por escolher a Tecnocenter! Sua confiança é nossa maior motivação. Estaremos sempre a disposição para qualquer dúvida!!
+                </p>
               </div>
             </div>
             <div className="text-right border-2 border-black p-2">
