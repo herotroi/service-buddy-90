@@ -478,20 +478,19 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                 <p style={{ fontSize: '12px', marginTop: '4px', color: 'black' }}>Nos siga no Instagram</p>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <p style={{ fontSize: '16px', fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>Confirmação de Retirada!</p>
-              <div style={{ display: 'flex', gap: '64px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ height: '48px' }} />
-                  <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
-                    Cliente
-                  </div>
+            <div style={{ display: 'flex', gap: '64px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px' }}>Confirmação de Retirada!</p>
+                <div style={{ height: '40px' }} />
+                <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
+                  Cliente
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ height: '48px' }} />
-                  <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
-                    Empresa
-                  </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '14px', fontWeight: 'bold', color: 'black', marginBottom: '4px', visibility: 'hidden' }}>Confirmação de Retirada!</p>
+                <div style={{ height: '40px' }} />
+                <div style={{ borderTop: '1px solid black', width: '192px', paddingTop: '4px', color: 'black' }}>
+                  Empresa
                 </div>
               </div>
             </div>
