@@ -108,7 +108,63 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
   }, [orderId, user?.id]);
 
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('print-content');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permita pop-ups para imprimir.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>OS ${orderData.os_number}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: Arial, sans-serif;
+              background: white;
+              color: black;
+              padding: 10mm;
+            }
+            @page {
+              size: A4;
+              margin: 10mm;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+    
+    // Fallback for browsers that don't trigger onload
+    setTimeout(() => {
+      if (!printWindow.closed) {
+        printWindow.print();
+        printWindow.close();
+      }
+    }, 500);
   };
 
   const getAddress = () => {
@@ -428,62 +484,7 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
         </div>
       </div>
 
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          /* Hide EVERYTHING first */
-          html, body {
-            visibility: hidden !important;
-            background: white !important;
-          }
-          
-          /* Hide all elements in root */
-          #root > * {
-            display: none !important;
-            visibility: hidden !important;
-          }
-          
-          /* Show only the print container */
-          .print-container {
-            display: block !important;
-            visibility: visible !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            background-color: white !important;
-            z-index: 99999 !important;
-          }
-          
-          /* Hide the print controls (buttons) */
-          .print-controls {
-            display: none !important;
-            visibility: hidden !important;
-          }
-          
-          /* Show the print content */
-          #print-content {
-            display: block !important;
-            visibility: visible !important;
-            max-width: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background-color: white !important;
-          }
-          
-          #print-content * {
-            visibility: visible !important;
-            color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          
-          @page {
-            size: A4;
-            margin: 10mm;
-          }
-        }
-      `}</style>
+      {/* No print styles needed - we use a separate print window */}
     </div>
   );
 };
