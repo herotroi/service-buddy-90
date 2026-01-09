@@ -248,6 +248,9 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
                 {profile?.phone && <p style={{ fontSize: '14px', color: 'black' }}>Fone: {profile.phone}</p>}
                 {getAddress() && <p style={{ fontSize: '14px', color: 'black' }}>{getAddress()}</p>}
                 {profile?.cnpj && <p style={{ fontSize: '14px', color: 'black' }}>CNPJ: {profile.cnpj}</p>}
+                <p style={{ fontSize: '12px', color: 'black', fontWeight: 'bold', marginTop: '8px' }}>
+                  Muito obrigado por escolher a Tecnocenter! Sua confiança é nossa maior motivação. Estaremos sempre a disposição para qualquer dúvida!!
+                </p>
               </div>
             </div>
             <div style={{ textAlign: 'right', border: '2px solid black', padding: '8px' }}>
