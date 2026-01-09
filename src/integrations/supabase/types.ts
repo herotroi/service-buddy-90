@@ -181,6 +181,8 @@ export type Database = {
           contact: string | null
           created_at: string
           deleted: boolean
+          device_brand: string | null
+          device_chip: string | null
           device_model: string
           device_password: string | null
           device_pattern: string | null
@@ -188,6 +190,7 @@ export type Database = {
           exit_date: string | null
           id: string
           media_files: Json | null
+          memory_card_size: string | null
           mensagem_entregue: boolean
           mensagem_finalizada: boolean
           os_number: number
@@ -197,6 +200,7 @@ export type Database = {
           reported_defect: string
           service_date: string | null
           situation_id: string | null
+          technical_info: string | null
           technician_id: string | null
           tracking_token: string | null
           updated_at: string
@@ -227,6 +231,8 @@ export type Database = {
           contact?: string | null
           created_at?: string
           deleted?: boolean
+          device_brand?: string | null
+          device_chip?: string | null
           device_model: string
           device_password?: string | null
           device_pattern?: string | null
@@ -234,6 +240,7 @@ export type Database = {
           exit_date?: string | null
           id?: string
           media_files?: Json | null
+          memory_card_size?: string | null
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
@@ -243,6 +250,7 @@ export type Database = {
           reported_defect: string
           service_date?: string | null
           situation_id?: string | null
+          technical_info?: string | null
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
@@ -273,6 +281,8 @@ export type Database = {
           contact?: string | null
           created_at?: string
           deleted?: boolean
+          device_brand?: string | null
+          device_chip?: string | null
           device_model?: string
           device_password?: string | null
           device_pattern?: string | null
@@ -280,6 +290,7 @@ export type Database = {
           exit_date?: string | null
           id?: string
           media_files?: Json | null
+          memory_card_size?: string | null
           mensagem_entregue?: boolean
           mensagem_finalizada?: boolean
           os_number?: number
@@ -289,6 +300,7 @@ export type Database = {
           reported_defect?: string
           service_date?: string | null
           situation_id?: string | null
+          technical_info?: string | null
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
