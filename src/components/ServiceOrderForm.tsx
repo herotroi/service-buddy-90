@@ -35,6 +35,9 @@ interface FormData {
   contact?: string;
   other_contacts?: string;
   device_model: string;
+  device_brand?: string;
+  device_chip?: string;
+  memory_card_size?: string;
   device_password?: string;
   device_pattern?: string;
   reported_defect: string;
@@ -50,6 +53,7 @@ interface FormData {
   withdrawal_situation_id?: string;
   mensagem_finalizada: boolean;
   mensagem_entregue: boolean;
+  technical_info?: string;
   // Checklist fields - tri-state (null/true/false)
   checklist_houve_queda: boolean | null;
   checklist_face_id: boolean | null;
@@ -111,8 +115,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       contact: '',
       other_contacts: '',
       device_model: '',
+      device_brand: '',
+      device_chip: '',
+      memory_card_size: '',
       device_password: '',
       device_pattern: '',
+      technical_info: '',
       reported_defect: '',
       client_message: '',
       value: undefined,
@@ -190,9 +198,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         contact: data.contact || '',
         other_contacts: data.other_contacts || '',
         device_model: data.device_model,
+        device_brand: (data as any).device_brand || '',
+        device_chip: (data as any).device_chip || '',
+        memory_card_size: (data as any).memory_card_size || '',
         device_password: passwordValue,
         device_pattern: patternValue,
-        reported_defect: data.reported_defect,
+        technical_info: (data as any).technical_info || '',
         client_message: data.client_message || '',
         value: data.value || undefined,
         situation_id: data.situation_id || undefined,
@@ -505,8 +516,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
         device_model: data.device_model,
+        device_brand: data.device_brand || null,
+        device_chip: data.device_chip || null,
+        memory_card_size: data.memory_card_size || null,
         device_password: data.device_password || null,
         device_pattern: data.device_pattern || null,
+        technical_info: data.technical_info || null,
         reported_defect: data.reported_defect,
         client_message: data.client_message || null,
         value: data.value || null,
@@ -834,6 +849,48 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="device_brand"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Marca</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Apple, Samsung, Motorola" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="device_chip"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chip</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Claro, Vivo, Tim, Oi" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="memory_card_size"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tamanho do Cartão de Memória</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: 32GB, 64GB, 128GB" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="md:col-span-2">
               <FormItem>
                 <FormLabel>Senha do Aparelho</FormLabel>
@@ -1059,6 +1116,32 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             />
           </div>
         </div>
+
+        {/* Informações Técnicas - apenas no modo de edição */}
+        {orderId && (
+          <div>
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">
+              Informações Técnicas
+            </h3>
+            <FormField
+              control={form.control}
+              name="technical_info"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observações Técnicas</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Informações técnicas detalhadas sobre o aparelho ou serviço realizado..."
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
 
         {/* Campos adicionais apenas no modo de edição */}
         {orderId && (
