@@ -241,7 +241,7 @@ serve(async (req) => {
               }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
-          }
+        }
         }
 
         // Keep all fields as sent, only remove id if provided (to prevent conflicts)
@@ -251,6 +251,14 @@ serve(async (req) => {
         if (insertData.os !== undefined && insertData.os_number === undefined) {
           insertData.os_number = insertData.os;
           delete insertData.os;
+        }
+        
+        // Convert empty strings to null for timestamp fields
+        const timestampFields = ['entry_date', 'exit_date', 'created_at', 'updated_at'];
+        for (const field of timestampFields) {
+          if (insertData[field] === '') {
+            insertData[field] = null;
+          }
         }
 
         const { data: created, error } = await supabase
