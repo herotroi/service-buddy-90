@@ -111,13 +111,23 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
     const printContent = document.getElementById('print-content');
     if (!printContent) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Por favor, permita pop-ups para imprimir.');
+    // Create a hidden iframe for printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.left = '-9999px';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
       return;
     }
 
-    printWindow.document.write(`
+    iframeDoc.open();
+    iframeDoc.write(`
       <!DOCTYPE html>
       <html>
         <head>
@@ -150,20 +160,29 @@ export const ServiceOrderPrint = ({ orderId, onClose }: ServiceOrderPrintProps) 
         </body>
       </html>
     `);
-    printWindow.document.close();
-    
-    // Wait for content to load then print
-    printWindow.onload = () => {
-      printWindow.print();
-      printWindow.close();
+    iframeDoc.close();
+
+    // Wait for iframe content to load
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        // Remove iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 250);
     };
-    
-    // Fallback for browsers that don't trigger onload
+
+    // Trigger load event manually for browsers that need it
     setTimeout(() => {
-      if (!printWindow.closed) {
-        printWindow.print();
-        printWindow.close();
-      }
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
     }, 500);
   };
 
