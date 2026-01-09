@@ -58,6 +58,9 @@ interface ServiceOrder {
   device_model: string;
   device_password: string | null;
   device_pattern: string | null;
+  device_chip: string | null;
+  memory_card_size: string | null;
+  technical_info: string | null;
   reported_defect: string;
   client_message: string | null;
   value: number | null;
@@ -811,6 +814,14 @@ export const ServiceOrdersTable = () => {
                         <p className="text-lg">{order.device_model}</p>
                       </div>
                       <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Chip</p>
+                        <p className="text-lg">{order.device_chip || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Tamanho do Cartão de Memória</p>
+                        <p className="text-lg">{order.memory_card_size || '-'}</p>
+                      </div>
+                      <div>
                         <p className="text-sm font-medium text-muted-foreground mb-1">Senha de Texto</p>
                         <p className="text-lg font-mono bg-muted px-3 py-2 rounded-md">{order.device_password || '-'}</p>
                       </div>
@@ -827,6 +838,12 @@ export const ServiceOrdersTable = () => {
                         <p className="text-lg">-</p>
                       )}
                     </div>
+                    {order.technical_info && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">Informações Técnicas</p>
+                        <p className="text-base bg-muted p-4 rounded-md whitespace-pre-wrap">{order.technical_info}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Checklist Técnico */}
