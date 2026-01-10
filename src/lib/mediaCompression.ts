@@ -6,33 +6,81 @@ const MAX_IMAGE_HEIGHT = 2560;
 const IMAGE_QUALITY = 0.92; // Qualidade alta para preservar detalhes
 const MAX_VIDEO_SIZE_MB = 5000; // Limite máximo para vídeos (5GB)
 
+// Extensões de imagem suportadas
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'];
+// Extensões de vídeo suportadas (incluindo formatos Apple)
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp', '.quicktime'];
+
+/**
+ * Detecta se o arquivo é uma imagem baseado no tipo MIME ou extensão
+ */
+const isImageFile = (file: File): boolean => {
+  // Verificar pelo tipo MIME primeiro
+  if (file.type && file.type.startsWith('image/')) {
+    return true;
+  }
+  
+  // Fallback: verificar pela extensão do arquivo (importante para iPhone)
+  const fileName = file.name.toLowerCase();
+  return IMAGE_EXTENSIONS.some(ext => fileName.endsWith(ext));
+};
+
+/**
+ * Detecta se o arquivo é um vídeo baseado no tipo MIME ou extensão
+ */
+const isVideoFile = (file: File): boolean => {
+  // Verificar pelo tipo MIME primeiro
+  if (file.type && (file.type.startsWith('video/') || file.type === 'video/quicktime')) {
+    return true;
+  }
+  
+  // Fallback: verificar pela extensão do arquivo (importante para iPhone com MOV)
+  const fileName = file.name.toLowerCase();
+  return VIDEO_EXTENSIONS.some(ext => fileName.endsWith(ext));
+};
+
+/**
+ * Detecta se o arquivo é HEIC/HEIF (formato padrão do iPhone)
+ */
+const isHeicFile = (file: File): boolean => {
+  const mimeTypes = ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'];
+  if (file.type && mimeTypes.includes(file.type.toLowerCase())) {
+    return true;
+  }
+  
+  // iPhone às vezes não envia o MIME type correto, verificar extensão
+  const fileName = file.name.toLowerCase();
+  return fileName.endsWith('.heic') || fileName.endsWith('.heif');
+};
+
 /**
  * Converte HEIC para JPEG se necessário
  */
 const convertHeicIfNeeded = async (file: File): Promise<File> => {
-  const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
-                 file.name.toLowerCase().endsWith('.heic') || 
-                 file.name.toLowerCase().endsWith('.heif');
-  
-  if (!isHeic) {
+  if (!isHeicFile(file)) {
     return file;
   }
 
+  console.log('Detectado arquivo HEIC/HEIF, iniciando conversão...');
+  
   try {
     const convertedBlob = await heic2any({
       blob: file,
       toType: 'image/jpeg',
-      quality: 0.9
+      quality: 0.92 // Qualidade alta para preservar detalhes
     }) as Blob;
+    
+    const newFileName = file.name.replace(/\.(heic|heif)$/i, '.jpg');
+    console.log(`HEIC convertido para JPEG: ${file.name} -> ${newFileName}`);
     
     return new File(
       [convertedBlob],
-      file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+      newFileName,
       { type: 'image/jpeg' }
     );
   } catch (error) {
     console.error('Erro ao converter HEIC:', error);
-    throw new Error('Não foi possível converter a imagem HEIC. Por favor, use formato JPEG ou PNG.');
+    throw new Error('Não foi possível converter a imagem HEIC. Por favor, tente novamente ou use formato JPEG/PNG.');
   }
 };
 
@@ -45,20 +93,29 @@ export const compressImage = async (
 ): Promise<File> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Converter HEIC se necessário
-      const convertedFile = await convertHeicIfNeeded(file);
-      if (convertedFile !== file) {
-        console.log('HEIC convertido para JPEG');
-      }
       onProgress?.(5);
+      
+      // Converter HEIC se necessário
+      let convertedFile: File;
+      try {
+        convertedFile = await convertHeicIfNeeded(file);
+        if (convertedFile !== file) {
+          console.log('Arquivo HEIC convertido com sucesso');
+        }
+      } catch (heicError) {
+        reject(heicError);
+        return;
+      }
+      
+      onProgress?.(15);
       const reader = new FileReader();
       
       reader.onload = (e) => {
-        onProgress?.(15);
+        onProgress?.(25);
         const img = new Image();
         
         img.onload = () => {
-          onProgress?.(30);
+          onProgress?.(40);
           // Calcular novas dimensões mantendo proporção
           let width = img.width;
           let height = img.height;
@@ -84,9 +141,11 @@ export const compressImage = async (
             return;
           }
           
-          // Desenhar imagem redimensionada
+          // Desenhar imagem redimensionada com alta qualidade
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
-          onProgress?.(50);
+          onProgress?.(60);
           
           // Converter para blob com compressão
           canvas.toBlob(
@@ -103,7 +162,7 @@ export const compressImage = async (
                 { type: 'image/jpeg' }
               );
               
-              console.log(`Imagem comprimida: ${(convertedFile.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+              console.log(`Imagem comprimida: ${(convertedFile.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB (${width}x${height})`);
               onProgress?.(70);
               resolve(compressedFile);
             },
@@ -112,13 +171,20 @@ export const compressImage = async (
           );
         };
         
-        img.onerror = () => reject(new Error('Falha ao carregar imagem'));
+        img.onerror = () => {
+          console.error('Erro ao carregar imagem no canvas');
+          reject(new Error('Falha ao carregar imagem. Verifique se o arquivo não está corrompido.'));
+        };
         img.src = e.target?.result as string;
       };
       
-      reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
+      reader.onerror = () => {
+        console.error('Erro ao ler arquivo');
+        reject(new Error('Falha ao ler arquivo. Tente novamente.'));
+      };
       reader.readAsDataURL(convertedFile);
     } catch (error: any) {
+      console.error('Erro geral na compressão:', error);
       reject(error);
     }
   });
@@ -136,12 +202,22 @@ export const prepareVideo = async (
   const fileSizeMB = file.size / 1024 / 1024;
   
   if (fileSizeMB > MAX_VIDEO_SIZE_MB) {
-    throw new Error(`Vídeo muito grande. Tamanho máximo: ${MAX_VIDEO_SIZE_MB}MB`);
+    throw new Error(`Vídeo muito grande. Tamanho máximo: ${MAX_VIDEO_SIZE_MB}MB. Seu arquivo: ${fileSizeMB.toFixed(0)}MB`);
   }
   
-  console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB`);
+  // Para vídeos MOV do iPhone, garantir que temos o tipo MIME correto
+  let processedFile = file;
+  const fileName = file.name.toLowerCase();
+  
+  if (fileName.endsWith('.mov') && (!file.type || file.type === '')) {
+    // Criar novo arquivo com tipo MIME correto
+    processedFile = new File([file], file.name, { type: 'video/quicktime' });
+    console.log('Tipo MIME do vídeo MOV corrigido para video/quicktime');
+  }
+  
+  console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB (${file.type || 'tipo não detectado'})`);
   onProgress?.(70);
-  return file;
+  return processedFile;
 };
 
 /**
@@ -151,15 +227,32 @@ export const processMediaFile = async (
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<File> => {
-  const fileType = file.type.split('/')[0];
+  console.log(`Processando arquivo: ${file.name}, tipo: ${file.type || 'não detectado'}, tamanho: ${formatFileSize(file.size)}`);
   
-  if (fileType === 'image') {
+  // Usar detecção robusta baseada em extensão também (importante para iPhone)
+  if (isImageFile(file)) {
+    console.log('Arquivo detectado como imagem');
     return await compressImage(file, onProgress);
-  } else if (fileType === 'video') {
+  } else if (isVideoFile(file)) {
+    console.log('Arquivo detectado como vídeo');
     return await prepareVideo(file, onProgress);
   }
   
-  throw new Error('Tipo de arquivo não suportado');
+  // Tentar detectar pelo conteúdo do arquivo como último recurso
+  const fileName = file.name.toLowerCase();
+  console.warn(`Tipo de arquivo não reconhecido: ${file.name} (${file.type})`);
+  
+  // Se tem extensão conhecida de imagem ou vídeo, tentar processar
+  if (IMAGE_EXTENSIONS.some(ext => fileName.endsWith(ext))) {
+    console.log('Tentando processar como imagem baseado na extensão');
+    return await compressImage(file, onProgress);
+  }
+  if (VIDEO_EXTENSIONS.some(ext => fileName.endsWith(ext))) {
+    console.log('Tentando processar como vídeo baseado na extensão');
+    return await prepareVideo(file, onProgress);
+  }
+  
+  throw new Error(`Tipo de arquivo não suportado: ${file.name}. Use imagens (JPG, PNG, HEIC) ou vídeos (MP4, MOV).`);
 };
 
 /**

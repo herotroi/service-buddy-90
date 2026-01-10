@@ -1314,7 +1314,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                   <input
                     id="camera-photo"
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif"
                     capture="environment"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
@@ -1332,7 +1332,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                   <input
                     id="camera-video"
                     type="file"
-                    accept="video/*"
+                    accept="video/*,.mov,.mp4,.m4v"
                     capture="environment"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
@@ -1363,7 +1363,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     id="media-upload"
                     type="file"
                     multiple
-                    accept="image/*,video/*"
+                    accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
                     className="hidden"

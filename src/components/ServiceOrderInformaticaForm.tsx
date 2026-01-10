@@ -893,7 +893,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                   <input
                     id="camera-photo-info"
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif"
                     capture="environment"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
@@ -911,7 +911,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                   <input
                     id="camera-video-info"
                     type="file"
-                    accept="video/*"
+                    accept="video/*,.mov,.mp4,.m4v"
                     capture="environment"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
@@ -942,7 +942,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                     id="media-upload-info"
                     type="file"
                     multiple
-                    accept="image/*,video/*"
+                    accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
                     className="hidden"
