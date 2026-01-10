@@ -1180,7 +1180,7 @@ export const ServiceOrdersTable = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {signedMediaFiles.map((file, index) => (
                           <div key={index} className="relative group">
-                            <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
+                            <div className={`${file.type === 'video' ? 'aspect-video' : 'aspect-square'} rounded-lg overflow-hidden bg-muted border border-border`}>
                               {file.type === 'image' ? (
                                 <img 
                                   src={file.url} 
@@ -1196,7 +1196,7 @@ export const ServiceOrdersTable = () => {
                                 <UniversalVideoPlayer
                                   src={file.url}
                                   name={file.name}
-                                  className="w-full h-full object-cover"
+                                  className="w-full aspect-video"
                                 />
                               )}
                             </div>
