@@ -10,10 +10,42 @@ export interface MediaFile {
 
 const STORAGE_PREFIX = 'os_media_files_';
 
+// Função helper para salvar no sessionStorage de forma síncrona
+const saveToStorage = (key: string, files: MediaFile[]) => {
+  try {
+    if (files.length > 0) {
+      sessionStorage.setItem(key, JSON.stringify(files));
+      console.log(`[usePersistedMediaFiles] Salvando ${files.length} arquivos no sessionStorage (sync)`);
+    } else {
+      sessionStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.error('[usePersistedMediaFiles] Erro ao salvar sessionStorage:', error);
+  }
+};
+
+// Função helper para ler do sessionStorage
+const loadFromStorage = (key: string): MediaFile[] => {
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      console.log(`[usePersistedMediaFiles] Restaurando ${parsed.length} arquivos do sessionStorage`);
+      return parsed;
+    }
+  } catch (error) {
+    console.error('[usePersistedMediaFiles] Erro ao ler sessionStorage:', error);
+  }
+  return [];
+};
+
 /**
  * Hook para persistir arquivos de mídia no sessionStorage
  * Resolve o problema de perda de estado quando o navegador mobile
  * desmonta o componente ao abrir a câmera nativa
+ * 
+ * IMPORTANTE: Usa persistência SÍNCRONA para garantir que os dados
+ * são salvos antes de qualquer possível desmontagem do componente
  */
 export const usePersistedMediaFiles = (
   formType: 'service_orders' | 'service_orders_informatica',
@@ -23,73 +55,74 @@ export const usePersistedMediaFiles = (
     ? `${STORAGE_PREFIX}${formType}_edit_${orderId}` 
     : `${STORAGE_PREFIX}${formType}_new`;
 
-  // Usar ref para evitar re-renders desnecessários
-  const isInitialMount = useRef(true);
   const hasLoadedFromDb = useRef(false);
+  const hasRefreshedUrls = useRef(false);
 
   // Inicializa com dados do sessionStorage
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(() => {
-    try {
-      const stored = sessionStorage.getItem(storageKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        console.log(`[usePersistedMediaFiles] Restaurando ${parsed.length} arquivos do sessionStorage`);
-        return parsed;
-      }
-    } catch (error) {
-      console.error('[usePersistedMediaFiles] Erro ao ler sessionStorage:', error);
-    }
-    return [];
+  const [mediaFiles, setMediaFilesState] = useState<MediaFile[]>(() => {
+    return loadFromStorage(storageKey);
   });
 
-  // Sincroniza com sessionStorage a cada mudança (exceto na montagem inicial)
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    try {
-      if (mediaFiles.length > 0) {
-        sessionStorage.setItem(storageKey, JSON.stringify(mediaFiles));
-        console.log(`[usePersistedMediaFiles] Salvando ${mediaFiles.length} arquivos no sessionStorage`);
-      } else {
-        // Não remover se acabou de carregar do DB e está vazio
-        if (!hasLoadedFromDb.current) {
-          sessionStorage.removeItem(storageKey);
-        }
+  // Wrapper para setMediaFiles que também persiste imediatamente
+  const setMediaFiles = useCallback((filesOrUpdater: MediaFile[] | ((prev: MediaFile[]) => MediaFile[])) => {
+    setMediaFilesState(prev => {
+      const newFiles = typeof filesOrUpdater === 'function' ? filesOrUpdater(prev) : filesOrUpdater;
+      // Persistir IMEDIATAMENTE de forma síncrona
+      if (!hasLoadedFromDb.current) {
+        saveToStorage(storageKey, newFiles);
       }
-    } catch (error) {
-      console.error('[usePersistedMediaFiles] Erro ao salvar sessionStorage:', error);
-    }
-  }, [mediaFiles, storageKey]);
-
-  // Função para definir arquivos vindos do banco de dados
-  // Isso limpa qualquer dado persistido e usa os dados do DB
-  const setMediaFilesFromDb = useCallback((files: MediaFile[]) => {
-    hasLoadedFromDb.current = true;
-    sessionStorage.removeItem(storageKey);
-    setMediaFiles(files);
-    console.log(`[usePersistedMediaFiles] Definindo ${files.length} arquivos do banco de dados`);
+      return newFiles;
+    });
   }, [storageKey]);
 
-  // Função para adicionar arquivos (preserva existentes)
+  // Função para definir arquivos vindos do banco de dados
+  // IMPORTANTE: Mescla com arquivos persistidos no sessionStorage para não perder uploads em andamento
+  const setMediaFilesFromDb = useCallback((dbFiles: MediaFile[]) => {
+    hasLoadedFromDb.current = true;
+    
+    // Carregar arquivos que podem estar no sessionStorage (uploads feitos durante remontagem)
+    const persistedFiles = loadFromStorage(storageKey);
+    
+    if (persistedFiles.length > 0) {
+      // Mesclar: arquivos do DB + arquivos persistidos (evitando duplicatas por path)
+      const existingPaths = new Set(dbFiles.map(f => f.path));
+      const newPersistedFiles = persistedFiles.filter(f => !existingPaths.has(f.path));
+      const merged = [...dbFiles, ...newPersistedFiles];
+      
+      console.log(`[usePersistedMediaFiles] Mesclando ${dbFiles.length} do DB + ${newPersistedFiles.length} persistidos = ${merged.length} total`);
+      
+      // Manter persistência para não perder os novos arquivos
+      saveToStorage(storageKey, merged);
+      setMediaFilesState(merged);
+    } else {
+      // Não há arquivos persistidos, apenas usar os do DB
+      sessionStorage.removeItem(storageKey);
+      setMediaFilesState(dbFiles);
+      console.log(`[usePersistedMediaFiles] Definindo ${dbFiles.length} arquivos do banco de dados`);
+    }
+  }, [storageKey]);
+
+  // Função para adicionar arquivos (preserva existentes) - PERSISTE IMEDIATAMENTE
   const addMediaFiles = useCallback((newFiles: MediaFile[]) => {
-    setMediaFiles(prev => {
+    setMediaFilesState(prev => {
       const updated = [...prev, ...newFiles];
       console.log(`[usePersistedMediaFiles] Adicionando ${newFiles.length} arquivos, total: ${updated.length}`);
+      // Persistir IMEDIATAMENTE de forma síncrona
+      saveToStorage(storageKey, updated);
       return updated;
     });
-  }, []);
+  }, [storageKey]);
 
-  // Função para remover um arquivo
+  // Função para remover um arquivo - PERSISTE IMEDIATAMENTE
   const removeMediaFile = useCallback((index: number) => {
-    setMediaFiles(prev => {
+    setMediaFilesState(prev => {
       const updated = prev.filter((_, i) => i !== index);
       console.log(`[usePersistedMediaFiles] Removendo arquivo índice ${index}, restantes: ${updated.length}`);
+      // Persistir IMEDIATAMENTE de forma síncrona
+      saveToStorage(storageKey, updated);
       return updated;
     });
-  }, []);
+  }, [storageKey]);
 
   // Função para limpar após sucesso
   const clearPersistedFiles = useCallback(() => {
@@ -99,7 +132,7 @@ export const usePersistedMediaFiles = (
       if (orderId) {
         sessionStorage.removeItem(`${STORAGE_PREFIX}${formType}_new`);
       }
-      setMediaFiles([]);
+      setMediaFilesState([]);
       console.log(`[usePersistedMediaFiles] Dados limpos do sessionStorage`);
     } catch (error) {
       console.error('[usePersistedMediaFiles] Erro ao limpar sessionStorage:', error);
@@ -115,7 +148,6 @@ export const usePersistedMediaFiles = (
     const refreshedFiles = await Promise.all(
       mediaFiles.map(async (file) => {
         try {
-          // Verificar se a URL parece expirada (contém token e é antiga)
           const signedUrl = await getSignedUrl(file.path, 3600);
           if (signedUrl) {
             return { ...file, url: signedUrl };
@@ -127,16 +159,19 @@ export const usePersistedMediaFiles = (
       })
     );
 
-    setMediaFiles(refreshedFiles);
-  }, [mediaFiles]);
+    // Atualizar estado e persistir
+    setMediaFilesState(refreshedFiles);
+    saveToStorage(storageKey, refreshedFiles);
+  }, [mediaFiles, storageKey]);
 
   // Verificar se há arquivos persistidos que precisam de renovação de URL
   useEffect(() => {
-    if (mediaFiles.length > 0 && !hasLoadedFromDb.current) {
+    if (mediaFiles.length > 0 && !hasLoadedFromDb.current && !hasRefreshedUrls.current) {
+      hasRefreshedUrls.current = true;
       // Arquivos vieram do sessionStorage, podem ter URLs expiradas
       refreshSignedUrls();
     }
-  }, []); // Executar apenas na montagem
+  }, [mediaFiles.length, refreshSignedUrls]);
 
   return {
     mediaFiles,

@@ -262,11 +262,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       });
 
       // Carregar arquivos de mídia com URLs assinadas
-      if (data.media_files && Array.isArray(data.media_files)) {
-        const files = data.media_files as unknown as MediaFile[];
-        const signedFiles = await getSignedUrls(files);
-        setMediaFilesFromDb(signedFiles); // Usar função específica para dados do DB
-      }
+      // Sempre chamar setMediaFilesFromDb mesmo se vazio - ele vai mesclar com arquivos persistidos
+      const dbFiles = data.media_files && Array.isArray(data.media_files) 
+        ? data.media_files as unknown as MediaFile[] 
+        : [];
+      const signedFiles = dbFiles.length > 0 ? await getSignedUrls(dbFiles) : [];
+      setMediaFilesFromDb(signedFiles);
       
       // Marcar que o carregamento inicial foi concluído
       setIsInitialLoad(false);
