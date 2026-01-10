@@ -418,7 +418,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       setCurrentFileName('');
 
       if (uploadedFiles.length > 0) {
-        setMediaFiles([...mediaFiles, ...uploadedFiles]);
+        setMediaFiles(prev => [...prev, ...uploadedFiles]);
         toast.success(
           uploadedFiles.length === 1 
             ? 'Arquivo enviado com sucesso' 
@@ -518,6 +518,8 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   };
 
   const onSubmit = async (data: FormData) => {
+    console.log('Salvando OS com', mediaFiles.length, 'arquivos de mídia');
+    
     try {
       setLoading(true);
 
@@ -627,6 +629,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           form.setValue('os_number', result.finalOsNumber);
         }
 
+        console.log('OS atualizada com media_files:', mediaFiles.length, 'arquivos');
         toast.success('OS atualizada com sucesso');
       } else {
         // Criar nova OS com retry para race conditions
