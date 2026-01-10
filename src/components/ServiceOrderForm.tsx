@@ -647,10 +647,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
         const newOrder = result.data;
 
-        // Se houver arquivos temporários, mover para a pasta da OS
+        // Se houver arquivos, mover para a pasta da OS e atualizar o banco
         if (mediaFiles.length > 0 && newOrder) {
           const updatedFiles: MediaFile[] = [];
           for (const file of mediaFiles) {
+            // Verificar se o arquivo está em temp/ ou já na pasta da OS
             if (file.path.startsWith('temp/')) {
               const newPath = file.path.replace('temp/', `${newOrder.id}/`);
               
@@ -660,28 +661,32 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
               if (moveError) {
                 console.error('Erro ao mover arquivo:', moveError);
+                // Tentar manter o arquivo no temp mesmo assim
                 updatedFiles.push(file);
               } else {
-                // Use createSignedUrl for private bucket instead of getPublicUrl
-                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                  .from('service-orders-media')
-                  .createSignedUrl(newPath, 3600); // 1 hour expiration
-
+                // Gerar nova URL assinada para o caminho atualizado
+                const signedUrl = await getSignedUrl(newPath);
                 updatedFiles.push({
                   ...file,
                   path: newPath,
-                  url: signedUrlError ? file.url : signedUrlData.signedUrl,
+                  url: signedUrl || file.url,
                 });
               }
             } else {
+              // Arquivo já está no caminho correto
               updatedFiles.push(file);
             }
           }
 
-          await supabase
+          // Atualizar os arquivos no banco de dados
+          const { error: updateError } = await supabase
             .from('service_orders')
             .update({ media_files: JSON.parse(JSON.stringify(updatedFiles)) } as any)
             .eq('id', newOrder.id);
+          
+          if (updateError) {
+            console.error('Erro ao atualizar media_files:', updateError);
+          }
         }
 
         if (result.finalOsNumber) {
