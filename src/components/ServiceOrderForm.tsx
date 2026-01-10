@@ -525,18 +525,38 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   };
 
   const onSubmit = async (data: FormData) => {
-    console.log('Salvando OS com', mediaFiles.length, 'arquivos de mídia');
+    setLoading(true);
     
     try {
-      setLoading(true);
-
-      // Validar número da OS antes de salvar (apenas para novas OS)
+      // IMPORTANTE: Recarregar do localStorage para garantir dados atualizados
+      // Isso resolve o problema de perda de estado no mobile
+      const storageKey = orderId 
+        ? `os_media_files_service_orders_edit_${orderId}`
+        : `os_media_files_service_orders_new`;
+      
+      let currentMediaFiles = mediaFiles;
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`[onSubmit] 📂 Recuperando ${parsed.length} arquivos do localStorage`);
+            currentMediaFiles = parsed;
+          }
+        }
+      } catch (e) {
+        console.error('[onSubmit] Erro ao ler localStorage:', e);
+      }
+      
+      console.log(`[onSubmit] 📊 Salvando com ${currentMediaFiles.length} arquivos de mídia`);
+      
+      // Validar número da OS antes de salvar (apenas para nova OS)
       if (!orderId) {
         const validation = await validateAndGetAvailableOsNumber(
           data.os_number,
           (existingOrder, newNumber) => {
             form.setValue('os_number', newNumber);
-            toast.info(`Número de OS alterado para ${newNumber}`);
+            toast.info(`Número de OS ${data.os_number} já existe. Usando ${newNumber}.`);
           }
         );
 
@@ -586,7 +606,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         withdrawal_situation_id: data.withdrawal_situation_id || null,
         mensagem_finalizada: data.mensagem_finalizada,
         mensagem_entregue: data.mensagem_entregue,
-        media_files: JSON.parse(JSON.stringify(mediaFiles)),
+        media_files: JSON.parse(JSON.stringify(currentMediaFiles)),
         checklist_houve_queda: data.checklist_houve_queda,
         checklist_face_id: data.checklist_face_id,
         checklist_carrega: data.checklist_carrega,
@@ -636,7 +656,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           form.setValue('os_number', result.finalOsNumber);
         }
 
-        console.log('OS atualizada com media_files:', mediaFiles.length, 'arquivos');
+        console.log('[onSubmit] ✅ OS atualizada com', currentMediaFiles.length, 'arquivos de mídia');
         toast.success('OS atualizada com sucesso');
       } else {
         // Criar nova OS com retry para race conditions
@@ -658,9 +678,10 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         const newOrder = result.data;
 
         // Se houver arquivos, mover para a pasta da OS e atualizar o banco
-        if (mediaFiles.length > 0 && newOrder) {
+        if (currentMediaFiles.length > 0 && newOrder) {
+          console.log('[onSubmit] 📦 Movendo', currentMediaFiles.length, 'arquivos de temp/ para', newOrder.id);
           const updatedFiles: MediaFile[] = [];
-          for (const file of mediaFiles) {
+          for (const file of currentMediaFiles) {
             // Verificar se o arquivo está em temp/ ou já na pasta da OS
             if (file.path.startsWith('temp/')) {
               const newPath = file.path.replace('temp/', `${newOrder.id}/`);

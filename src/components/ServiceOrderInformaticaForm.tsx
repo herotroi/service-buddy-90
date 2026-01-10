@@ -418,10 +418,30 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   };
 
   const onSubmit = async (data: FormData) => {
-    console.log('Salvando OS com', mediaFiles.length, 'arquivos de mídia');
-    
     try {
       setLoading(true);
+
+      // IMPORTANTE: Recarregar do localStorage para garantir dados atualizados
+      // Isso resolve o problema de perda de estado no mobile
+      const storageKey = orderId 
+        ? `os_media_files_service_orders_informatica_edit_${orderId}`
+        : `os_media_files_service_orders_informatica_new`;
+      
+      let currentMediaFiles = mediaFiles;
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log(`[onSubmit] 📂 Recuperando ${parsed.length} arquivos do localStorage`);
+            currentMediaFiles = parsed;
+          }
+        }
+      } catch (e) {
+        console.error('[onSubmit] Erro ao ler localStorage:', e);
+      }
+      
+      console.log(`[onSubmit] 📊 Salvando com ${currentMediaFiles.length} arquivos de mídia`);
 
       // Validar número da OS antes de salvar
       if (!orderId) {
@@ -473,7 +493,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         exit_date: toISOWithTimezone(data.exit_date || ''),
         withdrawn_by: data.withdrawn_by || null,
         user_id: user?.id,
-        media_files: JSON.parse(JSON.stringify(mediaFiles)),
+        media_files: JSON.parse(JSON.stringify(currentMediaFiles)),
       };
 
       if (orderId) {
@@ -529,9 +549,10 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         const newOrder = result.data;
 
         // Se houver arquivos, mover para a pasta da OS e atualizar o banco
-        if (mediaFiles.length > 0 && newOrder) {
+        if (currentMediaFiles.length > 0 && newOrder) {
+          console.log('[onSubmit] 📦 Movendo', currentMediaFiles.length, 'arquivos de temp/ para', newOrder.id);
           const updatedFiles: MediaFile[] = [];
-          for (const file of mediaFiles) {
+          for (const file of currentMediaFiles) {
             // Verificar se o arquivo está em temp/ ou já na pasta da OS
             if (file.path.startsWith('temp/')) {
               const newPath = file.path.replace('temp/', `${newOrder.id}/`);
