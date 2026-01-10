@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer } from 'lucide-react';
+import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -121,6 +121,8 @@ export const ServiceOrdersInformaticaTable = () => {
     page: 1,
     perPage: 50,
   });
+
+  const [sortBy, setSortBy] = useState<'os_number' | 'entry_date' | 'client_name' | 'situation' | 'service_date'>('os_number');
 
   // Search state - only applied when button is clicked
   const [appliedFilters, setAppliedFilters] = useState(filters);
@@ -304,7 +306,47 @@ export const ServiceOrdersInformaticaTable = () => {
     return matchesSearch && matchesSituation && matchesLocation && matchesWithdrawal && matchesDate;
   });
 
-  const paginatedOrders = filteredOrders.slice(
+  // Ordenar os dados filtrados
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    if (sortBy === 'service_date') {
+      const now = new Date();
+      const dateA = a.service_date ? new Date(a.service_date) : null;
+      const dateB = b.service_date ? new Date(b.service_date) : null;
+      
+      // Nulls vão para o final
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      const isFutureA = dateA >= now;
+      const isFutureB = dateB >= now;
+      
+      // Datas futuras vêm primeiro
+      if (isFutureA && !isFutureB) return -1;
+      if (!isFutureA && isFutureB) return 1;
+      
+      // Se ambas são futuras, a mais próxima vem primeiro
+      if (isFutureA && isFutureB) {
+        return dateA.getTime() - dateB.getTime();
+      }
+      
+      // Se ambas são passadas, a mais recente vem primeiro
+      return dateB.getTime() - dateA.getTime();
+    } else if (sortBy === 'os_number') {
+      return b.os_number - a.os_number;
+    } else if (sortBy === 'entry_date') {
+      return new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime();
+    } else if (sortBy === 'client_name') {
+      return a.client_name.localeCompare(b.client_name);
+    } else if (sortBy === 'situation') {
+      const nameA = a.situation?.name || '';
+      const nameB = b.situation?.name || '';
+      return nameA.localeCompare(nameB);
+    }
+    return 0;
+  });
+
+  const paginatedOrders = sortedOrders.slice(
     (pagination.page - 1) * pagination.perPage,
     pagination.page * pagination.perPage
   );
@@ -439,25 +481,43 @@ export const ServiceOrdersInformaticaTable = () => {
         )}
       </div>
 
-      {/* Estatísticas */}
+      {/* Estatísticas e Ordenação */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>
           Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
           <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
         </span>
-        <Select
-          value={pagination.perPage.toString()}
-          onValueChange={(value) => setPagination({ ...pagination, perPage: Number(value), page: 1 })}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10 por página</SelectItem>
-            <SelectItem value="25">25 por página</SelectItem>
-            <SelectItem value="50">50 por página</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-wrap">
+          <Select
+            value={sortBy}
+            onValueChange={(value: 'os_number' | 'entry_date' | 'client_name' | 'situation' | 'service_date') => setSortBy(value)}
+          >
+            <SelectTrigger className="w-48">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="os_number">Número OS</SelectItem>
+              <SelectItem value="entry_date">Data de Entrada</SelectItem>
+              <SelectItem value="client_name">Nome</SelectItem>
+              <SelectItem value="situation">Situação</SelectItem>
+              <SelectItem value="service_date">Para Quando é o Serviço</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={pagination.perPage.toString()}
+            onValueChange={(value) => setPagination({ ...pagination, perPage: Number(value), page: 1 })}
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10 por página</SelectItem>
+              <SelectItem value="25">25 por página</SelectItem>
+              <SelectItem value="50">50 por página</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Cards para Mobile */}
