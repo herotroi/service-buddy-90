@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer, ArrowUpDown } from 'lucide-react';
+import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -1161,17 +1162,11 @@ export const ServiceOrdersTable = () => {
                                     }}
                                   />
                                 ) : (
-                                  <video 
+                                  <UniversalVideoPlayer
                                     src={mediaUrl}
+                                    name={file.name}
                                     className="w-full h-full object-cover"
-                                    controls
-                                    preload="metadata"
-                                    onError={(e) => {
-                                      console.error('Erro ao carregar vídeo:', file);
-                                    }}
-                                  >
-                                    Seu navegador não suporta vídeos.
-                                  </video>
+                                  />
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
