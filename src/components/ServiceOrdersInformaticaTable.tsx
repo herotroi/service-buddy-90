@@ -719,7 +719,7 @@ export const ServiceOrdersInformaticaTable = () => {
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Para Quando</span>
-                    <p>{viewedOrder.service_date ? format(new Date(viewedOrder.service_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+                    <p>{viewedOrder.service_date ? format(new Date(viewedOrder.service_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '-'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-muted-foreground">Cliente Avisado</span>

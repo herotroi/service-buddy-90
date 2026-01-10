@@ -1097,7 +1097,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                 <FormItem>
                   <FormLabel>Para Quando é o Serviço</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="datetime-local" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

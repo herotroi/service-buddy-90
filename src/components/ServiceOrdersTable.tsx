@@ -1036,7 +1036,7 @@ export const ServiceOrdersTable = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-muted-foreground mb-1">Para Quando é o Serviço</p>
-                        <p className="text-lg">{order.service_date ? format(new Date(order.service_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}</p>
+                        <p className="text-lg">{order.service_date ? format(new Date(order.service_date), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : '-'}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-muted-foreground mb-1">Quem Recebeu</p>
