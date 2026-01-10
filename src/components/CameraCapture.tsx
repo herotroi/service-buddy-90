@@ -221,8 +221,8 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden" aria-describedby={undefined}>
+    <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden" aria-describedby={undefined} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2">
             {mode === 'photo' ? <Camera className="w-5 h-5" /> : <Video className="w-5 h-5" />}

@@ -851,7 +851,7 @@ export const ServiceOrdersTable = () => {
       </AlertDialog>
 
       {/* Drawer para nova OS */}
-      <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer}>
+      <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer} modal={false}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader className="border-b pb-4">
             <DrawerTitle className="text-2xl">Nova Ordem de Serviço</DrawerTitle>
@@ -861,13 +861,16 @@ export const ServiceOrdersTable = () => {
           </DrawerHeader>
           <div className="overflow-y-auto px-6 py-6">
             <div className="max-w-4xl mx-auto">
-              <ServiceOrderForm 
-                onSuccess={() => {
-                  setShowNewOrderDrawer(false);
-                  fetchOrders();
-                }}
-                onCancel={() => setShowNewOrderDrawer(false)}
-              />
+              {showNewOrderDrawer && (
+                <ServiceOrderForm 
+                  key="new-order-form"
+                  onSuccess={() => {
+                    setShowNewOrderDrawer(false);
+                    fetchOrders();
+                  }}
+                  onCancel={() => setShowNewOrderDrawer(false)}
+                />
+              )}
             </div>
           </div>
         </DrawerContent>
@@ -1188,21 +1191,24 @@ export const ServiceOrdersTable = () => {
       </Drawer>
 
       {/* Drawer para editar OS */}
-      <Drawer open={!!editOrderId} onOpenChange={() => setEditOrderId(null)}>
+      <Drawer open={!!editOrderId} onOpenChange={() => setEditOrderId(null)} modal={false}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader className="border-b pb-4">
             <DrawerTitle className="text-2xl">Editar Ordem de Serviço</DrawerTitle>
           </DrawerHeader>
           <div className="overflow-y-auto px-6 py-6">
             <div className="max-w-4xl mx-auto">
-              <ServiceOrderForm 
-                orderId={editOrderId || undefined}
-                onSuccess={() => {
-                  setEditOrderId(null);
-                  fetchOrders();
-                }}
-                onCancel={() => setEditOrderId(null)}
-              />
+              {editOrderId && (
+                <ServiceOrderForm 
+                  key={`edit-order-${editOrderId}`}
+                  orderId={editOrderId}
+                  onSuccess={() => {
+                    setEditOrderId(null);
+                    fetchOrders();
+                  }}
+                  onCancel={() => setEditOrderId(null)}
+                />
+              )}
             </div>
           </div>
         </DrawerContent>
