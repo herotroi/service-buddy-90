@@ -19,18 +19,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { tracking_token, paths } = await req.json();
+    const { tracking_token, paths, order_type = 'celular' } = await req.json();
 
-    if (!tracking_token || !paths || !Array.isArray(paths)) {
+    if (!paths || !Array.isArray(paths)) {
       return new Response(
-        JSON.stringify({ error: 'Missing tracking_token or paths' }),
+        JSON.stringify({ error: 'Missing paths' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tracking_token)) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (tracking_token && !uuidRegex.test(tracking_token)) {
       return new Response(
         JSON.stringify({ error: 'Invalid tracking token' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -43,17 +43,37 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Validate that the tracking token exists and the service order is valid
-    const { data: orderData, error: orderError } = await supabase
-      .from('service_orders')
-      .select('id, media_files')
-      .eq('tracking_token', tracking_token)
-      .eq('deleted', false)
-      .single();
+    let orderData;
+    let orderError;
+
+    // Validate based on order type
+    if (order_type === 'informatica') {
+      // For informatica orders, use the ID directly
+      const result = await supabase
+        .from('service_orders_informatica')
+        .select('id, media_files')
+        .eq('id', tracking_token)
+        .eq('deleted', false)
+        .single();
+      
+      orderData = result.data;
+      orderError = result.error;
+    } else {
+      // For celular orders, use tracking_token
+      const result = await supabase
+        .from('service_orders')
+        .select('id, media_files')
+        .eq('tracking_token', tracking_token)
+        .eq('deleted', false)
+        .single();
+      
+      orderData = result.data;
+      orderError = result.error;
+    }
 
     if (orderError || !orderData) {
       return new Response(
-        JSON.stringify({ error: 'Invalid tracking token or order not found' }),
+        JSON.stringify({ error: 'Invalid token or order not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
