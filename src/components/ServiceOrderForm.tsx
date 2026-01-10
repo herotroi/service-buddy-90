@@ -15,7 +15,7 @@ import { PatternLock } from '@/components/PatternLock';
 import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
-import { processMediaFile, formatFileSize } from '@/lib/mediaCompression';
+import { processMediaFile, formatFileSize, isVideoFile, isImageFile } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
@@ -367,8 +367,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           // Upload do arquivo processado
           // Upload para o storage (70% -> 100%)
           setUploadProgress(70);
-          const fileExt = file.type.startsWith('video/') ? 
-            file.name.split('.').pop() : 'jpg';
+          
+          // Usar detecção robusta baseada em extensão também (importante para iPhone/Android)
+          const isVideo = isVideoFile(file);
+          const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
+          const fileExt = isVideo ? (originalExt || 'mp4') : 'jpg';
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           const filePath = `${orderId || 'temp'}/${fileName}`;
 
@@ -376,7 +379,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
           const { error: uploadError } = await supabase.storage
             .from('service-orders-media')
             .upload(filePath, processedFile, {
-              contentType: processedFile.type,
+              contentType: processedFile.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
               upsert: false
             });
 
@@ -395,7 +398,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             throw new Error('Erro ao gerar URL de acesso');
           }
 
-          const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+          const mediaType = isVideo ? 'video' : 'image';
 
           uploadedFiles.push({
             url: signedUrl,
@@ -1368,7 +1371,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                   <input
                     id="camera-video"
                     type="file"
-                    accept="video/*,.mov,.mp4,.m4v"
+                    accept="video/*,.mov,.mp4,.m4v,.3gp,.webm"
                     capture="environment"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
@@ -1399,7 +1402,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     id="media-upload"
                     type="file"
                     multiple
-                    accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v"
+                    accept="image/*,video/*,.heic,.heif,.mov,.mp4,.m4v,.3gp,.webm"
                     onChange={handleMediaUpload}
                     disabled={uploadingMedia}
                     className="hidden"
