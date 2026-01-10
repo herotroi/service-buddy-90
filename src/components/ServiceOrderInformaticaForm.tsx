@@ -312,7 +312,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       setCurrentFileName('');
 
       if (uploadedFiles.length > 0) {
-        setMediaFiles([...mediaFiles, ...uploadedFiles]);
+        setMediaFiles(prev => [...prev, ...uploadedFiles]);
         toast.success(
           uploadedFiles.length === 1 
             ? 'Arquivo enviado com sucesso' 
@@ -411,6 +411,8 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   };
 
   const onSubmit = async (data: FormData) => {
+    console.log('Salvando OS com', mediaFiles.length, 'arquivos de mídia');
+    
     try {
       setLoading(true);
 
