@@ -14,7 +14,7 @@ import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
-import { processMediaFile, formatFileSize, isVideoFile, isImageFile } from '@/lib/mediaCompression';
+import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
 import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
 
 interface ServiceOrderInformaticaFormProps {
@@ -264,9 +264,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           setUploadProgress(70);
           
           // Usar detecção robusta baseada em extensão também (importante para iPhone/Android)
-          const isVideo = isVideoFile(file);
+          const isVideoType = isVideoFile(file);
           const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
-          const fileExt = isVideo ? (originalExt || 'mp4') : 'jpg';
+          const fileExt = isVideoType ? (originalExt || 'mp4') : 'jpg';
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           const filePath = `informatica/${orderId || 'temp'}/${fileName}`;
 
@@ -274,7 +274,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           const { error: uploadError } = await supabase.storage
             .from('service-orders-media')
             .upload(filePath, processedFile, {
-              contentType: processedFile.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+              contentType: processedFile.type || (isVideoType ? 'video/mp4' : 'image/jpeg'),
               upsert: false
             });
 
@@ -292,7 +292,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
             throw new Error('Erro ao gerar URL de acesso');
           }
 
-          const mediaType = isVideo ? 'video' : 'image';
+          const mediaType = isVideoType ? 'video' : 'image';
 
           uploadedFiles.push({
             url: signedUrl,
@@ -365,9 +365,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       setUploadProgress(70);
       
       // Usar detecção robusta baseada em extensão também
-      const isVideo = isVideoFile(file);
+      const isVideoType = isVideoFile(file);
       const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
-      const fileExt = isVideo ? (originalExt || 'mp4') : 'jpg';
+      const fileExt = isVideoType ? (originalExt || 'mp4') : 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `informatica/${orderId || 'temp'}/${fileName}`;
 
@@ -375,7 +375,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       const { error: uploadError } = await supabase.storage
         .from('service-orders-media')
         .upload(filePath, processedFile, {
-          contentType: processedFile.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
+          contentType: processedFile.type || (isVideoType ? 'video/mp4' : 'image/jpeg'),
           upsert: false
         });
 
@@ -389,7 +389,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         throw new Error('Erro ao gerar URL de acesso');
       }
 
-      const mediaType = isVideo ? 'video' : 'image';
+      const mediaType = isVideoType ? 'video' : 'image';
 
       setMediaFiles(prev => [...prev, {
         url: signedUrl,
