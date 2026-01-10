@@ -46,7 +46,6 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { ServiceOrderForm } from './ServiceOrderForm';
 import { ServiceOrderPrint } from './ServiceOrderPrint';
 import { PatternLock } from './PatternLock';
-import { UniversalVideoPlayer } from './UniversalVideoPlayer';
 
 interface ServiceOrder {
   id: string;
@@ -1161,13 +1160,19 @@ export const ServiceOrdersTable = () => {
                                       e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErro%3C/text%3E%3C/svg%3E';
                                     }}
                                   />
-                                                ) : (
-                                                  <UniversalVideoPlayer
-                                                    src={mediaUrl}
-                                                    name={file.name}
-                                                    className="w-full h-full object-cover"
-                                                  />
-                                                )}
+                                ) : (
+                                  <video 
+                                    src={mediaUrl}
+                                    className="w-full h-full object-cover"
+                                    controls
+                                    preload="metadata"
+                                    onError={(e) => {
+                                      console.error('Erro ao carregar vídeo:', file);
+                                    }}
+                                  >
+                                    Seu navegador não suporta vídeos.
+                                  </video>
+                                )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
                             </div>
