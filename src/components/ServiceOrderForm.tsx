@@ -1495,47 +1495,27 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
             )}
 
             {mediaFiles.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {mediaFiles.map((file, index) => (
-                  <div key={index} className="relative group">
-                    <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                      {file.type === 'image' ? (
-                        <img 
-                          src={file.url} 
-                          alt={file.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col">
-                          <video 
-                            src={file.url}
-                            className="w-full h-full object-cover"
-                            controls
-                            playsInline
-                            preload="metadata"
-                            controlsList="nodownload"
-                            onError={(e) => {
-                              // Mostrar link de download se não conseguir reproduzir
-                              const target = e.currentTarget;
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `
-                                  <div class="w-full h-full flex flex-col items-center justify-center p-2 text-center">
-                                    <svg class="w-8 h-8 mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                    </svg>
-                                    <p class="text-xs text-muted-foreground mb-2">Formato não suportado</p>
-                                    <a href="${file.url}" target="_blank" rel="noopener noreferrer" class="text-xs text-primary underline">Baixar vídeo</a>
-                                  </div>
-                                `;
-                              }
-                            }}
-                          >
-                            Seu navegador não suporta este formato de vídeo.
-                          </video>
-                        </div>
-                      )}
-                    </div>
+                  <div 
+                    key={index} 
+                    className="relative group rounded-lg overflow-hidden border border-border"
+                  >
+                    {file.type === 'video' ? (
+                      <video
+                        src={file.url}
+                        controls
+                        playsInline
+                        className="w-full aspect-video object-cover"
+                        controlsList="nodownload"
+                      />
+                    ) : (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="w-full aspect-square object-cover"
+                      />
+                    )}
                     <Button
                       type="button"
                       variant="destructive"
@@ -1545,17 +1525,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
-                    {/* Link para baixar vídeo do iPhone */}
-                    {file.type === 'video' && file.name.toLowerCase().endsWith('.mov') && (
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Baixar
-                      </a>
-                    )}
+                    <p className="text-xs text-muted-foreground p-2 truncate">{file.name}</p>
                   </div>
                 ))}
               </div>
