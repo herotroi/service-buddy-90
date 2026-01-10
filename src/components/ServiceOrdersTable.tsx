@@ -150,7 +150,7 @@ export const ServiceOrdersTable = () => {
   });
   const [totalCount, setTotalCount] = useState(0);
 
-  const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation'>('os_number');
+  const [sortBy, setSortBy] = useState<'entry_date' | 'client_name' | 'os_number' | 'situation' | 'service_date'>('os_number');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Search state - only applied when button is clicked
@@ -312,8 +312,13 @@ export const ServiceOrdersTable = () => {
       }
 
       // Apply sorting
-      const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
-      query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
+      if (sortBy === 'service_date') {
+        // Para "Para Quando é o Serviço", ordenar com datas futuras primeiro (mais próximas primeiro)
+        query = query.order('service_date', { ascending: true, nullsFirst: false });
+      } else {
+        const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
+        query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
+      }
 
       // If searching, fetch all records to filter client-side for OS partial match
       // Otherwise use server-side pagination
@@ -349,6 +354,35 @@ export const ServiceOrdersTable = () => {
       }
       if (appliedFilters.withdrawal !== 'all') {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
+      }
+
+      // Para ordenação por service_date, ordenar client-side para priorizar datas futuras mais próximas
+      if (sortBy === 'service_date') {
+        const now = new Date();
+        filteredData = filteredData.sort((a, b) => {
+          const dateA = a.service_date ? new Date(a.service_date) : null;
+          const dateB = b.service_date ? new Date(b.service_date) : null;
+          
+          // Nulls vão para o final
+          if (!dateA && !dateB) return 0;
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          
+          const isFutureA = dateA >= now;
+          const isFutureB = dateB >= now;
+          
+          // Datas futuras vêm primeiro
+          if (isFutureA && !isFutureB) return -1;
+          if (!isFutureA && isFutureB) return 1;
+          
+          // Se ambas são futuras, a mais próxima vem primeiro (ordem crescente)
+          if (isFutureA && isFutureB) {
+            return dateA.getTime() - dateB.getTime();
+          }
+          
+          // Se ambas são passadas, a mais recente vem primeiro (ordem decrescente)
+          return dateB.getTime() - dateA.getTime();
+        });
       }
 
       // For search results, apply client-side pagination
@@ -545,9 +579,9 @@ export const ServiceOrdersTable = () => {
         <div className="flex gap-2 flex-wrap">
           <Select
             value={sortBy}
-            onValueChange={(value: 'entry_date' | 'client_name' | 'os_number' | 'situation') => setSortBy(value)}
+            onValueChange={(value: 'entry_date' | 'client_name' | 'os_number' | 'situation' | 'service_date') => setSortBy(value)}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-48">
               <ArrowUpDown className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -556,6 +590,7 @@ export const ServiceOrdersTable = () => {
               <SelectItem value="client_name">Nome</SelectItem>
               <SelectItem value="os_number">Número OS</SelectItem>
               <SelectItem value="situation">Situação</SelectItem>
+              <SelectItem value="service_date">Para Quando é o Serviço</SelectItem>
             </SelectContent>
           </Select>
           <Button
