@@ -16,7 +16,7 @@ import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 import { usePersistedMediaFiles, MediaFile } from '@/hooks/usePersistedMediaFiles';
 import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
-import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
+import { getSignedUrl, getSignedUrls, listOrderFiles } from '@/lib/storageUtils';
 
 interface ServiceOrderInformaticaFormProps {
   onSuccess: () => void;
@@ -166,10 +166,32 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       });
 
       // Carregar arquivos de mídia com URLs assinadas
-      // Sempre chamar setMediaFilesFromDb mesmo se vazio - ele vai mesclar com arquivos persistidos
-      const dbFiles = data.media_files && Array.isArray(data.media_files) 
+      let dbFiles = data.media_files && Array.isArray(data.media_files) 
         ? data.media_files as unknown as MediaFile[] 
         : [];
+      
+      // Se não há arquivos no banco, tentar recuperar do storage (arquivos órfãos)
+      if (dbFiles.length === 0) {
+        console.log('[loadOrderData] 🔍 Buscando arquivos órfãos no storage...');
+        const storageFiles = await listOrderFiles(id);
+        if (storageFiles.length > 0) {
+          console.log(`[loadOrderData] 📦 Encontrou ${storageFiles.length} arquivos no storage!`);
+          dbFiles = storageFiles;
+          
+          // Salvar os arquivos recuperados no banco de dados
+          const { error: updateError } = await supabase
+            .from('service_orders_informatica')
+            .update({ media_files: JSON.parse(JSON.stringify(storageFiles)) })
+            .eq('id', id);
+          
+          if (updateError) {
+            console.error('[loadOrderData] Erro ao sincronizar arquivos:', updateError);
+          } else {
+            console.log('[loadOrderData] ✅ Arquivos sincronizados com o banco!');
+          }
+        }
+      }
+      
       const signedFiles = dbFiles.length > 0 ? await getSignedUrls(dbFiles) : [];
       setMediaFilesFromDb(signedFiles);
     } catch (error: any) {

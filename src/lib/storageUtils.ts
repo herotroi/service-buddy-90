@@ -90,3 +90,50 @@ export const uploadAndGetSignedUrl = async (
     return null;
   }
 };
+
+/**
+ * Lista todos os arquivos de uma OS no storage
+ * Útil para recuperar arquivos órfãos que não foram salvos no banco
+ * @param orderId - O ID da OS
+ */
+export const listOrderFiles = async (orderId: string): Promise<MediaFile[]> => {
+  try {
+    const { data: files, error } = await supabase.storage
+      .from('service-orders-media')
+      .list(orderId, { limit: 100 });
+
+    if (error) {
+      console.error('Erro ao listar arquivos do storage:', error);
+      return [];
+    }
+
+    if (!files || files.length === 0) {
+      return [];
+    }
+
+    // Converter para MediaFile com URLs assinadas
+    const mediaFiles: MediaFile[] = await Promise.all(
+      files.map(async (file) => {
+        const path = `${orderId}/${file.name}`;
+        const signedUrl = await getSignedUrl(path, 3600);
+        
+        // Detectar tipo pelo nome do arquivo
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+        const isVideo = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'quicktime'].includes(ext);
+        
+        return {
+          url: signedUrl || '',
+          path,
+          type: isVideo ? 'video' : 'image',
+          name: file.name,
+        } as MediaFile;
+      })
+    );
+
+    // Filtrar arquivos sem URL válida
+    return mediaFiles.filter(f => f.url);
+  } catch (error) {
+    console.error('Erro ao listar arquivos:', error);
+    return [];
+  }
+};
