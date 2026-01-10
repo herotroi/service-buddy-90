@@ -470,8 +470,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       console.log(`Arquivo da câmera processado: ${file.name} (${originalSize} → ${compressedSize})`);
 
       setUploadProgress(70);
-      const fileExt = file.type.startsWith('video/') ? 
-        file.name.split('.').pop() : 'jpg';
+      
+      // Usar detecção robusta baseada em extensão também
+      const isVideo = isVideoFile(file);
+      const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
+      const fileExt = isVideo ? (originalExt || 'mp4') : 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${orderId || 'temp'}/${fileName}`;
 
@@ -479,7 +482,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       const { error: uploadError } = await supabase.storage
         .from('service-orders-media')
         .upload(filePath, processedFile, {
-          contentType: processedFile.type,
+          contentType: processedFile.type || (isVideo ? 'video/mp4' : 'image/jpeg'),
           upsert: false
         });
 
@@ -493,7 +496,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         throw new Error('Erro ao gerar URL de acesso');
       }
 
-      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+      const mediaType = isVideo ? 'video' : 'image';
 
       setMediaFiles(prev => [...prev, {
         url: signedUrl,
