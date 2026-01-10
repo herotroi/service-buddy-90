@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, Plus, Printer, ArrowUpDown } from 'lucide-react';
 import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
+import { getSignedUrls } from '@/lib/storageUtils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -135,6 +136,8 @@ export const ServiceOrdersTable = () => {
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const [printOrderId, setPrintOrderId] = useState<string | null>(null);
+  const [signedMediaFiles, setSignedMediaFiles] = useState<MediaFile[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -174,6 +177,36 @@ export const ServiceOrdersTable = () => {
       fetchOrders();
     }
   }, [session, pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters]);
+
+  // Load signed URLs when viewing an order
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      if (!viewOrderId) {
+        setSignedMediaFiles([]);
+        return;
+      }
+
+      const order = orders.find(o => o.id === viewOrderId);
+      if (!order?.media_files || !Array.isArray(order.media_files) || (order.media_files as any[]).length === 0) {
+        setSignedMediaFiles([]);
+        return;
+      }
+
+      setLoadingMedia(true);
+      try {
+        const mediaFiles = order.media_files as unknown as MediaFile[];
+        const signedFiles = await getSignedUrls(mediaFiles);
+        setSignedMediaFiles(signedFiles);
+      } catch (error) {
+        console.error('Error loading signed URLs:', error);
+        setSignedMediaFiles(order.media_files as unknown as MediaFile[]);
+      } finally {
+        setLoadingMedia(false);
+      }
+    };
+
+    loadSignedUrls();
+  }, [viewOrderId, orders]);
 
   // Fetch filter options when session is ready
   useEffect(() => {
@@ -1139,40 +1172,37 @@ export const ServiceOrdersTable = () => {
                   {/* Fotos e Vídeos */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4 pb-2 border-b">Fotos e Vídeos</h3>
-                    {order.media_files && Array.isArray(order.media_files) && (order.media_files as any[]).length > 0 ? (
+                    {loadingMedia ? (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : signedMediaFiles.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {((order.media_files as unknown as MediaFile[]) || []).map((file, index) => {
-                          // Garantir que a URL seja pública e válida
-                          const mediaUrl = file.url.startsWith('http') 
-                            ? file.url 
-                            : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/service-orders-media/${file.path}`;
-                          
-                          return (
-                            <div key={index} className="relative group">
-                              <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
-                                {file.type === 'image' ? (
-                                  <img 
-                                    src={mediaUrl} 
-                                    alt={file.name}
-                                    className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => window.open(mediaUrl, '_blank')}
-                                    onError={(e) => {
-                                      console.error('Erro ao carregar imagem:', file);
-                                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErro%3C/text%3E%3C/svg%3E';
-                                    }}
-                                  />
-                                ) : (
-                                  <UniversalVideoPlayer
-                                    src={mediaUrl}
-                                    name={file.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
+                        {signedMediaFiles.map((file, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square rounded-lg overflow-hidden bg-muted border border-border">
+                              {file.type === 'image' ? (
+                                <img 
+                                  src={file.url} 
+                                  alt={file.name}
+                                  className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(file.url, '_blank')}
+                                  onError={(e) => {
+                                    console.error('Erro ao carregar imagem:', file);
+                                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EErro%3C/text%3E%3C/svg%3E';
+                                  }}
+                                />
+                              ) : (
+                                <UniversalVideoPlayer
+                                  src={file.url}
+                                  name={file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
                             </div>
-                          );
-                        })}
+                            <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="text-muted-foreground">Nenhum arquivo anexado</p>
