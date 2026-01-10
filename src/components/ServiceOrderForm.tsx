@@ -18,6 +18,7 @@ import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
 import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
+import { usePersistedMediaFiles, MediaFile } from '@/hooks/usePersistedMediaFiles';
 import { getSignedUrl, getSignedUrls } from '@/lib/storageUtils';
 
 interface ServiceOrderFormProps {
@@ -71,12 +72,7 @@ interface FormData {
   checklist_esta_ligado: boolean | null;
 }
 
-interface MediaFile {
-  url: string;
-  path: string;
-  type: 'image' | 'video';
-  name: string;
-}
+// MediaFile interface is imported from usePersistedMediaFiles hook
 
 export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderFormProps) => {
   const { user } = useAuth();
@@ -87,7 +83,17 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
   const [employees, setEmployees] = useState<any[]>([]);
   
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  
+  // Usar hook de persistência para mídias (resolve problema de perda de estado no mobile)
+  const { 
+    mediaFiles, 
+    setMediaFiles, 
+    setMediaFilesFromDb, 
+    addMediaFiles, 
+    removeMediaFile, 
+    clearPersistedFiles 
+  } = usePersistedMediaFiles('service_orders', orderId);
+  
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFileName, setCurrentFileName] = useState('');
@@ -259,7 +265,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       if (data.media_files && Array.isArray(data.media_files)) {
         const files = data.media_files as unknown as MediaFile[];
         const signedFiles = await getSignedUrls(files);
-        setMediaFiles(signedFiles);
+        setMediaFilesFromDb(signedFiles); // Usar função específica para dados do DB
       }
       
       // Marcar que o carregamento inicial foi concluído
@@ -418,7 +424,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
       setCurrentFileName('');
 
       if (uploadedFiles.length > 0) {
-        setMediaFiles(prev => [...prev, ...uploadedFiles]);
+        addMediaFiles(uploadedFiles);
         toast.success(
           uploadedFiles.length === 1 
             ? 'Arquivo enviado com sucesso' 
@@ -447,7 +453,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
       if (error) throw error;
 
-      setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+      removeMediaFile(index);
       toast.success('Arquivo removido');
     } catch (error: any) {
       toast.error('Erro ao remover arquivo');
@@ -498,7 +504,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
 
       const mediaType = isVideoType ? 'video' : 'image';
 
-      setMediaFiles(prev => [...prev, {
+      addMediaFiles([{
         url: signedUrl,
         path: filePath,
         type: mediaType,
@@ -699,10 +705,12 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         }
       }
 
+      // Limpar dados persistidos após sucesso
+      clearPersistedFiles();
+      
       onSuccess();
       if (!orderId) {
         form.reset();
-        setMediaFiles([]);
       }
     } catch (error: any) {
       toast.error(orderId ? 'Erro ao atualizar OS' : 'Erro ao criar OS');
