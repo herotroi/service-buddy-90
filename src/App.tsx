@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TrackingOS from "./pages/TrackingOS";
+import TrackingOSInformatica from "./pages/TrackingOSInformatica";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               {/* Public tracking route - no auth required */}
               <Route path="/acompanhar/:token" element={<TrackingOS />} />
+              {/* Public tracking route for informatica - no auth required */}
+              <Route path="/acompanhar-informatica/:id" element={<TrackingOSInformatica />} />
               <Route
                 path="/"
                 element={

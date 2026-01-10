@@ -363,6 +363,7 @@ export type Database = {
           senha: string | null
           service_date: string | null
           situation_id: string | null
+          tracking_token: string | null
           updated_at: string
           user_id: string | null
           value: number | null
@@ -391,6 +392,7 @@ export type Database = {
           senha?: string | null
           service_date?: string | null
           situation_id?: string | null
+          tracking_token?: string | null
           updated_at?: string
           user_id?: string | null
           value?: number | null
@@ -419,6 +421,7 @@ export type Database = {
           senha?: string | null
           service_date?: string | null
           situation_id?: string | null
+          tracking_token?: string | null
           updated_at?: string
           user_id?: string | null
           value?: number | null
@@ -601,6 +604,24 @@ export type Database = {
           media_files: Json
           os_number: number
           reported_defect: string
+          situation_color: string
+          situation_name: string
+          withdrawal_color: string
+          withdrawal_name: string
+          withdrawn_by: string
+        }[]
+      }
+      get_tracking_order_informatica: {
+        Args: { p_id: string }
+        Returns: {
+          accessories: string
+          defect: string
+          entry_date: string
+          equipment: string
+          exit_date: string
+          media_files: Json
+          more_details: string
+          os_number: number
           situation_color: string
           situation_name: string
           withdrawal_color: string
