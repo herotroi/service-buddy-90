@@ -464,7 +464,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         exit_date: toISOWithTimezone(data.exit_date || ''),
         withdrawn_by: data.withdrawn_by || null,
         user_id: user?.id,
-        media_files: mediaFiles,
+        media_files: JSON.parse(JSON.stringify(mediaFiles)),
       };
 
       if (orderId) {
@@ -507,12 +507,58 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
           async (retryData) => {
             return await supabase
               .from('service_orders_informatica')
-              .insert(retryData);
+              .insert(retryData)
+              .select()
+              .single();
           }
         );
 
         if (!result.success) {
           throw new Error('Não foi possível criar a OS');
+        }
+
+        const newOrder = result.data;
+
+        // Se houver arquivos, mover para a pasta da OS e atualizar o banco
+        if (mediaFiles.length > 0 && newOrder) {
+          const updatedFiles: MediaFile[] = [];
+          for (const file of mediaFiles) {
+            // Verificar se o arquivo está em temp/ ou já na pasta da OS
+            if (file.path.startsWith('temp/')) {
+              const newPath = file.path.replace('temp/', `${newOrder.id}/`);
+              
+              const { error: moveError } = await supabase.storage
+                .from('service-orders-media')
+                .move(file.path, newPath);
+
+              if (moveError) {
+                console.error('Erro ao mover arquivo:', moveError);
+                // Tentar manter o arquivo no temp mesmo assim
+                updatedFiles.push(file);
+              } else {
+                // Gerar nova URL assinada para o caminho atualizado
+                const signedUrl = await getSignedUrl(newPath);
+                updatedFiles.push({
+                  ...file,
+                  path: newPath,
+                  url: signedUrl || file.url,
+                });
+              }
+            } else {
+              // Arquivo já está no caminho correto
+              updatedFiles.push(file);
+            }
+          }
+
+          // Atualizar os arquivos no banco de dados
+          const { error: updateError } = await supabase
+            .from('service_orders_informatica')
+            .update({ media_files: JSON.parse(JSON.stringify(updatedFiles)) } as any)
+            .eq('id', newOrder.id);
+          
+          if (updateError) {
+            console.error('Erro ao atualizar media_files:', updateError);
+          }
         }
 
         if (result.finalOsNumber) {
