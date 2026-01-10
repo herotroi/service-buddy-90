@@ -6,21 +6,21 @@ const MAX_IMAGE_HEIGHT = 2560;
 const IMAGE_QUALITY = 0.92; // Qualidade alta para preservar detalhes
 const MAX_VIDEO_SIZE_MB = 5000; // Limite máximo para vídeos (5GB)
 
-// Extensões de imagem suportadas
+// Extensões de imagem suportadas (iPhone + Android)
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp', '.tiff'];
-// Extensões de vídeo suportadas (incluindo formatos Apple)
-const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp', '.quicktime'];
+// Extensões de vídeo suportadas (iPhone + Android)
+const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v', '.3gp', '.3gpp', '.quicktime', '.ts', '.mts'];
 
 /**
  * Detecta se o arquivo é uma imagem baseado no tipo MIME ou extensão
  */
-const isImageFile = (file: File): boolean => {
+export const isImageFile = (file: File): boolean => {
   // Verificar pelo tipo MIME primeiro
   if (file.type && file.type.startsWith('image/')) {
     return true;
   }
   
-  // Fallback: verificar pela extensão do arquivo (importante para iPhone)
+  // Fallback: verificar pela extensão do arquivo (importante para iPhone/Android)
   const fileName = file.name.toLowerCase();
   return IMAGE_EXTENSIONS.some(ext => fileName.endsWith(ext));
 };
@@ -28,13 +28,13 @@ const isImageFile = (file: File): boolean => {
 /**
  * Detecta se o arquivo é um vídeo baseado no tipo MIME ou extensão
  */
-const isVideoFile = (file: File): boolean => {
+export const isVideoFile = (file: File): boolean => {
   // Verificar pelo tipo MIME primeiro
   if (file.type && (file.type.startsWith('video/') || file.type === 'video/quicktime')) {
     return true;
   }
   
-  // Fallback: verificar pela extensão do arquivo (importante para iPhone com MOV)
+  // Fallback: verificar pela extensão do arquivo (importante para iPhone/Android com MOV, 3GP, WebM)
   const fileName = file.name.toLowerCase();
   return VIDEO_EXTENSIONS.some(ext => fileName.endsWith(ext));
 };
@@ -205,17 +205,31 @@ export const prepareVideo = async (
     throw new Error(`Vídeo muito grande. Tamanho máximo: ${MAX_VIDEO_SIZE_MB}MB. Seu arquivo: ${fileSizeMB.toFixed(0)}MB`);
   }
   
-  // Para vídeos MOV do iPhone, garantir que temos o tipo MIME correto
+  // Corrigir o tipo MIME para vídeos que não têm tipo detectado corretamente
   let processedFile = file;
   const fileName = file.name.toLowerCase();
+  const ext = fileName.split('.').pop() || '';
   
-  if (fileName.endsWith('.mov') && (!file.type || file.type === '')) {
-    // Criar novo arquivo com tipo MIME correto
-    processedFile = new File([file], file.name, { type: 'video/quicktime' });
-    console.log('Tipo MIME do vídeo MOV corrigido para video/quicktime');
+  // Mapear extensões para tipos MIME corretos
+  const mimeMap: Record<string, string> = {
+    'mov': 'video/quicktime',
+    'mp4': 'video/mp4',
+    'm4v': 'video/x-m4v',
+    'webm': 'video/webm',
+    '3gp': 'video/3gpp',
+    '3gpp': 'video/3gpp',
+    'avi': 'video/x-msvideo',
+    'mkv': 'video/x-matroska',
+    'ts': 'video/mp2t',
+    'mts': 'video/mp2t',
+  };
+  
+  if ((!file.type || file.type === '' || file.type === 'application/octet-stream') && mimeMap[ext]) {
+    processedFile = new File([file], file.name, { type: mimeMap[ext] });
+    console.log(`Tipo MIME do vídeo corrigido para ${mimeMap[ext]}`);
   }
   
-  console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB (${file.type || 'tipo não detectado'})`);
+  console.log(`Vídeo preparado para upload: ${fileSizeMB.toFixed(2)}MB (${processedFile.type || 'tipo não detectado'})`);
   onProgress?.(70);
   return processedFile;
 };
