@@ -66,6 +66,22 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
   const [currentFileName, setCurrentFileName] = useState('');
   const [cameraMode, setCameraMode] = useState<'photo' | 'video' | null>(null);
 
+  // Converte data do banco para formato local (date only)
+  const formatDateForInput = (dateString: string) => {
+    const date = new Date(dateString);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split('T')[0];
+  };
+
+  // Obtém data local atual
+  const getLocalDate = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split('T')[0];
+  };
+
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
     table: 'service_orders_informatica',
     currentOrderId: orderId,
@@ -76,7 +92,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     defaultValues: {
       os_number: 1,
       senha: '',
-      entry_date: new Date().toISOString().split('T')[0],
+      entry_date: getLocalDate(),
       client_name: '',
       contact: '',
       other_contacts: '',
@@ -123,7 +139,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       form.reset({
         os_number: data.os_number,
         senha: data.senha || '',
-        entry_date: new Date(data.entry_date).toISOString().split('T')[0],
+        entry_date: formatDateForInput(data.entry_date),
         client_name: data.client_name,
         contact: data.contact || '',
         other_contacts: data.other_contacts || '',
@@ -134,12 +150,12 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         value: data.value || undefined,
         situation_id: data.situation_id || undefined,
         observations: data.observations || '',
-        service_date: data.service_date ? new Date(data.service_date).toISOString().split('T')[0] : undefined,
+        service_date: data.service_date ? formatDateForInput(data.service_date) : undefined,
         received_by_id: data.received_by_id || undefined,
         equipment_location_id: data.equipment_location_id || undefined,
         withdrawal_situation_id: data.withdrawal_situation_id || undefined,
         client_notified: data.client_notified,
-        exit_date: data.exit_date ? new Date(data.exit_date).toISOString().split('T')[0] : undefined,
+        exit_date: data.exit_date ? formatDateForInput(data.exit_date) : undefined,
         withdrawn_by: data.withdrawn_by || '',
       });
 
@@ -407,10 +423,23 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         }
       }
 
+      // Função para converter data do input para formato ISO sem alterar o fuso
+      const toISOWithTimezone = (dateStr: string) => {
+        if (!dateStr) return null;
+        // Se já inclui horário (datetime-local), usa diretamente
+        if (dateStr.includes('T')) {
+          const date = new Date(dateStr);
+          return date.toISOString();
+        }
+        // Se é só data, adiciona meio-dia para evitar problemas de fuso
+        const date = new Date(dateStr + 'T12:00:00');
+        return date.toISOString();
+      };
+
       const orderData: any = {
         os_number: data.os_number,
         senha: data.senha || null,
-        entry_date: new Date(data.entry_date).toISOString(),
+        entry_date: toISOWithTimezone(data.entry_date),
         client_name: data.client_name,
         contact: data.contact || null,
         other_contacts: data.other_contacts || null,
@@ -421,12 +450,12 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         value: data.value || null,
         situation_id: data.situation_id || null,
         observations: data.observations || null,
-        service_date: data.service_date ? new Date(data.service_date).toISOString() : null,
+        service_date: toISOWithTimezone(data.service_date || ''),
         received_by_id: data.received_by_id || null,
         equipment_location_id: data.equipment_location_id || null,
         withdrawal_situation_id: data.withdrawal_situation_id || null,
         client_notified: data.client_notified,
-        exit_date: data.exit_date ? new Date(data.exit_date).toISOString() : null,
+        exit_date: toISOWithTimezone(data.exit_date || ''),
         withdrawn_by: data.withdrawn_by || null,
         user_id: user?.id,
         media_files: mediaFiles,
