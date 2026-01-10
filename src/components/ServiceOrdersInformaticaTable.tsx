@@ -151,6 +151,12 @@ export const ServiceOrdersInformaticaTable = () => {
           table: 'service_orders_informatica'
         },
         (payload) => {
+          // Não atualizar se um drawer de cadastro está aberto
+          if (showNewOrderDrawer || editOrderId) {
+            console.log('Drawer aberto, ignorando atualização realtime');
+            return;
+          }
+          
           if (payload.eventType === 'INSERT') {
             fetchSingleOrder(payload.new.id);
           } else if (payload.eventType === 'UPDATE') {
@@ -165,7 +171,7 @@ export const ServiceOrdersInformaticaTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [session, showNewOrderDrawer, editOrderId]);
 
   const fetchData = async () => {
     try {

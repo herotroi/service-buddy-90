@@ -180,7 +180,7 @@ export const ServiceOrdersTable = () => {
     
     fetchFilterOptions();
 
-    // Configurar realtime para service_orders
+    // Configurar realtime para service_orders - atualização incremental para não fechar drawers
     const channel = supabase
       .channel('service-orders-changes')
       .on(
@@ -190,10 +190,67 @@ export const ServiceOrdersTable = () => {
           schema: 'public',
           table: 'service_orders'
         },
-        (payload) => {
+        async (payload) => {
           console.log('Realtime update:', payload);
-          // Refetch current page on any change
-          fetchOrders();
+          
+          // Não atualizar se um drawer de cadastro está aberto
+          if (showNewOrderDrawer || editOrderId) {
+            console.log('Drawer aberto, ignorando atualização realtime');
+            return;
+          }
+          
+          if (payload.eventType === 'INSERT') {
+            // Buscar o novo registro completo
+            const { data, error } = await supabase
+              .from('service_orders')
+              .select(`
+                *,
+                situation:situations(id, name, color),
+                withdrawal_situation:withdrawal_situations(name, color),
+                technician:employees!service_orders_technician_id_fkey(name),
+                received_by:employees!service_orders_received_by_id_fkey(name)
+              `)
+              .eq('id', payload.new.id)
+              .eq('deleted', false)
+              .maybeSingle();
+              
+            if (!error && data) {
+              setOrders(prev => {
+                // Verificar se já existe
+                const exists = prev.some(o => o.id === data.id);
+                if (exists) return prev;
+                return [data, ...prev];
+              });
+              setTotalCount(prev => prev + 1);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Buscar o registro atualizado
+            const { data, error } = await supabase
+              .from('service_orders')
+              .select(`
+                *,
+                situation:situations(id, name, color),
+                withdrawal_situation:withdrawal_situations(name, color),
+                technician:employees!service_orders_technician_id_fkey(name),
+                received_by:employees!service_orders_received_by_id_fkey(name)
+              `)
+              .eq('id', payload.new.id)
+              .maybeSingle();
+              
+            if (!error && data) {
+              if (data.deleted) {
+                // Se foi soft-deleted, remover da lista
+                setOrders(prev => prev.filter(o => o.id !== data.id));
+                setTotalCount(prev => prev - 1);
+              } else {
+                // Atualizar o registro
+                setOrders(prev => prev.map(o => o.id === data.id ? data : o));
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setOrders(prev => prev.filter(o => o.id !== payload.old.id));
+            setTotalCount(prev => prev - 1);
+          }
         }
       )
       .subscribe();
@@ -201,7 +258,7 @@ export const ServiceOrdersTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [session, showNewOrderDrawer, editOrderId]);
 
   const fetchFilterOptions = async () => {
     try {
