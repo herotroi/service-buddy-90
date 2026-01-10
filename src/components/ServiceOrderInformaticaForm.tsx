@@ -1124,7 +1124,15 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                           src={file.url}
                           className="w-full h-full object-cover"
                           controls
-                        />
+                          playsInline
+                          preload="metadata"
+                          controlsList="nodownload"
+                          onError={(e) => {
+                            console.error('Erro ao carregar vídeo:', file.url);
+                          }}
+                        >
+                          Seu navegador não suporta a reprodução de vídeos.
+                        </video>
                       )}
                     </div>
                     <Button
