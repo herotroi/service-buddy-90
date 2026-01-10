@@ -661,19 +661,22 @@ export const ServiceOrdersInformaticaTable = () => {
       )}
 
       {/* Drawer Nova OS */}
-      <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer}>
+      <Drawer open={showNewOrderDrawer} onOpenChange={setShowNewOrderDrawer} modal={false}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Nova Ordem de Serviço - Informática</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="h-[calc(90vh-80px)] px-4">
-            <ServiceOrderInformaticaForm
-              onSuccess={() => {
-                setShowNewOrderDrawer(false);
-                fetchData();
-              }}
-              onCancel={() => setShowNewOrderDrawer(false)}
-            />
+            {showNewOrderDrawer && (
+              <ServiceOrderInformaticaForm
+                key="new-order-informatica-form"
+                onSuccess={() => {
+                  setShowNewOrderDrawer(false);
+                  fetchData();
+                }}
+                onCancel={() => setShowNewOrderDrawer(false)}
+              />
+            )}
           </ScrollArea>
         </DrawerContent>
       </Drawer>
@@ -816,20 +819,23 @@ export const ServiceOrdersInformaticaTable = () => {
       </Drawer>
 
       {/* Drawer Editar OS */}
-      <Drawer open={!!editOrderId} onOpenChange={() => setEditOrderId(null)}>
+      <Drawer open={!!editOrderId} onOpenChange={() => setEditOrderId(null)} modal={false}>
         <DrawerContent className="max-h-[90vh]">
           <DrawerHeader>
             <DrawerTitle>Editar Ordem de Serviço</DrawerTitle>
           </DrawerHeader>
           <ScrollArea className="h-[calc(90vh-80px)] px-4">
-            <ServiceOrderInformaticaForm
-              orderId={editOrderId || undefined}
-              onSuccess={() => {
-                setEditOrderId(null);
-                fetchData();
-              }}
-              onCancel={() => setEditOrderId(null)}
-            />
+            {editOrderId && (
+              <ServiceOrderInformaticaForm
+                key={`edit-order-informatica-${editOrderId}`}
+                orderId={editOrderId}
+                onSuccess={() => {
+                  setEditOrderId(null);
+                  fetchData();
+                }}
+                onCancel={() => setEditOrderId(null)}
+              />
+            )}
           </ScrollArea>
         </DrawerContent>
       </Drawer>
