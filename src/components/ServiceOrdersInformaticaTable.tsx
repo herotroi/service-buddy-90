@@ -119,8 +119,22 @@ export const ServiceOrdersInformaticaTable = () => {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    perPage: 10,
+    perPage: 50,
   });
+
+  // Search state - only applied when button is clicked
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+  
+  const handleSearch = () => {
+    setAppliedFilters(filters);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   useEffect(() => {
     if (!session) return;
@@ -265,17 +279,21 @@ export const ServiceOrdersInformaticaTable = () => {
     // Filtrar itens deletados
     if (order.deleted) return false;
 
-    const matchesSearch = 
-      order.os_number.toString().includes(filters.search) ||
-      order.client_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      order.equipment.toLowerCase().includes(filters.search.toLowerCase());
+    const searchTerm = appliedFilters.search?.trim() || '';
+    const searchLower = searchTerm.toLowerCase();
+    
+    const matchesSearch = searchTerm === '' || 
+      order.os_number.toString().includes(searchTerm) ||
+      order.client_name.toLowerCase().includes(searchLower) ||
+      order.equipment.toLowerCase().includes(searchLower) ||
+      order.defect?.toLowerCase().includes(searchLower);
 
-    const matchesSituation = filters.situation === 'all' || order.situation?.id === filters.situation;
-    const matchesLocation = filters.location === 'all' || order.equipment_location?.name === filters.location;
-    const matchesWithdrawal = filters.withdrawal === 'all' || order.withdrawal_situation?.name === filters.withdrawal;
+    const matchesSituation = appliedFilters.situation === 'all' || order.situation?.id === appliedFilters.situation;
+    const matchesLocation = appliedFilters.location === 'all' || order.equipment_location?.name === appliedFilters.location;
+    const matchesWithdrawal = appliedFilters.withdrawal === 'all' || order.withdrawal_situation?.name === appliedFilters.withdrawal;
 
-    const matchesDate = (!filters.startDate || new Date(order.entry_date) >= new Date(filters.startDate)) &&
-                       (!filters.endDate || new Date(order.entry_date) <= new Date(filters.endDate));
+    const matchesDate = (!appliedFilters.startDate || new Date(order.entry_date) >= new Date(appliedFilters.startDate)) &&
+                       (!appliedFilters.endDate || new Date(order.entry_date) <= new Date(appliedFilters.endDate));
 
     return matchesSearch && matchesSituation && matchesLocation && matchesWithdrawal && matchesDate;
   });
@@ -308,10 +326,19 @@ export const ServiceOrdersInformaticaTable = () => {
               placeholder="Buscar por OS, nome ou equipamento..."
               value={filters.search}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              onKeyDown={handleKeyPress}
               className="pl-10 transition-all"
             />
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={handleSearch}
+              variant="secondary"
+              className="shrink-0"
+            >
+              <Search className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Pesquisar</span>
+            </Button>
             <Button
               onClick={() => setShowNewOrderDrawer(true)}
               className="flex-1 sm:flex-none shrink-0"
@@ -326,6 +353,26 @@ export const ServiceOrdersInformaticaTable = () => {
             >
               <Filter className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Filtros</span>
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                const clearedFilters = {
+                  search: '',
+                  situation: 'all',
+                  location: 'all',
+                  withdrawal: 'all',
+                  startDate: '',
+                  endDate: '',
+                };
+                setFilters(clearedFilters);
+                setAppliedFilters(clearedFilters);
+                setPagination({ page: 1, perPage: 50 });
+              }}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title="Limpar filtros"
+            >
+              <span className="text-sm">Limpar</span>
             </Button>
           </div>
         </div>
