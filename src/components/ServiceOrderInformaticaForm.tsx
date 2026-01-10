@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
+import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 import { usePersistedMediaFiles, MediaFile } from '@/hooks/usePersistedMediaFiles';
 import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
@@ -1116,12 +1117,10 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                     className="relative group rounded-lg overflow-hidden border border-border"
                   >
                     {file.type === 'video' ? (
-                      <video
+                      <UniversalVideoPlayer
                         src={file.url}
-                        controls
-                        playsInline
+                        name={file.name}
                         className="w-full aspect-video object-cover"
-                        controlsList="nodownload"
                       />
                     ) : (
                       <img

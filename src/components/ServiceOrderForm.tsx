@@ -15,6 +15,7 @@ import { PatternLock } from '@/components/PatternLock';
 import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
+import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
@@ -1502,12 +1503,10 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                     className="relative group rounded-lg overflow-hidden border border-border"
                   >
                     {file.type === 'video' ? (
-                      <video
+                      <UniversalVideoPlayer
                         src={file.url}
-                        controls
-                        playsInline
+                        name={file.name}
                         className="w-full aspect-video object-cover"
-                        controlsList="nodownload"
                       />
                     ) : (
                       <img
