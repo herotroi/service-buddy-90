@@ -56,8 +56,8 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 }
         },
         audio: mode === 'video'
       };
@@ -177,7 +177,7 @@ export const CameraCapture = ({ open, onClose, onCapture, mode }: CameraCaptureP
         stopCamera();
         onClose();
       }
-    }, 'image/jpeg', 0.9);
+    }, 'image/jpeg', 0.95);
   };
 
   const startRecording = () => {

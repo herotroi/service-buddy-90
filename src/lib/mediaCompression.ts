@@ -1,9 +1,9 @@
 import heic2any from 'heic2any';
 
-// Configurações de compressão
-const MAX_IMAGE_WIDTH = 1920;
-const MAX_IMAGE_HEIGHT = 1920;
-const IMAGE_QUALITY = 0.8;
+// Configurações de compressão - qualidade alta para preservar detalhes
+const MAX_IMAGE_WIDTH = 2560;
+const MAX_IMAGE_HEIGHT = 2560;
+const IMAGE_QUALITY = 0.92; // Qualidade alta para preservar detalhes
 const MAX_VIDEO_SIZE_MB = 5000; // Limite máximo para vídeos (5GB)
 
 /**
