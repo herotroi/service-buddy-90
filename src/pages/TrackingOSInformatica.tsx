@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Monitor, Calendar, CheckCircle2, Clock, Image, Shield, PackageCheck, ShieldAlert } from 'lucide-react';
+import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -407,28 +408,24 @@ const TrackingOSInformatica = () => {
                 {data.media_files?.map((file, index) => (
                   <div 
                     key={index} 
-                    className="aspect-square rounded-lg overflow-hidden bg-muted select-none pointer-events-none"
+                    className="rounded-lg overflow-hidden bg-muted select-none"
                   >
-                    {file.type?.startsWith('image/') ? (
+                    {file.type?.startsWith('video/') || file.type === 'video' ? (
+                      <UniversalVideoPlayer
+                        src={file.url}
+                        name={file.name}
+                        className="w-full aspect-video object-cover"
+                        controlsList="nodownload"
+                        onContextMenu={(e) => e.preventDefault()}
+                      />
+                    ) : (
                       <img 
                         src={file.url} 
                         alt={`Foto ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full aspect-square object-cover"
                         draggable={false}
                         onContextMenu={(e) => e.preventDefault()}
                       />
-                    ) : file.type?.startsWith('video/') ? (
-                      <video 
-                        src={file.url}
-                        className="w-full h-full object-cover"
-                        controls={false}
-                        muted
-                        playsInline
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                        <p className="text-sm">Arquivo</p>
-                      </div>
                     )}
                   </div>
                 ))}

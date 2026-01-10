@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Smartphone, Calendar, CheckCircle2, Clock, ClipboardList, Image, Shield, PackageCheck, ShieldAlert } from 'lucide-react';
+import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -506,9 +507,9 @@ const TrackingOS = () => {
                     className="relative rounded-lg overflow-hidden border border-border select-none"
                   >
                     {file.type === 'video' ? (
-                      <video
+                      <UniversalVideoPlayer
                         src={file.url}
-                        controls
+                        name={file.name}
                         className="w-full aspect-video object-cover"
                         controlsList="nodownload"
                         onContextMenu={(e) => e.preventDefault()}
