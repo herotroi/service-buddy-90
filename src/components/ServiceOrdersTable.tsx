@@ -669,17 +669,24 @@ export const ServiceOrdersTable = () => {
                         {format(new Date(order.entry_date), 'dd/MM/yy', { locale: ptBR })}
                       </span>
                     </div>
-                    {order.situation && (
-                      <Badge 
-                        style={{ 
-                          backgroundColor: order.situation.color,
-                          color: getTextColor(order.situation.color)
-                        }}
-                        className="shadow-sm text-xs"
-                      >
-                        {order.situation.name}
-                      </Badge>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {order.situation && (
+                        <Badge 
+                          style={{ 
+                            backgroundColor: order.situation.color,
+                            color: getTextColor(order.situation.color)
+                          }}
+                          className="shadow-sm text-xs"
+                        >
+                          {order.situation.name}
+                        </Badge>
+                      )}
+                      {order.service_date && (
+                        <span className="text-xs text-muted-foreground">
+                          📅 {format(new Date(order.service_date), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="space-y-1.5 mb-3">
@@ -770,17 +777,24 @@ export const ServiceOrdersTable = () => {
                       </TableCell>
                       <TableCell className="text-sm">{order.device_model}</TableCell>
                       <TableCell>
-                        {order.situation && (
-                          <Badge 
-                            style={{ 
-                              backgroundColor: order.situation.color,
-                              color: getTextColor(order.situation.color)
-                            }}
-                            className="shadow-sm"
-                          >
-                            {order.situation.name}
-                          </Badge>
-                        )}
+                        <div className="flex flex-col gap-1">
+                          {order.situation && (
+                            <Badge 
+                              style={{ 
+                                backgroundColor: order.situation.color,
+                                color: getTextColor(order.situation.color)
+                              }}
+                              className="shadow-sm"
+                            >
+                              {order.situation.name}
+                            </Badge>
+                          )}
+                          {order.service_date && (
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                              📅 {format(new Date(order.service_date), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">
                         {order.technician?.name || '-'}
