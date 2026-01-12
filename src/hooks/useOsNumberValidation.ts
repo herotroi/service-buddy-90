@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface ExistingOrder {
@@ -15,11 +16,11 @@ interface UseOsNumberValidationProps {
 
 export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberValidationProps) => {
   const [validating, setValidating] = useState(false);
+  const { user } = useAuth();
 
   const checkOsNumberExists = async (osNumber: number): Promise<ExistingOrder | null> => {
     try {
       if (table === 'service_orders') {
-        // RLS já filtra automaticamente pelo user_id do usuário logado
         let query = supabase
           .from('service_orders')
           .select('id, os_number, client_name, device_model')
@@ -40,7 +41,6 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
           device_info: data.device_model || 'Não especificado',
         };
       } else {
-        // RLS já filtra automaticamente pelo user_id do usuário logado
         let query = supabase
           .from('service_orders_informatica')
           .select('id, os_number, client_name, equipment')
@@ -67,8 +67,37 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
     }
   };
 
+  // Função atômica para buscar próximo número disponível usando a função do banco
+  const getNextOsNumberFromDb = async (): Promise<number | null> => {
+    if (!user?.id) return null;
+    
+    try {
+      const { data, error } = await supabase.rpc('get_next_os_number', {
+        p_user_id: user.id,
+        p_table: table
+      });
+
+      if (error) {
+        console.error('Erro ao buscar próximo número da OS:', error);
+        return null;
+      }
+
+      return data as number;
+    } catch (error) {
+      console.error('Erro ao buscar próximo número da OS:', error);
+      return null;
+    }
+  };
+
   const findNextAvailableOsNumber = async (startingFrom: number): Promise<number> => {
-    let currentNumber = startingFrom;
+    // Primeiro tenta usar a função do banco (mais segura para concorrência)
+    const dbNextNumber = await getNextOsNumberFromDb();
+    if (dbNextNumber && dbNextNumber > startingFrom) {
+      return dbNextNumber;
+    }
+    
+    // Fallback: busca local
+    let currentNumber = Math.max(startingFrom, dbNextNumber || startingFrom);
     const maxAttempts = 100;
 
     for (let i = 0; i < maxAttempts; i++) {
@@ -116,7 +145,7 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
   const saveWithRetry = async <T extends { os_number: number }>(
     orderData: T,
     saveOperation: (data: T) => Promise<{ error: any; data?: any }>,
-    maxRetries: number = 5
+    maxRetries: number = 10 // Aumentado para 10 tentativas
   ): Promise<{ success: boolean; data?: any; finalOsNumber?: number }> => {
     let currentData = { ...orderData };
     let attempts = 0;
@@ -133,17 +162,31 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
         return { success: true, data: result.data, finalOsNumber: currentData.os_number };
       }
 
-      // Verificar se é erro de constraint único
-      if (result.error.code === '23505' || result.error.message?.includes('unique')) {
+      // Verificar se é erro de constraint único (race condition)
+      const isUniqueError = 
+        result.error.code === '23505' || 
+        result.error.message?.includes('unique') ||
+        result.error.message?.includes('duplicate') ||
+        result.error.message?.includes('user_os_number_unique');
+
+      if (isUniqueError) {
+        console.log(`[saveWithRetry] Tentativa ${attempts}: Conflito de número de OS ${currentData.os_number}, buscando próximo...`);
+        
+        // Buscar próximo número disponível usando a função do banco
         const nextNumber = await findNextAvailableOsNumber(currentData.os_number + 1);
         
         toast.warning(
           `Número de OS ${currentData.os_number} já está em uso. Tentando com ${nextNumber}...`,
-          { duration: 3000 }
+          { duration: 2000 }
         );
 
         currentData = { ...currentData, os_number: nextNumber };
+        
+        // Pequeno delay para evitar race condition imediata
+        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
       } else {
+        // Erro não relacionado a constraint único
+        console.error('[saveWithRetry] Erro não tratado:', result.error);
         return { success: false };
       }
     }
@@ -158,5 +201,6 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
     findNextAvailableOsNumber,
     validateAndGetAvailableOsNumber,
     saveWithRetry,
+    getNextOsNumberFromDb,
   };
 };

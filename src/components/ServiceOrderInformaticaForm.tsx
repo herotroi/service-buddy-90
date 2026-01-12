@@ -89,7 +89,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     return localDate.toISOString().split('T')[0];
   };
 
-  const { validating, validateAndGetAvailableOsNumber, saveWithRetry } = useOsNumberValidation({
+  const { validating, validateAndGetAvailableOsNumber, saveWithRetry, getNextOsNumberFromDb } = useOsNumberValidation({
     table: 'service_orders_informatica',
     currentOrderId: orderId,
   });
@@ -203,7 +203,15 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
 
   const fetchNextOsNumber = async () => {
     try {
-      // Buscar número inicial das configurações do usuário
+      // Usar função atômica do banco para evitar race conditions
+      const nextNumber = await getNextOsNumberFromDb();
+      
+      if (nextNumber) {
+        form.setValue('os_number', nextNumber);
+        return;
+      }
+      
+      // Fallback: método antigo caso a função não esteja disponível
       const { data: settingsData } = await supabase
         .from('system_settings')
         .select('value')
@@ -213,7 +221,6 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       
       const startingNumber = settingsData ? parseInt(settingsData.value) : 1;
 
-      // Buscar maior número de OS existente DO USUÁRIO (RLS já filtra automaticamente)
       const { data: ordersData } = await supabase
         .from('service_orders_informatica')
         .select('os_number')
@@ -225,7 +232,6 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       
       if (ordersData && ordersData.length > 0) {
         const highestExisting = ordersData[0].os_number + 1;
-        // Usar o maior entre o número inicial configurado e o próximo sequencial
         nextOsNumber = Math.max(startingNumber, highestExisting);
       }
 
