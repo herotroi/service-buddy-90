@@ -581,6 +581,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_os_number: {
+        Args: { p_table: string; p_user_id: string }
+        Returns: number
+      }
       get_tracking_order: {
         Args: { p_token: string }
         Returns: {

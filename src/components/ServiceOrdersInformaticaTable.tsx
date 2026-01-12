@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -138,6 +138,18 @@ export const ServiceOrdersInformaticaTable = () => {
     }
   };
 
+  // Refs para verificar se drawer está aberto (evita recriar canal)
+  const showNewOrderDrawerRef = useRef(showNewOrderDrawer);
+  const editOrderIdRef = useRef(editOrderId);
+  
+  useEffect(() => {
+    showNewOrderDrawerRef.current = showNewOrderDrawer;
+  }, [showNewOrderDrawer]);
+  
+  useEffect(() => {
+    editOrderIdRef.current = editOrderId;
+  }, [editOrderId]);
+
   useEffect(() => {
     if (!session) return;
     
@@ -153,8 +165,8 @@ export const ServiceOrdersInformaticaTable = () => {
           table: 'service_orders_informatica'
         },
         (payload) => {
-          // Não atualizar se um drawer de cadastro está aberto
-          if (showNewOrderDrawer || editOrderId) {
+          // Não atualizar se um drawer de cadastro está aberto (usar refs)
+          if (showNewOrderDrawerRef.current || editOrderIdRef.current) {
             console.log('Drawer aberto, ignorando atualização realtime');
             return;
           }
@@ -173,7 +185,7 @@ export const ServiceOrdersInformaticaTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session, showNewOrderDrawer, editOrderId]);
+  }, [session]); // Removido showNewOrderDrawer e editOrderId das dependências
 
   const fetchData = async () => {
     try {
