@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Função para refresh da sessão
+  const refreshSession = useCallback(async () => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession) {
+        const { data, error } = await supabase.auth.refreshSession();
+        if (error) {
+          console.error('[Auth] Error refreshing session:', error);
+        } else if (data.session) {
+          console.log('[Auth] Session refreshed successfully');
+          setSession(data.session);
+          setUser(data.session.user);
+        }
+      }
+    } catch (error) {
+      console.error('[Auth] Error in refreshSession:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -29,9 +48,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Handle token refresh errors
+        // Handle specific events
         if (event === 'TOKEN_REFRESHED') {
-          console.log('[Auth] Token refreshed successfully');
+          console.log('[Auth] Token refreshed automatically');
         }
         
         if (event === 'SIGNED_OUT') {
@@ -45,26 +64,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Se tem sessão, faz refresh imediato para garantir token válido
+      if (session) {
+        refreshSession();
+      }
     });
 
-    // Set up periodic session refresh to prevent logout
-    const refreshInterval = setInterval(async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (currentSession) {
-        const { error } = await supabase.auth.refreshSession();
-        if (error) {
-          console.error('[Auth] Error refreshing session:', error);
-        } else {
-          console.log('[Auth] Session refreshed proactively');
-        }
+    // Refresh session every 5 minutes to keep it alive
+    const refreshInterval = setInterval(refreshSession, 5 * 60 * 1000);
+
+    // Also refresh when the window regains focus (user returns to the tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Auth] Tab became visible, refreshing session...');
+        refreshSession();
       }
-    }, 10 * 60 * 1000); // Refresh every 10 minutes
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Refresh when coming back online
+    const handleOnline = () => {
+      console.log('[Auth] Back online, refreshing session...');
+      refreshSession();
+    };
+    window.addEventListener('online', handleOnline);
 
     return () => {
       subscription.unsubscribe();
       clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
     };
-  }, []);
+  }, [refreshSession]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
