@@ -21,23 +21,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
+        console.log('[Auth] Event:', event);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Handle token refresh errors
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('[Auth] Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('[Auth] User signed out');
+        }
       }
     );
 
-    // Check for existing session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Set up periodic session refresh to prevent logout
+    const refreshInterval = setInterval(async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession) {
+        const { error } = await supabase.auth.refreshSession();
+        if (error) {
+          console.error('[Auth] Error refreshing session:', error);
+        } else {
+          console.log('[Auth] Session refreshed proactively');
+        }
+      }
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
