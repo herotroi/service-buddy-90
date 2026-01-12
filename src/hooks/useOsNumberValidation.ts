@@ -67,37 +67,8 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
     }
   };
 
-  // Função atômica para buscar próximo número disponível usando a função do banco
-  const getNextOsNumberFromDb = async (): Promise<number | null> => {
-    if (!user?.id) return null;
-    
-    try {
-      const { data, error } = await supabase.rpc('get_next_os_number', {
-        p_user_id: user.id,
-        p_table: table
-      });
-
-      if (error) {
-        console.error('Erro ao buscar próximo número da OS:', error);
-        return null;
-      }
-
-      return data as number;
-    } catch (error) {
-      console.error('Erro ao buscar próximo número da OS:', error);
-      return null;
-    }
-  };
-
   const findNextAvailableOsNumber = async (startingFrom: number): Promise<number> => {
-    // Primeiro tenta usar a função do banco (mais segura para concorrência)
-    const dbNextNumber = await getNextOsNumberFromDb();
-    if (dbNextNumber && dbNextNumber > startingFrom) {
-      return dbNextNumber;
-    }
-    
-    // Fallback: busca local
-    let currentNumber = Math.max(startingFrom, dbNextNumber || startingFrom);
+    let currentNumber = startingFrom;
     const maxAttempts = 100;
 
     for (let i = 0; i < maxAttempts; i++) {
@@ -145,7 +116,7 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
   const saveWithRetry = async <T extends { os_number: number }>(
     orderData: T,
     saveOperation: (data: T) => Promise<{ error: any; data?: any }>,
-    maxRetries: number = 10 // Aumentado para 10 tentativas
+    maxRetries: number = 3
   ): Promise<{ success: boolean; data?: any; finalOsNumber?: number }> => {
     let currentData = { ...orderData };
     let attempts = 0;
@@ -162,17 +133,15 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
         return { success: true, data: result.data, finalOsNumber: currentData.os_number };
       }
 
-      // Verificar se é erro de constraint único (race condition)
+      // Verificar se é erro de constraint único
       const isUniqueError = 
         result.error.code === '23505' || 
         result.error.message?.includes('unique') ||
-        result.error.message?.includes('duplicate') ||
-        result.error.message?.includes('user_os_number_unique');
+        result.error.message?.includes('duplicate');
 
       if (isUniqueError) {
         console.log(`[saveWithRetry] Tentativa ${attempts}: Conflito de número de OS ${currentData.os_number}, buscando próximo...`);
         
-        // Buscar próximo número disponível usando a função do banco
         const nextNumber = await findNextAvailableOsNumber(currentData.os_number + 1);
         
         toast.warning(
@@ -181,9 +150,6 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
         );
 
         currentData = { ...currentData, os_number: nextNumber };
-        
-        // Pequeno delay para evitar race condition imediata
-        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
       } else {
         // Erro não relacionado a constraint único
         console.error('[saveWithRetry] Erro não tratado:', result.error);
@@ -201,6 +167,5 @@ export const useOsNumberValidation = ({ table, currentOrderId }: UseOsNumberVali
     findNextAvailableOsNumber,
     validateAndGetAvailableOsNumber,
     saveWithRetry,
-    getNextOsNumberFromDb,
   };
 };

@@ -89,7 +89,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     return localDate.toISOString().split('T')[0];
   };
 
-  const { validating, validateAndGetAvailableOsNumber, saveWithRetry, getNextOsNumberFromDb } = useOsNumberValidation({
+  const { validating, validateAndGetAvailableOsNumber, saveWithRetry, findNextAvailableOsNumber } = useOsNumberValidation({
     table: 'service_orders_informatica',
     currentOrderId: orderId,
   });
@@ -203,15 +203,6 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
 
   const fetchNextOsNumber = async () => {
     try {
-      // Usar função atômica do banco para evitar race conditions
-      const nextNumber = await getNextOsNumberFromDb();
-      
-      if (nextNumber) {
-        form.setValue('os_number', nextNumber);
-        return;
-      }
-      
-      // Fallback: método antigo caso a função não esteja disponível
       const { data: settingsData } = await supabase
         .from('system_settings')
         .select('value')
