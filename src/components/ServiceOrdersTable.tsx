@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -208,6 +208,19 @@ export const ServiceOrdersTable = () => {
     loadSignedUrls();
   }, [viewOrderId, orders]);
 
+  // Referências para verificar se drawer está aberto (evita recriar canal)
+  const showNewOrderDrawerRef = useRef(showNewOrderDrawer);
+  const editOrderIdRef = useRef(editOrderId);
+  
+  // Atualizar refs quando valores mudarem
+  useEffect(() => {
+    showNewOrderDrawerRef.current = showNewOrderDrawer;
+  }, [showNewOrderDrawer]);
+  
+  useEffect(() => {
+    editOrderIdRef.current = editOrderId;
+  }, [editOrderId]);
+
   // Fetch filter options when session is ready
   useEffect(() => {
     if (!session) return;
@@ -227,8 +240,8 @@ export const ServiceOrdersTable = () => {
         async (payload) => {
           console.log('Realtime update:', payload);
           
-          // Não atualizar se um drawer de cadastro está aberto
-          if (showNewOrderDrawer || editOrderId) {
+          // Não atualizar se um drawer de cadastro está aberto (usar refs para evitar recriação do canal)
+          if (showNewOrderDrawerRef.current || editOrderIdRef.current) {
             console.log('Drawer aberto, ignorando atualização realtime');
             return;
           }
@@ -292,7 +305,7 @@ export const ServiceOrdersTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session, showNewOrderDrawer, editOrderId]);
+  }, [session]); // Removido showNewOrderDrawer e editOrderId das dependências
 
   const fetchFilterOptions = async () => {
     try {
