@@ -20,18 +20,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Função para refresh da sessão
+  // Função para refresh da sessão - NÃO atualiza estado para evitar re-render
+  // O onAuthStateChange já cuida de atualizar o estado quando necessário
   const refreshSession = useCallback(async () => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (currentSession) {
-        const { data, error } = await supabase.auth.refreshSession();
+        const { error } = await supabase.auth.refreshSession();
         if (error) {
           console.error('[Auth] Error refreshing session:', error);
-        } else if (data.session) {
-          console.log('[Auth] Session refreshed successfully');
-          setSession(data.session);
-          setUser(data.session.user);
+        } else {
+          console.log('[Auth] Session refreshed silently');
+          // NÃO atualizar setSession/setUser aqui para evitar re-render
+          // O onAuthStateChange com TOKEN_REFRESHED já lida com isso internamente
         }
       }
     } catch (error) {
