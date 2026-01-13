@@ -18,6 +18,7 @@ import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
 import { UniversalVideoPlayer } from '@/components/UniversalVideoPlayer';
 import { processMediaFile, formatFileSize, isVideoFile } from '@/lib/mediaCompression';
 import { Progress } from '@/components/ui/progress';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { useOsNumberValidation } from '@/hooks/useOsNumberValidation';
 import { usePersistedMediaFiles, MediaFile } from '@/hooks/usePersistedMediaFiles';
 import { getSignedUrl, getSignedUrls, listOrderFiles } from '@/lib/storageUtils';
@@ -1159,25 +1160,11 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
               name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor (R$)</FormLabel>
+                  <FormLabel>Valor</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      min="0"
-                      inputMode="decimal"
-                      placeholder="0.00" 
-                      value={field.value ?? ''}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        if (rawValue === '') {
-                          field.onChange(undefined);
-                        } else {
-                          // Manter o valor como string durante a digitação para evitar problemas de precisão
-                          // O valor será convertido para número apenas no submit
-                          field.onChange(rawValue);
-                        }
-                      }}
+                    <CurrencyInput
+                      value={field.value}
+                      onChange={field.onChange}
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
