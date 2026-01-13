@@ -615,7 +615,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         technical_info: data.technical_info || null,
         reported_defect: data.reported_defect,
         client_message: data.client_message || null,
-        value: data.value || null,
+        value: data.value !== undefined && data.value !== null ? Number(data.value) : null,
         situation_id: data.situation_id || null,
         technician_id: data.technician_id || null,
         received_by_id: data.received_by_id || null,
@@ -1173,11 +1173,9 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                         if (rawValue === '') {
                           field.onChange(undefined);
                         } else {
-                          // Garantir que o valor seja tratado corretamente
-                          const numValue = parseFloat(rawValue);
-                          if (!isNaN(numValue)) {
-                            field.onChange(numValue);
-                          }
+                          // Manter o valor como string durante a digitação para evitar problemas de precisão
+                          // O valor será convertido para número apenas no submit
+                          field.onChange(rawValue);
                         }
                       }}
                       onBlur={field.onBlur}
