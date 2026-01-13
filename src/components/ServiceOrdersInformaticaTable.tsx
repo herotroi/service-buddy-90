@@ -150,10 +150,16 @@ export const ServiceOrdersInformaticaTable = () => {
     editOrderIdRef.current = editOrderId;
   }, [editOrderId]);
 
+  // Buscar dados iniciais apenas se não houver drawer aberto
+  useEffect(() => {
+    if (session && !showNewOrderDrawer && !editOrderId) {
+      fetchData();
+    }
+  }, [session, showNewOrderDrawer, editOrderId]);
+
+  // Configurar canal realtime separadamente para não depender do estado do drawer
   useEffect(() => {
     if (!session) return;
-    
-    fetchData();
 
     const channel = supabase
       .channel('service-orders-informatica-changes')
@@ -185,7 +191,7 @@ export const ServiceOrdersInformaticaTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]); // Removido showNewOrderDrawer e editOrderId das dependências
+  }, [session]);
 
   const fetchData = async () => {
     try {
@@ -287,8 +293,8 @@ export const ServiceOrdersInformaticaTable = () => {
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
       
-      // Recarregar dados do servidor para garantir consistência
-      fetchData();
+      // Não recarregar dados do servidor aqui - o realtime vai cuidar disso
+      // e a atualização local já foi feita
     } catch (error: any) {
       toast.error('Erro ao excluir OS: ' + error.message);
       console.error('handleDelete error:', error);

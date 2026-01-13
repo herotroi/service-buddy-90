@@ -172,11 +172,12 @@ export const ServiceOrdersTable = () => {
   };
 
   // Fetch orders when session is ready and filters change
+  // NÃO buscar dados se drawer está aberto para evitar re-render e perda de dados
   useEffect(() => {
-    if (session) {
+    if (session && !showNewOrderDrawer && !editOrderId) {
       fetchOrders();
     }
-  }, [session, pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters]);
+  }, [session, pagination.page, pagination.perPage, sortBy, sortOrder, appliedFilters, showNewOrderDrawer, editOrderId]);
 
   // Load signed URLs when viewing an order
   useEffect(() => {
@@ -477,8 +478,8 @@ export const ServiceOrdersTable = () => {
       toast.success('OS excluída com sucesso');
       setDeleteOrder(null);
       
-      // Recarregar dados do servidor para garantir consistência
-      fetchOrders();
+      // Não recarregar dados do servidor aqui - o realtime vai cuidar disso
+      // e a atualização local já foi feita
     } catch (error: any) {
       toast.error('Erro ao excluir OS: ' + error.message);
       console.error('handleDelete error:', error);
