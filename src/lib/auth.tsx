@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -19,9 +19,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Ref para evitar atualizações desnecessárias de estado
+  const sessionRef = useRef<Session | null>(null);
+  const userRef = useRef<User | null>(null);
 
   // Função para refresh da sessão - NÃO atualiza estado para evitar re-render
-  // O onAuthStateChange já cuida de atualizar o estado quando necessário
   const refreshSession = useCallback(async () => {
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -31,8 +34,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error('[Auth] Error refreshing session:', error);
         } else {
           console.log('[Auth] Session refreshed silently');
-          // NÃO atualizar setSession/setUser aqui para evitar re-render
-          // O onAuthStateChange com TOKEN_REFRESHED já lida com isso internamente
         }
       }
     } catch (error) {
@@ -46,17 +47,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event, currentSession) => {
         console.log('[Auth] Event:', event);
         
-        // IGNORAR TOKEN_REFRESHED para evitar re-render que fecha drawers/modais
-        // O token já foi atualizado internamente pelo Supabase
+        // IGNORAR TOKEN_REFRESHED completamente - não causa mudança de estado
         if (event === 'TOKEN_REFRESHED') {
           console.log('[Auth] Token refreshed - ignoring to prevent re-render');
+          // Atualizar apenas as refs para manter referência interna atualizada
+          sessionRef.current = currentSession;
+          userRef.current = currentSession?.user ?? null;
           return; // NÃO atualizar estado
         }
         
-        // Só atualiza estado para eventos importantes (login, logout, etc)
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setLoading(false);
+        // Para outros eventos, verificar se realmente mudou algo
+        const currentUserId = userRef.current?.id;
+        const newUserId = currentSession?.user?.id;
+        
+        // Só atualizar estado se houve mudança real (login/logout)
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED' || currentUserId !== newUserId) {
+          console.log('[Auth] State change:', event, '- updating state');
+          sessionRef.current = currentSession;
+          userRef.current = currentSession?.user ?? null;
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          setLoading(false);
+        }
         
         if (event === 'SIGNED_OUT') {
           console.log('[Auth] User signed out');
@@ -66,6 +78,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      sessionRef.current = session;
+      userRef.current = session?.user ?? null;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

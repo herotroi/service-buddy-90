@@ -1163,10 +1163,26 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
                   <FormControl>
                     <Input 
                       type="number" 
-                      step="0.01" 
+                      step="0.01"
+                      min="0"
+                      inputMode="decimal"
                       placeholder="0.00" 
-                      {...field}
-                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const rawValue = e.target.value;
+                        if (rawValue === '') {
+                          field.onChange(undefined);
+                        } else {
+                          // Garantir que o valor seja tratado corretamente
+                          const numValue = parseFloat(rawValue);
+                          if (!isNaN(numValue)) {
+                            field.onChange(numValue);
+                          }
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormMessage />
