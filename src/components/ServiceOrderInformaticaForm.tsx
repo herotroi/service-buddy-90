@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { CameraCapture } from '@/components/CameraCapture';
 import { toast } from 'sonner';
 import { Loader2, Plus, Trash2, Camera, Video, Monitor } from 'lucide-react';
@@ -821,25 +822,11 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
               name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Valor (R$)</FormLabel>
+                  <FormLabel>Valor</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01"
-                      min="0"
-                      inputMode="decimal"
-                      placeholder="0.00" 
-                      value={field.value ?? ''}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        if (rawValue === '') {
-                          field.onChange(undefined);
-                        } else {
-                          // Manter o valor como string durante a digitação para evitar problemas de precisão
-                          // O valor será convertido para número apenas no submit
-                          field.onChange(rawValue);
-                        }
-                      }}
+                    <CurrencyInput
+                      value={field.value}
+                      onChange={field.onChange}
                       onBlur={field.onBlur}
                       name={field.name}
                       ref={field.ref}
