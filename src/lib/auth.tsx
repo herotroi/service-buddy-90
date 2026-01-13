@@ -43,16 +43,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, currentSession) => {
         console.log('[Auth] Event:', event);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Handle specific events
+        
+        // IGNORAR TOKEN_REFRESHED para evitar re-render que fecha drawers/modais
+        // O token já foi atualizado internamente pelo Supabase
         if (event === 'TOKEN_REFRESHED') {
-          console.log('[Auth] Token refreshed automatically');
+          console.log('[Auth] Token refreshed - ignoring to prevent re-render');
+          return; // NÃO atualizar estado
         }
+        
+        // Só atualiza estado para eventos importantes (login, logout, etc)
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setLoading(false);
         
         if (event === 'SIGNED_OUT') {
           console.log('[Auth] User signed out');
