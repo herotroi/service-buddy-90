@@ -154,7 +154,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         accessories: data.accessories || '',
         defect: data.defect,
         more_details: data.more_details || '',
-        value: data.value || undefined,
+        value: data.value !== undefined && data.value !== null ? Number(data.value) : undefined,
         situation_id: data.situation_id || undefined,
         observations: data.observations || '',
         service_date: data.service_date ? formatDateForInput(data.service_date) : undefined,
@@ -502,7 +502,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         accessories: data.accessories || null,
         defect: data.defect,
         more_details: data.more_details || null,
-        value: data.value || null,
+        value: data.value !== undefined && data.value !== null ? Number(data.value) : null,
         situation_id: data.situation_id || null,
         observations: data.observations || null,
         service_date: toISOWithTimezone(data.service_date || ''),
@@ -835,11 +835,9 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                         if (rawValue === '') {
                           field.onChange(undefined);
                         } else {
-                          // Garantir que o valor seja tratado corretamente
-                          const numValue = parseFloat(rawValue);
-                          if (!isNaN(numValue)) {
-                            field.onChange(numValue);
-                          }
+                          // Manter o valor como string durante a digitação para evitar problemas de precisão
+                          // O valor será convertido para número apenas no submit
+                          field.onChange(rawValue);
                         }
                       }}
                       onBlur={field.onBlur}
