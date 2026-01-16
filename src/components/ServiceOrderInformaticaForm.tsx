@@ -90,6 +90,14 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
     return localDate.toISOString().split('T')[0];
   };
 
+  // Converte data do banco para formato local (datetime-local)
+  const formatDateTimeForInput = (dateString: string) => {
+    const date = new Date(dateString);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
   const { validating, validateAndGetAvailableOsNumber, saveWithRetry, findNextAvailableOsNumber } = useOsNumberValidation({
     table: 'service_orders_informatica',
     currentOrderId: orderId,
@@ -158,7 +166,7 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         value: data.value !== null && data.value !== undefined ? Number(data.value) : undefined,
         situation_id: data.situation_id || '',
         observations: data.observations || '',
-        service_date: data.service_date ? formatDateForInput(data.service_date) : '',
+        service_date: data.service_date ? formatDateTimeForInput(data.service_date) : '',
         received_by_id: data.received_by_id || '',
         equipment_location_id: data.equipment_location_id || '',
         withdrawal_situation_id: data.withdrawal_situation_id || '',
