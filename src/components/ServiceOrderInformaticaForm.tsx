@@ -480,16 +480,22 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
       }
 
       // Função para converter data do input para formato ISO sem alterar o fuso
-      const toISOWithTimezone = (dateStr: string) => {
-        if (!dateStr) return null;
-        // Se já inclui horário (datetime-local), usa diretamente
-        if (dateStr.includes('T')) {
-          const date = new Date(dateStr);
+      const toISOWithTimezone = (dateStr: string | undefined | null) => {
+        if (!dateStr || dateStr.trim() === '') return null;
+        try {
+          // Se já inclui horário (datetime-local), usa diretamente
+          if (dateStr.includes('T')) {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
+            return date.toISOString();
+          }
+          // Se é só data, adiciona meio-dia para evitar problemas de fuso
+          const date = new Date(dateStr + 'T12:00:00');
+          if (isNaN(date.getTime())) return null;
           return date.toISOString();
+        } catch {
+          return null;
         }
-        // Se é só data, adiciona meio-dia para evitar problemas de fuso
-        const date = new Date(dateStr + 'T12:00:00');
-        return date.toISOString();
       };
 
       const orderData: any = {
@@ -506,12 +512,12 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
         value: data.value !== undefined && data.value !== null ? Number(data.value) : null,
         situation_id: data.situation_id || null,
         observations: data.observations || null,
-        service_date: toISOWithTimezone(data.service_date || ''),
+        service_date: toISOWithTimezone(data.service_date),
         received_by_id: data.received_by_id || null,
         equipment_location_id: data.equipment_location_id || null,
         withdrawal_situation_id: data.withdrawal_situation_id || null,
         client_notified: data.client_notified,
-        exit_date: toISOWithTimezone(data.exit_date || ''),
+        exit_date: toISOWithTimezone(data.exit_date),
         withdrawn_by: data.withdrawn_by || null,
         user_id: user?.id,
         media_files: JSON.parse(JSON.stringify(currentMediaFiles)),
