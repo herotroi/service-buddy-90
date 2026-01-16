@@ -242,7 +242,7 @@ export const ServiceOrderForm = ({ onSuccess, onCancel, orderId }: ServiceOrderF
         technician_id: data.technician_id || '',
         received_by_id: data.received_by_id || '',
         part_order_date: data.part_order_date ? formatDateForInput(data.part_order_date) : '',
-        service_date: data.service_date ? formatDateForInput(data.service_date) : '',
+        service_date: data.service_date ? formatDateTimeForInput(data.service_date) : '',
         withdrawn_by: data.withdrawn_by || '',
         exit_date: data.exit_date ? formatDateForInput(data.exit_date) : '',
         withdrawal_situation_id: data.withdrawal_situation_id || '',
