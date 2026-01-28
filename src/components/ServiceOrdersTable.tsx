@@ -404,32 +404,23 @@ export const ServiceOrdersTable = () => {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
-      // Para ordenação por service_date, ordenar client-side para priorizar datas futuras mais próximas
+      // Para ordenação por service_date, ordenar pela data mais próxima do momento atual
       if (sortBy === 'service_date') {
-        const now = new Date();
+        const now = new Date().getTime();
         filteredData = filteredData.sort((a, b) => {
-          const dateA = a.service_date ? new Date(a.service_date) : null;
-          const dateB = b.service_date ? new Date(b.service_date) : null;
+          const dateA = a.service_date ? new Date(a.service_date).getTime() : null;
+          const dateB = b.service_date ? new Date(b.service_date).getTime() : null;
           
           // Nulls vão para o final
           if (!dateA && !dateB) return 0;
           if (!dateA) return 1;
           if (!dateB) return -1;
           
-          const isFutureA = dateA >= now;
-          const isFutureB = dateB >= now;
+          // Ordenar pela proximidade ao momento atual (menor diferença absoluta primeiro)
+          const diffA = Math.abs(dateA - now);
+          const diffB = Math.abs(dateB - now);
           
-          // Datas futuras vêm primeiro
-          if (isFutureA && !isFutureB) return -1;
-          if (!isFutureA && isFutureB) return 1;
-          
-          // Se ambas são futuras, a mais próxima vem primeiro (ordem crescente)
-          if (isFutureA && isFutureB) {
-            return dateA.getTime() - dateB.getTime();
-          }
-          
-          // Se ambas são passadas, a mais recente vem primeiro (ordem decrescente)
-          return dateB.getTime() - dateA.getTime();
+          return diffA - diffB;
         });
       }
 
