@@ -21,6 +21,7 @@ interface TrackingData {
   entry_date: string;
   defect: string;
   accessories: string | null;
+  value: number | null;
   more_details: string | null;
   situation_name: string | null;
   situation_color: string | null;
@@ -159,6 +160,7 @@ const TrackingOSInformatica = () => {
           entry_date: order.entry_date,
           defect: order.defect,
           accessories: order.accessories,
+          value: order.value,
           more_details: order.more_details,
           situation_name: order.situation_name,
           situation_color: order.situation_color,
@@ -380,11 +382,26 @@ const TrackingOSInformatica = () => {
             </Card>
           )}
 
+          {data.value !== null && data.value !== undefined && (
+            <Card className="md:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                  Valor do Serviço
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-foreground text-lg font-semibold select-none">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.value)}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {data.more_details && (
             <Card className="md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
-                  Mais Detalhes
+                  Serviço Efetuado
                 </CardTitle>
               </CardHeader>
               <CardContent>
