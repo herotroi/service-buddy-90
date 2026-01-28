@@ -404,7 +404,10 @@ export const ServiceOrdersTable = () => {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
-      // Para ordenação por service_date, ordenar pela data mais próxima do momento atual
+      // Para ordenação por service_date:
+      // 1. Datas futuras primeiro, ordenadas da mais próxima para a mais distante
+      // 2. Depois datas passadas, ordenadas da mais recente para a mais antiga
+      // 3. Sem data vai para o final
       if (sortBy === 'service_date') {
         const now = new Date().getTime();
         filteredData = filteredData.sort((a, b) => {
@@ -416,11 +419,20 @@ export const ServiceOrdersTable = () => {
           if (!dateA) return 1;
           if (!dateB) return -1;
           
-          // Ordenar pela proximidade ao momento atual (menor diferença absoluta primeiro)
-          const diffA = Math.abs(dateA - now);
-          const diffB = Math.abs(dateB - now);
+          const isFutureA = dateA >= now;
+          const isFutureB = dateB >= now;
           
-          return diffA - diffB;
+          // Datas futuras vêm antes de datas passadas
+          if (isFutureA && !isFutureB) return -1;
+          if (!isFutureA && isFutureB) return 1;
+          
+          // Se ambas são futuras, a mais próxima vem primeiro (crescente)
+          if (isFutureA && isFutureB) {
+            return dateA - dateB;
+          }
+          
+          // Se ambas são passadas, a mais recente vem primeiro (decrescente)
+          return dateB - dateA;
         });
       }
 

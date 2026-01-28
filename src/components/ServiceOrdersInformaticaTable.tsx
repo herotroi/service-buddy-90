@@ -325,6 +325,10 @@ export const ServiceOrdersInformaticaTable = () => {
   });
 
   // Ordenar os dados filtrados
+  // Para ordenação por service_date:
+  // 1. Datas futuras primeiro, ordenadas da mais próxima para a mais distante
+  // 2. Depois datas passadas, ordenadas da mais recente para a mais antiga
+  // 3. Sem data vai para o final
   const sortedOrders = [...filteredOrders].sort((a, b) => {
     if (sortBy === 'service_date') {
       const now = new Date().getTime();
@@ -336,11 +340,20 @@ export const ServiceOrdersInformaticaTable = () => {
       if (!dateA) return 1;
       if (!dateB) return -1;
       
-      // Ordenar pela proximidade ao momento atual (menor diferença absoluta primeiro)
-      const diffA = Math.abs(dateA - now);
-      const diffB = Math.abs(dateB - now);
+      const isFutureA = dateA >= now;
+      const isFutureB = dateB >= now;
       
-      return diffA - diffB;
+      // Datas futuras vêm antes de datas passadas
+      if (isFutureA && !isFutureB) return -1;
+      if (!isFutureA && isFutureB) return 1;
+      
+      // Se ambas são futuras, a mais próxima vem primeiro (crescente)
+      if (isFutureA && isFutureB) {
+        return dateA - dateB;
+      }
+      
+      // Se ambas são passadas, a mais recente vem primeiro (decrescente)
+      return dateB - dateA;
     } else if (sortBy === 'os_number') {
       return b.os_number - a.os_number;
     } else if (sortBy === 'entry_date') {
