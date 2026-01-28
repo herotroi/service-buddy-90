@@ -23,7 +23,7 @@ export type Database = {
           name: string
           type: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           contact?: string | null
@@ -33,7 +33,7 @@ export type Database = {
           name: string
           type: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           contact?: string | null
@@ -43,7 +43,7 @@ export type Database = {
           name?: string
           type?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -55,7 +55,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string
@@ -64,7 +64,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string
@@ -73,7 +73,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -136,7 +136,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string
@@ -145,7 +145,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string
@@ -154,7 +154,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -204,7 +204,7 @@ export type Database = {
           technician_id: string | null
           tracking_token: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
           value: number | null
           withdrawal_situation_id: string | null
           withdrawn_by: string | null
@@ -254,7 +254,7 @@ export type Database = {
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -304,7 +304,7 @@ export type Database = {
           technician_id?: string | null
           tracking_token?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -365,7 +365,7 @@ export type Database = {
           situation_id: string | null
           tracking_token: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
           value: number | null
           withdrawal_situation_id: string | null
           withdrawn_by: string | null
@@ -394,7 +394,7 @@ export type Database = {
           situation_id?: string | null
           tracking_token?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -423,7 +423,7 @@ export type Database = {
           situation_id?: string | null
           tracking_token?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           value?: number | null
           withdrawal_situation_id?: string | null
           withdrawn_by?: string | null
@@ -467,7 +467,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string
@@ -476,7 +476,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string
@@ -485,7 +485,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -497,7 +497,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color: string
@@ -506,7 +506,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string
@@ -515,7 +515,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -525,7 +525,7 @@ export type Database = {
           id: string
           key: string
           updated_at: string
-          user_id: string | null
+          user_id: string
           value: string
         }
         Insert: {
@@ -533,7 +533,7 @@ export type Database = {
           id?: string
           key: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           value: string
         }
         Update: {
@@ -541,7 +541,7 @@ export type Database = {
           id?: string
           key?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           value?: string
         }
         Relationships: []
@@ -554,7 +554,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string
@@ -563,7 +563,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string
@@ -572,7 +572,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
