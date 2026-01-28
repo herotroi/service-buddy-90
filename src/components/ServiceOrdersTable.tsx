@@ -359,18 +359,20 @@ export const ServiceOrdersTable = () => {
         query = query.lte('entry_date', appliedFilters.endDate + 'T23:59:59');
       }
 
-      // Apply sorting
+      // Apply sorting - para service_date usamos client-side, então buscar todos os dados
       if (sortBy === 'service_date') {
-        // Para "Para Quando é o Serviço", ordenar com datas futuras primeiro (mais próximas primeiro)
+        // Buscar todos para ordenar client-side por proximidade absoluta
         query = query.order('service_date', { ascending: true, nullsFirst: false });
       } else {
         const sortColumn = sortBy === 'situation' ? 'situation_id' : sortBy;
         query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
       }
 
-      // If searching, fetch all records to filter client-side for OS partial match
+      // If searching OR sorting by service_date, fetch all records for client-side processing
       // Otherwise use server-side pagination
-      if (hasSearch) {
+      const needsClientSideProcessing = hasSearch || sortBy === 'service_date';
+      
+      if (needsClientSideProcessing) {
         query = query.limit(5000);
       } else {
         const from = (pagination.page - 1) * pagination.perPage;
@@ -404,13 +406,10 @@ export const ServiceOrdersTable = () => {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
-      // Para ordenação por service_date:
-      // 1. Datas futuras primeiro, ordenadas da mais próxima para a mais distante
-      // 2. Depois datas passadas, ordenadas da mais recente para a mais antiga
-      // 3. Sem data vai para o final
+      // Ordenação por service_date: proximidade absoluta ao momento atual
       if (sortBy === 'service_date') {
         const now = new Date().getTime();
-        filteredData = filteredData.sort((a, b) => {
+        filteredData = [...filteredData].sort((a, b) => {
           const dateA = a.service_date ? new Date(a.service_date).getTime() : null;
           const dateB = b.service_date ? new Date(b.service_date).getTime() : null;
           
@@ -427,8 +426,8 @@ export const ServiceOrdersTable = () => {
         });
       }
 
-      // For search results, apply client-side pagination
-      if (hasSearch) {
+      // For client-side processed results, apply client-side pagination
+      if (needsClientSideProcessing) {
         const totalFiltered = filteredData.length;
         const from = (pagination.page - 1) * pagination.perPage;
         const to = from + pagination.perPage;
