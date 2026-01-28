@@ -628,6 +628,7 @@ export type Database = {
           os_number: number
           situation_color: string
           situation_name: string
+          value: number
           withdrawal_color: string
           withdrawal_name: string
           withdrawn_by: string

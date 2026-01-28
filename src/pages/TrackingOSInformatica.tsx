@@ -160,7 +160,7 @@ const TrackingOSInformatica = () => {
           entry_date: order.entry_date,
           defect: order.defect,
           accessories: order.accessories,
-          value: order.value,
+          value: (order as any).value ?? null,
           more_details: order.more_details,
           situation_name: order.situation_name,
           situation_color: order.situation_color,
