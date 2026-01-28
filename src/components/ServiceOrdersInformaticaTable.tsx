@@ -340,20 +340,11 @@ export const ServiceOrdersInformaticaTable = () => {
       if (!dateA) return 1;
       if (!dateB) return -1;
       
-      const isFutureA = dateA >= now;
-      const isFutureB = dateB >= now;
+      // Ordenar pela distância absoluta ao momento atual
+      const diffA = Math.abs(dateA - now);
+      const diffB = Math.abs(dateB - now);
       
-      // Datas futuras vêm antes de datas passadas
-      if (isFutureA && !isFutureB) return -1;
-      if (!isFutureA && isFutureB) return 1;
-      
-      // Se ambas são futuras, a mais próxima vem primeiro (crescente)
-      if (isFutureA && isFutureB) {
-        return dateA - dateB;
-      }
-      
-      // Se ambas são passadas, a mais recente vem primeiro (decrescente)
-      return dateB - dateA;
+      return diffA - diffB; // Menor diferença = mais próximo = primeiro
     } else if (sortBy === 'os_number') {
       return b.os_number - a.os_number;
     } else if (sortBy === 'entry_date') {
