@@ -692,19 +692,6 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="senha"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha</FormLabel>
-                  <FormControl>
-                    <Input type="text" placeholder="Senha do equipamento" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         </div>
 
@@ -788,6 +775,20 @@ export const ServiceOrderInformaticaForm = ({ onSuccess, onCancel, orderId }: Se
                   <FormLabel>Acessórios</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: Carregador, mouse, mochila" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="senha"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Senha</FormLabel>
+                  <FormControl>
+                    <Input type="text" placeholder="Senha do equipamento" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
