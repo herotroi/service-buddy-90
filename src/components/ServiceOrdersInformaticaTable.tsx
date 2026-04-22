@@ -214,20 +214,24 @@ export const ServiceOrdersInformaticaTable = () => {
       setLoading(true);
       const searchTerm = appliedFilters.search?.trim() || '';
       const isExactOsSearch = /^\d+$/.test(searchTerm);
+      let ordersQuery = supabase
+        .from('service_orders_informatica')
+        .select(`
+          *,
+          situation:situacao_informatica(id, name, color),
+          withdrawal_situation:retirada_informatica(name, color),
+          received_by:employees!service_orders_informatica_received_by_id_fkey(name),
+          equipment_location:local_equipamento(name, color)
+        `)
+        .eq('deleted', false)
+        .order('os_number', { ascending: false });
+
+      if (isExactOsSearch) {
+        ordersQuery = ordersQuery.eq('os_number', Number(searchTerm));
+      }
       
       const [ordersData, situationsData, locationsData, withdrawalData] = await Promise.all([
-        supabase
-          .from('service_orders_informatica')
-          .select(`
-            *,
-            situation:situacao_informatica(id, name, color),
-            withdrawal_situation:retirada_informatica(name, color),
-            received_by:employees!service_orders_informatica_received_by_id_fkey(name),
-            equipment_location:local_equipamento(name, color)
-          `)
-          .eq('deleted', false)
-          .eq('os_number', isExactOsSearch ? Number(searchTerm) : undefined as never)
-          .order('os_number', { ascending: false }),
+        ordersQuery,
         supabase.from('situacao_informatica').select('*'),
         supabase.from('local_equipamento').select('*'),
         supabase.from('retirada_informatica').select('*'),
@@ -388,6 +392,7 @@ export const ServiceOrdersInformaticaTable = () => {
   const emptyStateMessage = isExactOsSearchApplied
     ? 'Nenhuma OS com esse número foi encontrada'
     : 'Nenhuma ordem de serviço encontrada';
+  const exactSearchLabel = isExactOsSearchApplied ? `Busca exata por OS #${appliedFilters.search.trim()}` : null;
 
   const viewedOrder = orders.find(o => o.id === viewOrderId);
 
@@ -523,6 +528,7 @@ export const ServiceOrdersInformaticaTable = () => {
           Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
           <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
         </span>
+        {exactSearchLabel && <span>{exactSearchLabel}</span>}
         <div className="flex gap-2 flex-wrap">
           <Select
             value={sortBy}

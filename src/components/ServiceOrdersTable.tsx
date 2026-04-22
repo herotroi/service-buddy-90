@@ -520,6 +520,7 @@ export const ServiceOrdersTable = () => {
   const emptyStateMessage = isExactOsSearchApplied
     ? 'Nenhuma OS com esse número foi encontrada'
     : 'Nenhuma ordem de serviço encontrada';
+  const exactSearchLabel = isExactOsSearchApplied ? `Busca exata por OS #${appliedFilters.search.trim()}` : null;
 
   if (loading) {
     return (
@@ -649,6 +650,7 @@ export const ServiceOrdersTable = () => {
           Mostrando <span className="font-medium text-foreground">{orders.length}</span> de{' '}
           <span className="font-medium text-foreground">{totalCount}</span> OS
         </span>
+        {exactSearchLabel && <span>{exactSearchLabel}</span>}
         <div className="flex gap-2 flex-wrap">
           <Select
             value={sortBy}
