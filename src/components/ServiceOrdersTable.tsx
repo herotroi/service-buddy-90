@@ -361,6 +361,7 @@ export const ServiceOrdersTable = () => {
       
       const searchTerm = appliedFilters.search?.trim() || '';
       const hasSearch = searchTerm.length > 0;
+      const isExactOsSearch = /^\d+$/.test(searchTerm);
       
       // Build query with server-side filtering
       let query = supabase
@@ -373,16 +374,20 @@ export const ServiceOrdersTable = () => {
           received_by:employees!service_orders_received_by_id_fkey(name)
         `, { count: 'exact' })
         .eq('deleted', false);
+
+      if (isExactOsSearch) {
+        query = query.eq('os_number', Number(searchTerm));
+      }
       
-      if (appliedFilters.situation !== 'all') {
+      if (!isExactOsSearch && appliedFilters.situation !== 'all') {
         query = query.eq('situation_id', appliedFilters.situation);
       }
       
-      if (appliedFilters.startDate) {
+      if (!isExactOsSearch && appliedFilters.startDate) {
         query = query.gte('entry_date', appliedFilters.startDate);
       }
       
-      if (appliedFilters.endDate) {
+      if (!isExactOsSearch && appliedFilters.endDate) {
         query = query.lte('entry_date', appliedFilters.endDate + 'T23:59:59');
       }
 
@@ -397,11 +402,11 @@ export const ServiceOrdersTable = () => {
 
       // If searching OR sorting by service_date, fetch all records for client-side processing
       // Otherwise use server-side pagination
-      const needsClientSideProcessing = hasSearch || sortBy === 'service_date';
+      const needsClientSideProcessing = !isExactOsSearch && (hasSearch || sortBy === 'service_date');
       
       if (needsClientSideProcessing) {
         query = query.limit(5000);
-      } else {
+      } else if (!isExactOsSearch) {
         const from = (pagination.page - 1) * pagination.perPage;
         const to = from + pagination.perPage - 1;
         query = query.range(from, to);
@@ -414,7 +419,7 @@ export const ServiceOrdersTable = () => {
       let filteredData = data || [];
       
       // Apply search filter client-side for partial OS number matching
-      if (hasSearch) {
+      if (hasSearch && !isExactOsSearch) {
         const searchLower = searchTerm.toLowerCase();
         filteredData = filteredData.filter(order => {
           const osMatch = order.os_number?.toString().includes(searchTerm);
@@ -426,10 +431,10 @@ export const ServiceOrdersTable = () => {
       }
       
       // Filter by technician and withdrawal client-side (join fields)
-      if (appliedFilters.technician !== 'all') {
+      if (!isExactOsSearch && appliedFilters.technician !== 'all') {
         filteredData = filteredData.filter(o => o.technician?.name === appliedFilters.technician);
       }
-      if (appliedFilters.withdrawal !== 'all') {
+      if (!isExactOsSearch && appliedFilters.withdrawal !== 'all') {
         filteredData = filteredData.filter(o => o.withdrawal_situation?.name === appliedFilters.withdrawal);
       }
 
@@ -461,6 +466,9 @@ export const ServiceOrdersTable = () => {
         const paginatedData = filteredData.slice(from, to);
         setOrders(paginatedData);
         setTotalCount(totalFiltered);
+      } else if (isExactOsSearch) {
+        setOrders(filteredData);
+        setTotalCount(filteredData.length);
       } else {
         setOrders(filteredData);
         setTotalCount(count || 0);
@@ -508,6 +516,10 @@ export const ServiceOrdersTable = () => {
 
   // Orders are already filtered and sorted server-side, just use them directly
   const totalPages = Math.ceil(totalCount / pagination.perPage);
+  const isExactOsSearchApplied = /^\d+$/.test(appliedFilters.search.trim());
+  const emptyStateMessage = isExactOsSearchApplied
+    ? 'Nenhuma OS com esse número foi encontrada'
+    : 'Nenhuma ordem de serviço encontrada';
 
   if (loading) {
     return (
@@ -683,7 +695,7 @@ export const ServiceOrdersTable = () => {
         <div className="space-y-3">
           {orders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Nenhuma ordem de serviço encontrada
+              {emptyStateMessage}
             </div>
           ) : (
             orders.map((order) => (
@@ -784,7 +796,7 @@ export const ServiceOrdersTable = () => {
                 {orders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                      Nenhuma ordem de serviço encontrada
+                      {emptyStateMessage}
                     </TableCell>
                   </TableRow>
                 ) : (
