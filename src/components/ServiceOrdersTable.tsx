@@ -161,7 +161,7 @@ export const ServiceOrdersTable = () => {
   const [appliedFilters, setAppliedFilters] = useState(filters);
   
   const handleSearch = () => {
-    setAppliedFilters(filters);
+    setAppliedFilters({ ...filters });
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -291,8 +291,19 @@ export const ServiceOrdersTable = () => {
                 setOrders(prev => prev.filter(o => o.id !== data.id));
                 setTotalCount(prev => prev - 1);
               } else {
-                // Atualizar o registro
-                setOrders(prev => prev.map(o => o.id === data.id ? data : o));
+                // Atualizar o registro ou recolocá-lo na lista se foi restaurado
+                setOrders(prev => {
+                  const index = prev.findIndex(o => o.id === data.id);
+
+                  if (index !== -1) {
+                    const next = [...prev];
+                    next[index] = data;
+                    return next;
+                  }
+
+                  setTotalCount(current => current + 1);
+                  return [data, ...prev];
+                });
               }
             }
           } else if (payload.eventType === 'DELETE') {
