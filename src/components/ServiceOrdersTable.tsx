@@ -122,6 +122,15 @@ interface Filters {
   endDate: string;
 }
 
+const createDefaultFilters = (): Filters => ({
+  search: '',
+  situation: 'all',
+  technician: 'all',
+  withdrawal: 'all',
+  startDate: '',
+  endDate: '',
+});
+
 export const ServiceOrdersTable = () => {
   const isMobile = useIsMobile();
   const { session } = useAuth();
@@ -139,14 +148,7 @@ export const ServiceOrdersTable = () => {
   const [signedMediaFiles, setSignedMediaFiles] = useState<MediaFile[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
   
-  const [filters, setFilters] = useState<Filters>({
-    search: '',
-    situation: 'all',
-    technician: 'all',
-    withdrawal: 'all',
-    startDate: '',
-    endDate: '',
-  });
+  const [filters, setFilters] = useState<Filters>(createDefaultFilters);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -158,10 +160,24 @@ export const ServiceOrdersTable = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Search state - only applied when button is clicked
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(createDefaultFilters);
   
   const handleSearch = () => {
-    setAppliedFilters({ ...filters });
+    const searchTerm = filters.search.trim();
+    const isExactOsSearch = /^\d+$/.test(searchTerm);
+
+    if (isExactOsSearch) {
+      const searchOnlyFilters = {
+        ...createDefaultFilters(),
+        search: searchTerm,
+      };
+
+      setFilters(searchOnlyFilters);
+      setAppliedFilters(searchOnlyFilters);
+    } else {
+      setAppliedFilters({ ...filters, search: searchTerm });
+    }
+
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -543,14 +559,7 @@ export const ServiceOrdersTable = () => {
             <Button
               variant="ghost"
               onClick={() => {
-                const clearedFilters = {
-                  search: '',
-                  situation: 'all',
-                  technician: 'all',
-                  withdrawal: 'all',
-                  startDate: '',
-                  endDate: '',
-                };
+                const clearedFilters = createDefaultFilters();
                 setFilters(clearedFilters);
                 setAppliedFilters(clearedFilters);
                 setSortBy('os_number');

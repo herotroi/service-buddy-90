@@ -93,6 +93,15 @@ interface Filters {
   endDate: string;
 }
 
+const createDefaultFilters = (): Filters => ({
+  search: '',
+  situation: 'all',
+  location: 'all',
+  withdrawal: 'all',
+  startDate: '',
+  endDate: '',
+});
+
 export const ServiceOrdersInformaticaTable = () => {
   const isMobile = useIsMobile();
   const { session } = useAuth();
@@ -108,14 +117,7 @@ export const ServiceOrdersInformaticaTable = () => {
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const [printOrderId, setPrintOrderId] = useState<string | null>(null);
   
-  const [filters, setFilters] = useState<Filters>({
-    search: '',
-    situation: 'all',
-    location: 'all',
-    withdrawal: 'all',
-    startDate: '',
-    endDate: '',
-  });
+  const [filters, setFilters] = useState<Filters>(createDefaultFilters);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -125,10 +127,24 @@ export const ServiceOrdersInformaticaTable = () => {
   const [sortBy, setSortBy] = useState<'os_number' | 'entry_date' | 'client_name' | 'situation' | 'service_date'>('os_number');
 
   // Search state - only applied when button is clicked
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(createDefaultFilters);
   
   const handleSearch = () => {
-    setAppliedFilters(filters);
+    const searchTerm = filters.search.trim();
+    const isExactOsSearch = /^\d+$/.test(searchTerm);
+
+    if (isExactOsSearch) {
+      const searchOnlyFilters = {
+        ...createDefaultFilters(),
+        search: searchTerm,
+      };
+
+      setFilters(searchOnlyFilters);
+      setAppliedFilters(searchOnlyFilters);
+    } else {
+      setAppliedFilters({ ...filters, search: searchTerm });
+    }
+
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
