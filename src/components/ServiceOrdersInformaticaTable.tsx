@@ -171,7 +171,7 @@ export const ServiceOrdersInformaticaTable = () => {
     if (session && !showNewOrderDrawer && !editOrderId) {
       fetchData();
     }
-  }, [session, showNewOrderDrawer, editOrderId]);
+  }, [session, showNewOrderDrawer, editOrderId, appliedFilters]);
 
   // Configurar canal realtime separadamente para não depender do estado do drawer
   useEffect(() => {
@@ -212,19 +212,26 @@ export const ServiceOrdersInformaticaTable = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const searchTerm = appliedFilters.search?.trim() || '';
+      const isExactOsSearch = /^\d+$/.test(searchTerm);
+      let ordersQuery = supabase
+        .from('service_orders_informatica')
+        .select(`
+          *,
+          situation:situacao_informatica(id, name, color),
+          withdrawal_situation:retirada_informatica(name, color),
+          received_by:employees!service_orders_informatica_received_by_id_fkey(name),
+          equipment_location:local_equipamento(name, color)
+        `)
+        .eq('deleted', false)
+        .order('os_number', { ascending: false });
+
+      if (isExactOsSearch) {
+        ordersQuery = ordersQuery.eq('os_number', Number(searchTerm));
+      }
       
       const [ordersData, situationsData, locationsData, withdrawalData] = await Promise.all([
-        supabase
-          .from('service_orders_informatica')
-          .select(`
-            *,
-            situation:situacao_informatica(id, name, color),
-            withdrawal_situation:retirada_informatica(name, color),
-            received_by:employees!service_orders_informatica_received_by_id_fkey(name),
-            equipment_location:local_equipamento(name, color)
-          `)
-          .eq('deleted', false)
-          .order('os_number', { ascending: false }),
+        ordersQuery,
         supabase.from('situacao_informatica').select('*'),
         supabase.from('local_equipamento').select('*'),
         supabase.from('retirada_informatica').select('*'),
@@ -381,6 +388,11 @@ export const ServiceOrdersInformaticaTable = () => {
   );
 
   const totalPages = Math.ceil(filteredOrders.length / pagination.perPage);
+  const isExactOsSearchApplied = /^\d+$/.test(appliedFilters.search.trim());
+  const emptyStateMessage = isExactOsSearchApplied
+    ? 'Nenhuma OS com esse número foi encontrada'
+    : 'Nenhuma ordem de serviço encontrada';
+  const exactSearchLabel = isExactOsSearchApplied ? `Busca exata por OS #${appliedFilters.search.trim()}` : null;
 
   const viewedOrder = orders.find(o => o.id === viewOrderId);
 
@@ -516,6 +528,7 @@ export const ServiceOrdersInformaticaTable = () => {
           Mostrando <span className="font-medium text-foreground">{paginatedOrders.length}</span> de{' '}
           <span className="font-medium text-foreground">{filteredOrders.length}</span> OS
         </span>
+        {exactSearchLabel && <span>{exactSearchLabel}</span>}
         <div className="flex gap-2 flex-wrap">
           <Select
             value={sortBy}
@@ -554,7 +567,7 @@ export const ServiceOrdersInformaticaTable = () => {
         <div className="space-y-3">
           {paginatedOrders.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Nenhuma ordem de serviço encontrada
+              {emptyStateMessage}
             </div>
           ) : (
             paginatedOrders.map((order) => (
@@ -627,7 +640,7 @@ export const ServiceOrdersInformaticaTable = () => {
                 {paginatedOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                      Nenhuma ordem de serviço encontrada
+                      {emptyStateMessage}
                     </TableCell>
                   </TableRow>
                 ) : (
