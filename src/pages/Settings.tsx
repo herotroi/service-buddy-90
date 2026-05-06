@@ -724,6 +724,26 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-lg border p-4 bg-muted/30 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Armazenamento utilizado</p>
+                  {bucketStats ? (
+                    <p className="text-2xl font-bold">
+                      {formatBytes(bucketStats.bytes)}
+                      <span className="text-sm font-normal text-muted-foreground ml-2">
+                        ({bucketStats.files} arquivos)
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Clique em "Calcular" para ver o tamanho total.</p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLoadStats} disabled={loadingStats || downloadingBucket}>
+                  {loadingStats ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Calcular
+                </Button>
+              </div>
+
               <Button
                 onClick={handleDownloadBucket}
                 disabled={downloadingBucket}
@@ -732,7 +752,9 @@ const Settings = () => {
                 {downloadingBucket ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Baixando...
+                    {downloadPhase === 'listing' && 'Listando arquivos...'}
+                    {downloadPhase === 'downloading' && 'Baixando arquivos...'}
+                    {downloadPhase === 'zipping' && 'Compactando .zip...'}
                   </>
                 ) : (
                   <>
@@ -748,7 +770,9 @@ const Settings = () => {
                     value={(downloadProgress.current / downloadProgress.total) * 100}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {downloadProgress.current} / {downloadProgress.total}
+                    {downloadPhase === 'zipping'
+                      ? `Compactando: ${downloadProgress.current}%`
+                      : `${downloadProgress.current} / ${downloadProgress.total} arquivos`}
                   </p>
                 </div>
               )}
