@@ -711,9 +711,7 @@ const Settings = () => {
                 {downloadingBucket ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {downloadPhase === 'listing' && 'Listando arquivos...'}
-                    {downloadPhase === 'downloading' && 'Baixando arquivos...'}
-                    {downloadPhase === 'zipping' && 'Compactando .zip...'}
+                    Iniciando download...
                   </>
                 ) : (
                   <>
@@ -723,18 +721,9 @@ const Settings = () => {
                 )}
               </Button>
 
-              {downloadingBucket && downloadProgress.total > 0 && (
-                <div className="space-y-2">
-                  <Progress
-                    value={(downloadProgress.current / downloadProgress.total) * 100}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {downloadPhase === 'zipping'
-                      ? `Compactando: ${downloadProgress.current}%`
-                      : `${downloadProgress.current} / ${downloadProgress.total} arquivos`}
-                  </p>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                O arquivo é gerado e enviado diretamente pelo servidor — não consome memória nem CPU do navegador.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
