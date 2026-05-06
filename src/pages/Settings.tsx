@@ -36,8 +36,6 @@ const Settings = () => {
   const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
   const [printQrCodeInformaticaEnabled, setPrintQrCodeInformaticaEnabled] = useState(true);
   const [downloadingBucket, setDownloadingBucket] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
-  const [downloadPhase, setDownloadPhase] = useState<'idle' | 'listing' | 'downloading' | 'zipping'>('idle');
   const [bucketStats, setBucketStats] = useState<{ files: number; bytes: number } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
@@ -92,100 +90,38 @@ const Settings = () => {
 
   const handleDownloadBucket = async () => {
     try {
-      // File System Access API: salva direto no disco, mantendo pastas e nomes.
-      // Sem ZIP, sem RAM acumulada, sem limite de CPU do servidor.
-      if (!(window as any).showDirectoryPicker) {
-        toast({
-          title: 'Navegador não suportado',
-          description: 'Use Chrome, Edge ou Opera no computador para baixar a pasta completa.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // showDirectoryPicker é bloqueado em iframes cross-origin (preview do Lovable).
-      // Detecta e abre em nova aba (top-level) com flag para iniciar o download automaticamente.
-      const inIframe = window.self !== window.top;
-      if (inIframe) {
-        window.open(window.location.href, '_blank', 'noopener');
-        toast({
-          title: 'Abrindo em nova aba',
-          description: 'O navegador não permite escolher pasta dentro do preview. Na nova aba, clique novamente em "Baixar pasta completa".',
-        });
-        return;
-      }
-
-      const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
-
       setDownloadingBucket(true);
-      setDownloadPhase('listing');
-
-      const files = await listAllFiles();
-      if (files.length === 0) {
-        toast({ title: 'Bucket vazio', description: 'Nenhum arquivo para baixar.' });
+      // Pega o token da sessão atual para autenticar a edge function
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
         return;
       }
 
-      setDownloadPhase('downloading');
-      setDownloadProgress({ current: 0, total: files.length });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const url = `${supabaseUrl}/functions/v1/download-bucket-zip?token=${encodeURIComponent(token)}`;
 
-      // Cache de subpastas para evitar recriar
-      const dirCache = new Map<string, any>();
-      dirCache.set('', dirHandle);
-      const ensureDir = async (parts: string[]) => {
-        let key = '';
-        let handle: any = dirHandle;
-        for (const part of parts) {
-          key = key ? `${key}/${part}` : part;
-          if (dirCache.has(key)) {
-            handle = dirCache.get(key);
-          } else {
-            handle = await handle.getDirectoryHandle(part, { create: true });
-            dirCache.set(key, handle);
-          }
-        }
-        return handle;
-      };
-
-      let done = 0;
-      let failed = 0;
-      for (const f of files) {
-        try {
-          const segs = f.path.split('/');
-          const fileName = segs.pop()!;
-          const folderHandle = await ensureDir(segs);
-
-          const { data: signed, error: sErr } = await supabase.storage
-            .from('service-orders-media')
-            .createSignedUrl(f.path, 3600);
-          if (sErr || !signed?.signedUrl) throw sErr || new Error('signed url falhou');
-
-          const resp = await fetch(signed.signedUrl);
-          if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
-
-          const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
-          const writable = await fileHandle.createWritable();
-          await resp.body.pipeTo(writable);
-        } catch (e) {
-          console.error('Falhou:', f.path, e);
-          failed++;
-        }
-        done++;
-        setDownloadProgress({ current: done, total: files.length });
-      }
+      // Download nativo do navegador: o backend gera e faz streaming do .zip.
+      // O frontend não processa nada — apenas dispara o download.
+      const a = document.createElement('a');
+      a.href = url;
+      a.rel = 'noopener';
+      // target _blank evita que o navegador troque a navegação da aba atual
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
       toast({
-        title: 'Download concluído',
-        description: `${done - failed} arquivo(s) salvos${failed ? `, ${failed} falharam` : ''}.`,
+        title: 'Download iniciado',
+        description: 'O arquivo .zip será baixado pelo navegador. Não feche a aba até concluir.',
       });
     } catch (err: any) {
-      if (err?.name === 'AbortError') return; // usuário cancelou o seletor
       console.error(err);
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
     } finally {
       setDownloadingBucket(false);
-      setDownloadPhase('idle');
-      setDownloadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -775,9 +711,7 @@ const Settings = () => {
                 {downloadingBucket ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {downloadPhase === 'listing' && 'Listando arquivos...'}
-                    {downloadPhase === 'downloading' && 'Baixando arquivos...'}
-                    {downloadPhase === 'zipping' && 'Compactando .zip...'}
+                    Iniciando download...
                   </>
                 ) : (
                   <>
@@ -787,18 +721,9 @@ const Settings = () => {
                 )}
               </Button>
 
-              {downloadingBucket && downloadProgress.total > 0 && (
-                <div className="space-y-2">
-                  <Progress
-                    value={(downloadProgress.current / downloadProgress.total) * 100}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {downloadPhase === 'zipping'
-                      ? `Compactando: ${downloadProgress.current}%`
-                      : `${downloadProgress.current} / ${downloadProgress.total} arquivos`}
-                  </p>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                O arquivo é gerado e enviado diretamente pelo servidor — não consome memória nem CPU do navegador.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
