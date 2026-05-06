@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Upload, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import JSZip from 'jszip';
+import { downloadZip } from 'client-zip';
 import N8nDocumentation from '@/components/N8nDocumentation';
 
 const Settings = () => {
@@ -92,6 +92,8 @@ const Settings = () => {
   };
 
   const handleDownloadBucket = async () => {
+    const fileName = `service-orders-media-${new Date().toISOString().slice(0, 10)}.zip`;
+    let writable: FileSystemWritableFileStream | null = null;
     try {
       setDownloadingBucket(true);
       setDownloadPhase('listing');
@@ -101,8 +103,6 @@ const Settings = () => {
 
       if (allFiles.length === 0) {
         toast({ title: 'Nenhum arquivo encontrado', variant: 'destructive' });
-        setDownloadingBucket(false);
-        setDownloadPhase('idle');
         return;
       }
 
@@ -111,25 +111,36 @@ const Settings = () => {
         bytes: allFiles.reduce((a, f) => a + (f.size || 0), 0),
       });
 
+      // Tenta usar File System Access API para stream direto ao disco (evita estouro de memória)
+      const supportsFS = typeof (window as any).showSaveFilePicker === 'function';
+      if (supportsFS) {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{ description: 'Zip', accept: { 'application/zip': ['.zip'] } }],
+          });
+          writable = await handle.createWritable();
+        } catch (e: any) {
+          if (e?.name === 'AbortError') {
+            return;
+          }
+          writable = null;
+        }
+      }
+
       setDownloadPhase('downloading');
       setDownloadProgress({ current: 0, total: allFiles.length });
-      const zip = new JSZip();
 
       let done = 0;
-      const concurrency = 6;
-      let idx = 0;
-
-      const worker = async () => {
-        while (idx < allFiles.length) {
-          const i = idx++;
-          const file = allFiles[i];
+      async function* fileIterator() {
+        for (const file of allFiles) {
           try {
             const { data, error } = await supabase.storage
               .from('service-orders-media')
               .download(file.path);
             if (error) throw error;
             if (data) {
-              zip.file(file.path, data);
+              yield { name: file.path, input: data, lastModified: new Date() };
             }
           } catch (e) {
             console.error('Erro ao baixar', file.path, e);
@@ -137,28 +148,34 @@ const Settings = () => {
           done++;
           setDownloadProgress({ current: done, total: allFiles.length });
         }
-      };
+      }
 
-      await Promise.all(Array.from({ length: concurrency }, worker));
+      const response = downloadZip(fileIterator());
 
-      setDownloadPhase('zipping');
-      setDownloadProgress({ current: 0, total: 100 });
-      const zipBlob = await zip.generateAsync({ type: 'blob' }, (meta) => {
-        setDownloadProgress({ current: Math.round(meta.percent), total: 100 });
-      });
-
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(zipBlob);
-      a.download = `service-orders-media-${new Date().toISOString().slice(0, 10)}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
+      if (writable) {
+        // Stream direto ao arquivo no disco - sem estourar memória
+        await response.body!.pipeTo(writable as unknown as WritableStream);
+        writable = null;
+      } else {
+        // Fallback: gera Blob e dispara link (pode ser pesado para muitos GB)
+        setDownloadPhase('zipping');
+        const zipBlob = await response.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(zipBlob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      }
 
       toast({ title: 'Download concluído!', description: `${allFiles.length} arquivos baixados.` });
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
+      if (writable) {
+        try { await writable.abort(); } catch {}
+      }
     } finally {
       setDownloadingBucket(false);
       setDownloadPhase('idle');
