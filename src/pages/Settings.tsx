@@ -123,13 +123,14 @@ const Settings = () => {
       async function* fileIterator() {
         for (const file of allFiles) {
           try {
-            const { data, error } = await supabase.storage
+            const { data: signed, error } = await supabase.storage
               .from('service-orders-media')
-              .download(file.path);
-            if (error) throw error;
-            if (data) {
-              yield { name: file.path, input: data, lastModified: new Date() };
-            }
+              .createSignedUrl(file.path, 3600);
+            if (error || !signed?.signedUrl) throw error ?? new Error('signed url falhou');
+            const resp = await fetch(signed.signedUrl);
+            if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+            // Passa a Response direto: client-zip consome o stream sem carregar em memória
+            yield { name: file.path, input: resp, lastModified: new Date() };
           } catch (e) {
             console.error('Erro ao baixar', file.path, e);
           }
