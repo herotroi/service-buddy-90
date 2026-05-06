@@ -35,40 +35,45 @@ const Settings = () => {
   const [osStartNumberInformatica, setOsStartNumberInformatica] = useState('1');
   const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
   const [printQrCodeInformaticaEnabled, setPrintQrCodeInformaticaEnabled] = useState(true);
-  const [downloadingBucket, setDownloadingBucket] = useState(false);
+  const TOTAL_BLOCKS = 8;
+  const [downloadingBlock, setDownloadingBlock] = useState<number | null>(null);
   const [bucketStats, setBucketStats] = useState<{ files: number; bytes: number } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<{ done: number; failed: number; total: number } | null>(null);
-  const [hasResume, setHasResume] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem('bucket_download_progress');
-      if (!raw) return false;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed?.completed) && parsed.completed.length > 0;
-    } catch { return false; }
+  const [blockProgress, setBlockProgress] = useState<Record<number, { done: number; failed: number; total: number }>>({});
+  const [blockResume, setBlockResume] = useState<Record<number, boolean>>(() => {
+    const out: Record<number, boolean> = {};
+    for (let i = 0; i < TOTAL_BLOCKS; i++) {
+      try {
+        const raw = localStorage.getItem(`bucket_download_progress_b${i}`);
+        const p = raw ? JSON.parse(raw) : null;
+        out[i] = Array.isArray(p?.completed) && p.completed.length > 0;
+      } catch { out[i] = false; }
+    }
+    return out;
   });
 
-  const PROGRESS_KEY = 'bucket_download_progress';
-  const loadProgress = (): { completed: string[]; failed: string[] } => {
+  const progressKey = (block: number) => `bucket_download_progress_b${block}`;
+  const loadProgress = (block: number): { completed: string[]; failed: string[] } => {
     try {
-      const raw = localStorage.getItem(PROGRESS_KEY);
+      const raw = localStorage.getItem(progressKey(block));
       if (!raw) return { completed: [], failed: [] };
       const p = JSON.parse(raw);
       return { completed: p.completed || [], failed: p.failed || [] };
     } catch { return { completed: [], failed: [] }; }
   };
-  const saveProgress = (completed: Set<string>, failed: Set<string>) => {
+  const saveProgress = (block: number, completed: Set<string>, failed: Set<string>) => {
     try {
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+      localStorage.setItem(progressKey(block), JSON.stringify({
         completed: Array.from(completed),
         failed: Array.from(failed),
         updatedAt: Date.now(),
       }));
     } catch {}
   };
-  const clearProgress = () => {
-    localStorage.removeItem(PROGRESS_KEY);
-    setHasResume(false);
+  const clearProgress = (block: number) => {
+    localStorage.removeItem(progressKey(block));
+    setBlockResume((prev) => ({ ...prev, [block]: false }));
+    setBlockProgress((prev) => { const n = { ...prev }; delete n[block]; return n; });
   };
 
   const formatBytes = (bytes: number) => {
@@ -120,7 +125,7 @@ const Settings = () => {
     }
   };
 
-  const handleDownloadBucket = async () => {
+  const handleDownloadBucket = async (block: number) => {
     // Verifica suporte ao File System Access API (Chrome/Edge/Opera desktop)
     const picker = (window as any).showDirectoryPicker;
     if (typeof picker !== 'function') {
@@ -137,7 +142,7 @@ const Settings = () => {
       window.open(window.location.href, '_blank', 'noopener');
       toast({
         title: 'Abrindo em nova aba',
-        description: 'Clique novamente em "Baixar pastas" na nova aba para escolher a pasta de destino.',
+        description: 'Clique novamente no bloco desejado na nova aba para escolher a pasta de destino.',
       });
       return;
     }
@@ -152,13 +157,25 @@ const Settings = () => {
     }
 
     try {
-      setDownloadingBucket(true);
+      setDownloadingBlock(block);
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const publicBase = `${supabaseUrl}/storage/v1/object/public/service-orders-media`;
 
-      const files = await listAllFiles();
-      if (files.length === 0) {
+      const allFiles = await listAllFiles();
+      if (allFiles.length === 0) {
         toast({ title: 'Nada para baixar', description: 'O bucket está vazio.' });
+        return;
+      }
+
+      // Separa em 8 blocos deterministicamente, sem repetição.
+      // Ordena por path e fatia em partes iguais — garante mesmo arquivo sempre no mesmo bloco.
+      const sorted = [...allFiles].sort((a, b) => a.path.localeCompare(b.path));
+      const size = Math.ceil(sorted.length / TOTAL_BLOCKS);
+      const start = block * size;
+      const end = Math.min(start + size, sorted.length);
+      const files = sorted.slice(start, end);
+      if (files.length === 0) {
+        toast({ title: `Bloco ${block + 1} vazio`, description: 'Não há arquivos neste bloco.' });
         return;
       }
 
@@ -178,16 +195,16 @@ const Settings = () => {
         return current;
       };
 
-      const prev = loadProgress();
+      const prev = loadProgress(block);
       const completed = new Set<string>(prev.completed);
       const failedSet = new Set<string>();
       let done = completed.size;
       let failed = 0;
-      setDownloadProgress({ done, failed, total: files.length });
+      setBlockProgress((p) => ({ ...p, [block]: { done, failed, total: files.length } }));
 
       const remaining = files.filter((f) => !completed.has(f.path));
       if (completed.size > 0) {
-        toast({ title: 'Retomando download', description: `${completed.size} já baixados, faltam ${remaining.length}.` });
+        toast({ title: `Retomando bloco ${block + 1}`, description: `${completed.size} já baixados, faltam ${remaining.length}.` });
       }
 
       for (const f of remaining) {
@@ -205,34 +222,32 @@ const Settings = () => {
           await resp.body.pipeTo(writable);
           done++;
           completed.add(f.path);
-          // Persiste a cada arquivo — sobrevive a travamento/refresh.
-          saveProgress(completed, failedSet);
-          setDownloadProgress({ done, failed, total: files.length });
-          setHasResume(true);
+          saveProgress(block, completed, failedSet);
+          setBlockProgress((p) => ({ ...p, [block]: { done, failed, total: files.length } }));
+          setBlockResume((p) => ({ ...p, [block]: true }));
         } catch (e) {
           console.error('skip', f.path, e);
           failed++;
           failedSet.add(f.path);
-          saveProgress(completed, failedSet);
-          setDownloadProgress({ done, failed, total: files.length });
+          saveProgress(block, completed, failedSet);
+          setBlockProgress((p) => ({ ...p, [block]: { done, failed, total: files.length } }));
         }
       }
 
       toast({
-        title: 'Download concluído',
+        title: `Bloco ${block + 1} concluído`,
         description: `${done} arquivos salvos${failed ? `, ${failed} falharam` : ''}.`,
       });
-      // Sucesso total → limpa progresso para próxima execução começar do zero.
-      if (failed === 0) clearProgress();
+      if (failed === 0) clearProgress(block);
     } catch (err: any) {
       console.error(err);
       toast({
-        title: 'Download interrompido',
-        description: (err.message || 'Erro') + ' — o progresso foi salvo. Clique em "Continuar download" para retomar.',
+        title: `Bloco ${block + 1} interrompido`,
+        description: (err.message || 'Erro') + ' — o progresso foi salvo. Clique novamente no bloco para retomar.',
         variant: 'destructive',
       });
     } finally {
-      setDownloadingBucket(false);
+      setDownloadingBlock(null);
     }
   };
 
