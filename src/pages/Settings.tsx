@@ -827,14 +827,31 @@ const Settings = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Baixar pastas
+                    {hasResume ? 'Continuar download' : 'Baixar pastas'}
                   </>
                 )}
               </Button>
 
+              {hasResume && !downloadingBucket && (
+                <Button variant="ghost" size="sm" onClick={clearProgress} className="ml-2">
+                  Recomeçar do zero
+                </Button>
+              )}
+
+              {downloadProgress && (
+                <div className="space-y-1">
+                  <Progress value={(downloadProgress.done / Math.max(1, downloadProgress.total)) * 100} />
+                  <p className="text-xs text-muted-foreground">
+                    {downloadProgress.done} de {downloadProgress.total} arquivos
+                    {downloadProgress.failed ? ` (${downloadProgress.failed} falharam)` : ''}
+                  </p>
+                </div>
+              )}
+
               <p className="text-xs text-muted-foreground">
                 Você escolherá uma pasta no seu computador. Os arquivos serão gravados direto no disco
-                (Chrome, Edge ou Opera no desktop).
+                (Chrome, Edge ou Opera no desktop). O progresso é salvo automaticamente — se travar ou
+                fechar a aba, basta clicar em "Continuar download" para retomar de onde parou.
               </p>
             </CardContent>
           </Card>
