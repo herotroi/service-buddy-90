@@ -92,40 +92,88 @@ const Settings = () => {
 
   const handleDownloadBucket = async () => {
     try {
-      setDownloadingBucket(true);
-      setDownloadPhase('downloading');
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
+      // File System Access API: salva direto no disco, mantendo pastas e nomes.
+      // Sem ZIP, sem RAM acumulada, sem limite de CPU do servidor.
+      if (!(window as any).showDirectoryPicker) {
+        toast({
+          title: 'Navegador não suportado',
+          description: 'Use Chrome, Edge ou Opera no computador para baixar a pasta completa.',
+          variant: 'destructive',
+        });
         return;
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const downloadUrl = `${supabaseUrl}/functions/v1/download-bucket-zip?token=${encodeURIComponent(token)}`;
+      const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
 
-      // Abre como download nativo do navegador — zero memória usada na aba.
-      // O ZIP é montado por streaming na Edge Function e enviado direto ao disco.
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.rel = 'noopener';
-      // Força em uma nova aba para o iframe do preview também
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      setDownloadingBucket(true);
+      setDownloadPhase('listing');
+
+      const files = await listAllFiles();
+      if (files.length === 0) {
+        toast({ title: 'Bucket vazio', description: 'Nenhum arquivo para baixar.' });
+        return;
+      }
+
+      setDownloadPhase('downloading');
+      setDownloadProgress({ current: 0, total: files.length });
+
+      // Cache de subpastas para evitar recriar
+      const dirCache = new Map<string, any>();
+      dirCache.set('', dirHandle);
+      const ensureDir = async (parts: string[]) => {
+        let key = '';
+        let handle: any = dirHandle;
+        for (const part of parts) {
+          key = key ? `${key}/${part}` : part;
+          if (dirCache.has(key)) {
+            handle = dirCache.get(key);
+          } else {
+            handle = await handle.getDirectoryHandle(part, { create: true });
+            dirCache.set(key, handle);
+          }
+        }
+        return handle;
+      };
+
+      let done = 0;
+      let failed = 0;
+      for (const f of files) {
+        try {
+          const segs = f.path.split('/');
+          const fileName = segs.pop()!;
+          const folderHandle = await ensureDir(segs);
+
+          const { data: signed, error: sErr } = await supabase.storage
+            .from('service-orders-media')
+            .createSignedUrl(f.path, 3600);
+          if (sErr || !signed?.signedUrl) throw sErr || new Error('signed url falhou');
+
+          const resp = await fetch(signed.signedUrl);
+          if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+
+          const fileHandle = await folderHandle.getFileHandle(fileName, { create: true });
+          const writable = await fileHandle.createWritable();
+          await resp.body.pipeTo(writable);
+        } catch (e) {
+          console.error('Falhou:', f.path, e);
+          failed++;
+        }
+        done++;
+        setDownloadProgress({ current: done, total: files.length });
+      }
 
       toast({
-        title: 'Download iniciado',
-        description: 'O arquivo ZIP será montado no servidor e baixado direto pelo navegador.',
+        title: 'Download concluído',
+        description: `${done - failed} arquivo(s) salvos${failed ? `, ${failed} falharam` : ''}.`,
       });
     } catch (err: any) {
+      if (err?.name === 'AbortError') return; // usuário cancelou o seletor
       console.error(err);
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
     } finally {
       setDownloadingBucket(false);
       setDownloadPhase('idle');
+      setDownloadProgress({ current: 0, total: 0 });
     }
   };
 
