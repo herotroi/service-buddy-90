@@ -107,12 +107,10 @@ const Settings = () => {
       // Detecta e abre em nova aba (top-level) com flag para iniciar o download automaticamente.
       const inIframe = window.self !== window.top;
       if (inIframe) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('autoDownloadBucket', '1');
-        window.open(url.toString(), '_blank', 'noopener');
+        window.open(window.location.href, '_blank', 'noopener');
         toast({
           title: 'Abrindo em nova aba',
-          description: 'O download da pasta precisa ser iniciado fora do preview. Clique em "Permitir" e escolha a pasta na nova aba.',
+          description: 'O navegador não permite escolher pasta dentro do preview. Na nova aba, clique novamente em "Baixar pasta completa".',
         });
         return;
       }
