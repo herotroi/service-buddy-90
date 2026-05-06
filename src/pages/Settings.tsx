@@ -103,6 +103,18 @@ const Settings = () => {
         return;
       }
 
+      // showDirectoryPicker é bloqueado em iframes cross-origin (preview do Lovable).
+      // Detecta e abre em nova aba (top-level) com flag para iniciar o download automaticamente.
+      const inIframe = window.self !== window.top;
+      if (inIframe) {
+        window.open(window.location.href, '_blank', 'noopener');
+        toast({
+          title: 'Abrindo em nova aba',
+          description: 'O navegador não permite escolher pasta dentro do preview. Na nova aba, clique novamente em "Baixar pasta completa".',
+        });
+        return;
+      }
+
       const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
 
       setDownloadingBucket(true);
