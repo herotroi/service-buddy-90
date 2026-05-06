@@ -103,6 +103,20 @@ const Settings = () => {
         return;
       }
 
+      // showDirectoryPicker é bloqueado em iframes cross-origin (preview do Lovable).
+      // Detecta e abre em nova aba (top-level) com flag para iniciar o download automaticamente.
+      const inIframe = window.self !== window.top;
+      if (inIframe) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('autoDownloadBucket', '1');
+        window.open(url.toString(), '_blank', 'noopener');
+        toast({
+          title: 'Abrindo em nova aba',
+          description: 'O download da pasta precisa ser iniciado fora do preview. Clique em "Permitir" e escolha a pasta na nova aba.',
+        });
+        return;
+      }
+
       const dirHandle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
 
       setDownloadingBucket(true);
