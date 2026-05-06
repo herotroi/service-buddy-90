@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.n8n-reports]
 verify_jwt = false
+
+[functions.download-bucket-zip]
+verify_jwt = false

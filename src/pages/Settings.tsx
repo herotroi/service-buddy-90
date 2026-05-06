@@ -11,11 +11,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Upload, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
-import { downloadZip } from 'client-zip';
-import streamSaver from 'streamsaver';
-
-// Configura mitm para funcionar dentro de iframes (preview Lovable)
-streamSaver.mitm = 'https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0';
 import N8nDocumentation from '@/components/N8nDocumentation';
 
 const Settings = () => {
@@ -96,68 +91,41 @@ const Settings = () => {
   };
 
   const handleDownloadBucket = async () => {
-    const fileName = `service-orders-media-${new Date().toISOString().slice(0, 10)}.zip`;
-    let writer: WritableStreamDefaultWriter | null = null;
-    let fileStream: WritableStream | null = null;
     try {
       setDownloadingBucket(true);
-      setDownloadPhase('listing');
-      setDownloadProgress({ current: 0, total: 0 });
+      setDownloadPhase('downloading');
 
-      const allFiles = await listAllFiles();
-
-      if (allFiles.length === 0) {
-        toast({ title: 'Nenhum arquivo encontrado', variant: 'destructive' });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
         return;
       }
 
-      setBucketStats({
-        files: allFiles.length,
-        bytes: allFiles.reduce((a, f) => a + (f.size || 0), 0),
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const downloadUrl = `${supabaseUrl}/functions/v1/download-bucket-zip?token=${encodeURIComponent(token)}`;
+
+      // Abre como download nativo do navegador — zero memória usada na aba.
+      // O ZIP é montado por streaming na Edge Function e enviado direto ao disco.
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.rel = 'noopener';
+      // Força em uma nova aba para o iframe do preview também
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      toast({
+        title: 'Download iniciado',
+        description: 'O arquivo ZIP será montado no servidor e baixado direto pelo navegador.',
       });
-
-      setDownloadPhase('downloading');
-      setDownloadProgress({ current: 0, total: allFiles.length });
-
-      let done = 0;
-      async function* fileIterator() {
-        for (const file of allFiles) {
-          try {
-            const { data: signed, error } = await supabase.storage
-              .from('service-orders-media')
-              .createSignedUrl(file.path, 3600);
-            if (error || !signed?.signedUrl) throw error ?? new Error('signed url falhou');
-            const resp = await fetch(signed.signedUrl);
-            if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
-            // Passa a Response direto: client-zip consome o stream sem carregar em memória
-            yield { name: file.path, input: resp, lastModified: new Date() };
-          } catch (e) {
-            console.error('Erro ao baixar', file.path, e);
-          }
-          done++;
-          setDownloadProgress({ current: done, total: allFiles.length });
-        }
-      }
-
-      const response = downloadZip(fileIterator());
-
-      // Usa StreamSaver para baixar direto ao disco como download nativo
-      // (funciona em qualquer contexto, inclusive iframes)
-      fileStream = streamSaver.createWriteStream(fileName);
-      await response.body!.pipeTo(fileStream);
-      fileStream = null;
-
-      toast({ title: 'Download concluído!', description: `${allFiles.length} arquivos baixados.` });
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
-      if (fileStream) {
-        try { await fileStream.abort(); } catch {}
-      }
     } finally {
       setDownloadingBucket(false);
       setDownloadPhase('idle');
-      setDownloadProgress({ current: 0, total: 0 });
     }
   };
 
