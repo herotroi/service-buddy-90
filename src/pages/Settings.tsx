@@ -823,50 +823,57 @@ const Settings = () => {
                     <p className="text-sm text-muted-foreground">Clique em "Calcular" para ver o tamanho total.</p>
                   )}
                 </div>
-                <Button variant="outline" size="sm" onClick={handleLoadStats} disabled={loadingStats || downloadingBucket}>
+                <Button variant="outline" size="sm" onClick={handleLoadStats} disabled={loadingStats || downloadingBlock !== null}>
                   {loadingStats ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Calcular
                 </Button>
               </div>
 
-              <Button
-                onClick={handleDownloadBucket}
-                disabled={downloadingBucket}
-                className="w-full sm:w-auto"
-              >
-                {downloadingBucket ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Baixando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="mr-2 h-4 w-4" />
-                    {hasResume ? 'Continuar download' : 'Baixar pastas'}
-                  </>
-                )}
-              </Button>
-
-              {hasResume && !downloadingBucket && (
-                <Button variant="ghost" size="sm" onClick={clearProgress} className="ml-2">
-                  Recomeçar do zero
-                </Button>
-              )}
-
-              {downloadProgress && (
-                <div className="space-y-1">
-                  <Progress value={(downloadProgress.done / Math.max(1, downloadProgress.total)) * 100} />
-                  <p className="text-xs text-muted-foreground">
-                    {downloadProgress.done} de {downloadProgress.total} arquivos
-                    {downloadProgress.failed ? ` (${downloadProgress.failed} falharam)` : ''}
-                  </p>
-                </div>
-              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Array.from({ length: TOTAL_BLOCKS }).map((_, i) => {
+                  const isThis = downloadingBlock === i;
+                  const anyRunning = downloadingBlock !== null;
+                  const prog = blockProgress[i];
+                  const resume = blockResume[i];
+                  return (
+                    <div key={i} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium">Bloco {i + 1} de {TOTAL_BLOCKS}</p>
+                        {resume && !isThis && (
+                          <Button variant="ghost" size="sm" onClick={() => clearProgress(i)}>
+                            Recomeçar
+                          </Button>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => handleDownloadBucket(i)}
+                        disabled={anyRunning}
+                        size="sm"
+                        className="w-full"
+                      >
+                        {isThis ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Baixando...</>
+                        ) : (
+                          <><Download className="mr-2 h-4 w-4" />{resume ? 'Continuar' : 'Baixar bloco'}</>
+                        )}
+                      </Button>
+                      {prog && (
+                        <div className="space-y-1">
+                          <Progress value={(prog.done / Math.max(1, prog.total)) * 100} />
+                          <p className="text-xs text-muted-foreground">
+                            {prog.done} de {prog.total}{prog.failed ? ` (${prog.failed} falharam)` : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
               <p className="text-xs text-muted-foreground">
-                Você escolherá uma pasta no seu computador. Os arquivos serão gravados direto no disco
-                (Chrome, Edge ou Opera no desktop). O progresso é salvo automaticamente — se travar ou
-                fechar a aba, basta clicar em "Continuar download" para retomar de onde parou.
+                O bucket é dividido em {TOTAL_BLOCKS} blocos sem arquivos repetidos. Baixe um bloco por vez
+                escolhendo uma pasta no seu computador (Chrome, Edge ou Opera no desktop). O progresso de
+                cada bloco é salvo — se travar, clique em "Continuar" para retomar de onde parou.
               </p>
             </CardContent>
           </Card>
