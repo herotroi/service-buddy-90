@@ -33,46 +33,56 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
+    const BUCKET = 'service-orders-media';
 
-    // Lista todos os arquivos do bucket recursivamente
-    const allFiles: { path: string }[] = [];
-    const queue: string[] = [''];
-    while (queue.length) {
-      const prefix = queue.shift()!;
-      let offset = 0;
-      while (true) {
-        const { data, error } = await admin.storage
-          .from('service-orders-media')
-          .list(prefix, { limit: 1000, offset });
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        for (const entry of data as any[]) {
-          const full = prefix ? `${prefix}/${entry.name}` : entry.name;
-          if (entry.id === null || !entry.metadata) {
-            queue.push(full);
-          } else {
-            allFiles.push({ path: full });
+    // Stream: lista e baixa arquivos sob demanda (não acumula tudo em memória/CPU antes do zip).
+    async function* listAllFiles(): AsyncGenerator<string> {
+      const queue: string[] = [''];
+      while (queue.length) {
+        const prefix = queue.shift()!;
+        let offset = 0;
+        while (true) {
+          const { data, error } = await admin.storage
+            .from(BUCKET)
+            .list(prefix, { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          for (const entry of data as any[]) {
+            const full = prefix ? `${prefix}/${entry.name}` : entry.name;
+            if (entry.id === null || !entry.metadata) {
+              queue.push(full);
+            } else {
+              yield full;
+            }
           }
+          if (data.length < 1000) break;
+          offset += 1000;
         }
-        if (data.length < 1000) break;
-        offset += 1000;
       }
     }
 
+    // Bucket é público — usa getPublicUrl (sem CPU/API extra por arquivo).
+    const publicBase = `${supabaseUrl}/storage/v1/object/public/${BUCKET}`;
+
+    let count = 0;
+    let failed = 0;
     async function* fileIterator() {
-      for (const f of allFiles) {
+      for await (const path of listAllFiles()) {
         try {
-          const { data: signed, error } = await admin.storage
-            .from('service-orders-media')
-            .createSignedUrl(f.path, 3600);
-          if (error || !signed?.signedUrl) continue;
-          const resp = await fetch(signed.signedUrl);
-          if (!resp.ok || !resp.body) continue;
-          yield { name: f.path, input: resp, lastModified: new Date() };
+          const resp = await fetch(`${publicBase}/${path.split('/').map(encodeURIComponent).join('/')}`);
+          if (!resp.ok || !resp.body) {
+            failed++;
+            console.error('skip', path, resp.status);
+            continue;
+          }
+          count++;
+          yield { name: path, input: resp, lastModified: new Date() };
         } catch (e) {
-          console.error('skip', f.path, e);
+          failed++;
+          console.error('skip', path, e);
         }
       }
+      console.log(`zip done: ${count} files, ${failed} failures`);
     }
 
     const zipResponse = downloadZip(fileIterator());
