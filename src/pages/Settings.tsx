@@ -38,6 +38,38 @@ const Settings = () => {
   const [downloadingBucket, setDownloadingBucket] = useState(false);
   const [bucketStats, setBucketStats] = useState<{ files: number; bytes: number } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<{ done: number; failed: number; total: number } | null>(null);
+  const [hasResume, setHasResume] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem('bucket_download_progress');
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed?.completed) && parsed.completed.length > 0;
+    } catch { return false; }
+  });
+
+  const PROGRESS_KEY = 'bucket_download_progress';
+  const loadProgress = (): { completed: string[]; failed: string[] } => {
+    try {
+      const raw = localStorage.getItem(PROGRESS_KEY);
+      if (!raw) return { completed: [], failed: [] };
+      const p = JSON.parse(raw);
+      return { completed: p.completed || [], failed: p.failed || [] };
+    } catch { return { completed: [], failed: [] }; }
+  };
+  const saveProgress = (completed: Set<string>, failed: Set<string>) => {
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+        completed: Array.from(completed),
+        failed: Array.from(failed),
+        updatedAt: Date.now(),
+      }));
+    } catch {}
+  };
+  const clearProgress = () => {
+    localStorage.removeItem(PROGRESS_KEY);
+    setHasResume(false);
+  };
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -146,9 +178,19 @@ const Settings = () => {
         return current;
       };
 
-      let done = 0;
+      const prev = loadProgress();
+      const completed = new Set<string>(prev.completed);
+      const failedSet = new Set<string>();
+      let done = completed.size;
       let failed = 0;
-      for (const f of files) {
+      setDownloadProgress({ done, failed, total: files.length });
+
+      const remaining = files.filter((f) => !completed.has(f.path));
+      if (completed.size > 0) {
+        toast({ title: 'Retomando download', description: `${completed.size} já baixados, faltam ${remaining.length}.` });
+      }
+
+      for (const f of remaining) {
         try {
           const parts = f.path.split('/');
           const fileName = parts.pop()!;
@@ -156,18 +198,23 @@ const Settings = () => {
 
           const url = `${publicBase}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
           const resp = await fetch(url);
-          if (!resp.ok || !resp.body) { failed++; continue; }
+          if (!resp.ok || !resp.body) { failed++; failedSet.add(f.path); continue; }
 
           const fileHandle = await dir.getFileHandle(fileName, { create: true });
           const writable = await fileHandle.createWritable();
           await resp.body.pipeTo(writable);
           done++;
+          completed.add(f.path);
+          // Persiste a cada arquivo — sobrevive a travamento/refresh.
+          saveProgress(completed, failedSet);
+          setDownloadProgress({ done, failed, total: files.length });
+          setHasResume(true);
         } catch (e) {
           console.error('skip', f.path, e);
           failed++;
-        }
-        if (done % 5 === 0 || done + failed === files.length) {
-          toast({ title: 'Baixando…', description: `${done + failed} de ${files.length}` });
+          failedSet.add(f.path);
+          saveProgress(completed, failedSet);
+          setDownloadProgress({ done, failed, total: files.length });
         }
       }
 
@@ -175,9 +222,15 @@ const Settings = () => {
         title: 'Download concluído',
         description: `${done} arquivos salvos${failed ? `, ${failed} falharam` : ''}.`,
       });
+      // Sucesso total → limpa progresso para próxima execução começar do zero.
+      if (failed === 0) clearProgress();
     } catch (err: any) {
       console.error(err);
-      toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
+      toast({
+        title: 'Download interrompido',
+        description: (err.message || 'Erro') + ' — o progresso foi salvo. Clique em "Continuar download" para retomar.',
+        variant: 'destructive',
+      });
     } finally {
       setDownloadingBucket(false);
     }
