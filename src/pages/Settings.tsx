@@ -89,33 +89,91 @@ const Settings = () => {
   };
 
   const handleDownloadBucket = async () => {
+    // Verifica suporte ao File System Access API (Chrome/Edge/Opera desktop)
+    const picker = (window as any).showDirectoryPicker;
+    if (typeof picker !== 'function') {
+      toast({
+        title: 'Navegador não suportado',
+        description: 'Use Chrome, Edge ou Opera no desktop para baixar as pastas diretamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Se estamos em iframe (preview do Lovable), abre nova aba — showDirectoryPicker exige top-level
+    if (window.self !== window.top) {
+      window.open(window.location.href, '_blank', 'noopener');
+      toast({
+        title: 'Abrindo em nova aba',
+        description: 'Clique novamente em "Baixar pastas" na nova aba para escolher a pasta de destino.',
+      });
+      return;
+    }
+
+    let rootDir: any;
+    try {
+      rootDir = await picker({ mode: 'readwrite' });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+      return;
+    }
+
     try {
       setDownloadingBucket(true);
-      // Pega o token da sessão atual para autenticar a edge function
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const publicBase = `${supabaseUrl}/storage/v1/object/public/service-orders-media`;
+
+      const files = await listAllFiles();
+      if (files.length === 0) {
+        toast({ title: 'Nada para baixar', description: 'O bucket está vazio.' });
         return;
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const url = `${supabaseUrl}/functions/v1/download-bucket-zip?token=${encodeURIComponent(token)}`;
+      const dirCache = new Map<string, any>();
+      const ensureDir = async (parts: string[]) => {
+        let current = rootDir;
+        let key = '';
+        for (const part of parts) {
+          key = key ? `${key}/${part}` : part;
+          if (dirCache.has(key)) {
+            current = dirCache.get(key);
+            continue;
+          }
+          current = await current.getDirectoryHandle(part, { create: true });
+          dirCache.set(key, current);
+        }
+        return current;
+      };
 
-      // Download nativo do navegador: o backend gera e faz streaming do .zip.
-      // O frontend não processa nada — apenas dispara o download.
-      const a = document.createElement('a');
-      a.href = url;
-      a.rel = 'noopener';
-      // target _blank evita que o navegador troque a navegação da aba atual
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      let done = 0;
+      let failed = 0;
+      for (const f of files) {
+        try {
+          const parts = f.path.split('/');
+          const fileName = parts.pop()!;
+          const dir = parts.length ? await ensureDir(parts) : rootDir;
+
+          const url = `${publicBase}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
+          const resp = await fetch(url);
+          if (!resp.ok || !resp.body) { failed++; continue; }
+
+          const fileHandle = await dir.getFileHandle(fileName, { create: true });
+          const writable = await fileHandle.createWritable();
+          await resp.body.pipeTo(writable);
+          done++;
+        } catch (e) {
+          console.error('skip', f.path, e);
+          failed++;
+        }
+        if (done % 5 === 0 || done + failed === files.length) {
+          toast({ title: 'Baixando…', description: `${done + failed} de ${files.length}` });
+        }
+      }
 
       toast({
-        title: 'Download iniciado',
-        description: 'O arquivo .zip será baixado pelo navegador. Não feche a aba até concluir.',
+        title: 'Download concluído',
+        description: `${done} arquivos salvos${failed ? `, ${failed} falharam` : ''}.`,
       });
     } catch (err: any) {
       console.error(err);
@@ -678,8 +736,8 @@ const Settings = () => {
             <CardHeader>
               <CardTitle>Backup de Mídias</CardTitle>
               <CardDescription>
-                Baixe todos os arquivos do storage (fotos e vídeos das OS) em um único arquivo .zip,
-                preservando a estrutura de pastas (ID da OS) e os nomes originais.
+                Baixe todas as pastas e arquivos do storage diretamente para o seu computador,
+                preservando a estrutura (ID da OS) e os nomes originais. Sem ZIP.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -711,18 +769,19 @@ const Settings = () => {
                 {downloadingBucket ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Iniciando download...
+                    Baixando...
                   </>
                 ) : (
                   <>
                     <Download className="mr-2 h-4 w-4" />
-                    Baixar todo o bucket (.zip)
+                    Baixar pastas
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-muted-foreground">
-                O arquivo é gerado e enviado diretamente pelo servidor — não consome memória nem CPU do navegador.
+                Você escolherá uma pasta no seu computador. Os arquivos serão gravados direto no disco
+                (Chrome, Edge ou Opera no desktop).
               </p>
             </CardContent>
           </Card>
