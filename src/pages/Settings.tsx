@@ -38,47 +38,85 @@ const Settings = () => {
   const [printQrCodeInformaticaEnabled, setPrintQrCodeInformaticaEnabled] = useState(true);
   const [downloadingBucket, setDownloadingBucket] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+  const [downloadPhase, setDownloadPhase] = useState<'idle' | 'listing' | 'downloading' | 'zipping'>('idle');
+  const [bucketStats, setBucketStats] = useState<{ files: number; bytes: number } | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+  };
+
+  const listAllFiles = async () => {
+    const allFiles: { path: string; size: number }[] = [];
+    const queue: string[] = [''];
+    while (queue.length) {
+      const prefix = queue.shift()!;
+      let offset = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase.storage
+          .from('service-orders-media')
+          .list(prefix, { limit: pageSize, offset });
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        for (const entry of data as any[]) {
+          const fullPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+          if (entry.id === null || !entry.metadata) {
+            queue.push(fullPath);
+          } else {
+            allFiles.push({ path: fullPath, size: entry.metadata?.size || 0 });
+          }
+        }
+        if (data.length < pageSize) break;
+        offset += pageSize;
+      }
+    }
+    return allFiles;
+  };
+
+  const handleLoadStats = async () => {
+    try {
+      setLoadingStats(true);
+      const files = await listAllFiles();
+      const bytes = files.reduce((acc, f) => acc + (f.size || 0), 0);
+      setBucketStats({ files: files.length, bytes });
+    } catch (err: any) {
+      toast({ title: 'Erro ao calcular tamanho', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const handleDownloadBucket = async () => {
     try {
       setDownloadingBucket(true);
+      setDownloadPhase('listing');
       setDownloadProgress({ current: 0, total: 0 });
 
-      // Listar todas as pastas (raiz)
-      const allFiles: { path: string }[] = [];
-      const { data: rootEntries, error: rootErr } = await supabase.storage
-        .from('service-orders-media')
-        .list('', { limit: 10000 });
-      if (rootErr) throw rootErr;
-
-      const folders = (rootEntries || []).filter((e: any) => e.id === null || !e.metadata);
-      const rootFiles = (rootEntries || []).filter((e: any) => e.id !== null && e.metadata);
-      rootFiles.forEach((f: any) => allFiles.push({ path: f.name }));
-
-      for (const folder of folders) {
-        const { data: subFiles, error: subErr } = await supabase.storage
-          .from('service-orders-media')
-          .list(folder.name, { limit: 10000 });
-        if (subErr) continue;
-        (subFiles || []).forEach((f: any) => {
-          if (f.id !== null && f.metadata) {
-            allFiles.push({ path: `${folder.name}/${f.name}` });
-          }
-        });
-      }
+      const allFiles = await listAllFiles();
 
       if (allFiles.length === 0) {
         toast({ title: 'Nenhum arquivo encontrado', variant: 'destructive' });
         setDownloadingBucket(false);
+        setDownloadPhase('idle');
         return;
       }
 
+      setBucketStats({
+        files: allFiles.length,
+        bytes: allFiles.reduce((a, f) => a + (f.size || 0), 0),
+      });
+
+      setDownloadPhase('downloading');
       setDownloadProgress({ current: 0, total: allFiles.length });
       const zip = new JSZip();
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
       let done = 0;
-      const concurrency = 8;
+      const concurrency = 6;
       let idx = 0;
 
       const worker = async () => {
@@ -86,11 +124,12 @@ const Settings = () => {
           const i = idx++;
           const file = allFiles[i];
           try {
-            const url = `${SUPABASE_URL}/storage/v1/object/public/service-orders-media/${file.path}`;
-            const res = await fetch(url);
-            if (res.ok) {
-              const blob = await res.blob();
-              zip.file(file.path, blob);
+            const { data, error } = await supabase.storage
+              .from('service-orders-media')
+              .download(file.path);
+            if (error) throw error;
+            if (data) {
+              zip.file(file.path, data);
             }
           } catch (e) {
             console.error('Erro ao baixar', file.path, e);
@@ -102,7 +141,8 @@ const Settings = () => {
 
       await Promise.all(Array.from({ length: concurrency }, worker));
 
-      toast({ title: 'Gerando arquivo .zip...', description: 'Aguarde, isso pode levar alguns instantes.' });
+      setDownloadPhase('zipping');
+      setDownloadProgress({ current: 0, total: 100 });
       const zipBlob = await zip.generateAsync({ type: 'blob' }, (meta) => {
         setDownloadProgress({ current: Math.round(meta.percent), total: 100 });
       });
@@ -121,6 +161,7 @@ const Settings = () => {
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
     } finally {
       setDownloadingBucket(false);
+      setDownloadPhase('idle');
       setDownloadProgress({ current: 0, total: 0 });
     }
   };
