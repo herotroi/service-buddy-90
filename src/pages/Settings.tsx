@@ -8,8 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import JSZip from 'jszip';
 import N8nDocumentation from '@/components/N8nDocumentation';
 
 const Settings = () => {
@@ -34,6 +36,94 @@ const Settings = () => {
   const [osStartNumberInformatica, setOsStartNumberInformatica] = useState('1');
   const [printQrCodeEnabled, setPrintQrCodeEnabled] = useState(true);
   const [printQrCodeInformaticaEnabled, setPrintQrCodeInformaticaEnabled] = useState(true);
+  const [downloadingBucket, setDownloadingBucket] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+
+  const handleDownloadBucket = async () => {
+    try {
+      setDownloadingBucket(true);
+      setDownloadProgress({ current: 0, total: 0 });
+
+      // Listar todas as pastas (raiz)
+      const allFiles: { path: string }[] = [];
+      const { data: rootEntries, error: rootErr } = await supabase.storage
+        .from('service-orders-media')
+        .list('', { limit: 10000 });
+      if (rootErr) throw rootErr;
+
+      const folders = (rootEntries || []).filter((e: any) => e.id === null || !e.metadata);
+      const rootFiles = (rootEntries || []).filter((e: any) => e.id !== null && e.metadata);
+      rootFiles.forEach((f: any) => allFiles.push({ path: f.name }));
+
+      for (const folder of folders) {
+        const { data: subFiles, error: subErr } = await supabase.storage
+          .from('service-orders-media')
+          .list(folder.name, { limit: 10000 });
+        if (subErr) continue;
+        (subFiles || []).forEach((f: any) => {
+          if (f.id !== null && f.metadata) {
+            allFiles.push({ path: `${folder.name}/${f.name}` });
+          }
+        });
+      }
+
+      if (allFiles.length === 0) {
+        toast({ title: 'Nenhum arquivo encontrado', variant: 'destructive' });
+        setDownloadingBucket(false);
+        return;
+      }
+
+      setDownloadProgress({ current: 0, total: allFiles.length });
+      const zip = new JSZip();
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+      let done = 0;
+      const concurrency = 8;
+      let idx = 0;
+
+      const worker = async () => {
+        while (idx < allFiles.length) {
+          const i = idx++;
+          const file = allFiles[i];
+          try {
+            const url = `${SUPABASE_URL}/storage/v1/object/public/service-orders-media/${file.path}`;
+            const res = await fetch(url);
+            if (res.ok) {
+              const blob = await res.blob();
+              zip.file(file.path, blob);
+            }
+          } catch (e) {
+            console.error('Erro ao baixar', file.path, e);
+          }
+          done++;
+          setDownloadProgress({ current: done, total: allFiles.length });
+        }
+      };
+
+      await Promise.all(Array.from({ length: concurrency }, worker));
+
+      toast({ title: 'Gerando arquivo .zip...', description: 'Aguarde, isso pode levar alguns instantes.' });
+      const zipBlob = await zip.generateAsync({ type: 'blob' }, (meta) => {
+        setDownloadProgress({ current: Math.round(meta.percent), total: 100 });
+      });
+
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = `service-orders-media-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+
+      toast({ title: 'Download concluído!', description: `${allFiles.length} arquivos baixados.` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
+    } finally {
+      setDownloadingBucket(false);
+      setDownloadProgress({ current: 0, total: 0 });
+    }
+  };
 
   // Mask functions
   const maskPhone = (value: string) => {
@@ -583,6 +673,46 @@ const Settings = () => {
           </Card>
 
           <N8nDocumentation />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup de Mídias</CardTitle>
+              <CardDescription>
+                Baixe todos os arquivos do storage (fotos e vídeos das OS) em um único arquivo .zip,
+                preservando a estrutura de pastas (ID da OS) e os nomes originais.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={handleDownloadBucket}
+                disabled={downloadingBucket}
+                className="w-full sm:w-auto"
+              >
+                {downloadingBucket ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Baixando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar todo o bucket (.zip)
+                  </>
+                )}
+              </Button>
+
+              {downloadingBucket && downloadProgress.total > 0 && (
+                <div className="space-y-2">
+                  <Progress
+                    value={(downloadProgress.current / downloadProgress.total) * 100}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {downloadProgress.current} / {downloadProgress.total}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
