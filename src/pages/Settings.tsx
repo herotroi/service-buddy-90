@@ -12,6 +12,10 @@ import { Loader2, Upload, Download } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { downloadZip } from 'client-zip';
+import streamSaver from 'streamsaver';
+
+// Configura mitm para funcionar dentro de iframes (preview Lovable)
+streamSaver.mitm = 'https://jimmywarting.github.io/StreamSaver.js/mitm.html?version=2.0.0';
 import N8nDocumentation from '@/components/N8nDocumentation';
 
 const Settings = () => {
@@ -93,7 +97,8 @@ const Settings = () => {
 
   const handleDownloadBucket = async () => {
     const fileName = `service-orders-media-${new Date().toISOString().slice(0, 10)}.zip`;
-    let writable: FileSystemWritableFileStream | null = null;
+    let writer: WritableStreamDefaultWriter | null = null;
+    let fileStream: WritableStream | null = null;
     try {
       setDownloadingBucket(true);
       setDownloadPhase('listing');
@@ -110,23 +115,6 @@ const Settings = () => {
         files: allFiles.length,
         bytes: allFiles.reduce((a, f) => a + (f.size || 0), 0),
       });
-
-      // Tenta usar File System Access API para stream direto ao disco (evita estouro de memória)
-      const supportsFS = typeof (window as any).showSaveFilePicker === 'function';
-      if (supportsFS) {
-        try {
-          const handle = await (window as any).showSaveFilePicker({
-            suggestedName: fileName,
-            types: [{ description: 'Zip', accept: { 'application/zip': ['.zip'] } }],
-          });
-          writable = await handle.createWritable();
-        } catch (e: any) {
-          if (e?.name === 'AbortError') {
-            return;
-          }
-          writable = null;
-        }
-      }
 
       setDownloadPhase('downloading');
       setDownloadProgress({ current: 0, total: allFiles.length });
@@ -152,29 +140,18 @@ const Settings = () => {
 
       const response = downloadZip(fileIterator());
 
-      if (writable) {
-        // Stream direto ao arquivo no disco - sem estourar memória
-        await response.body!.pipeTo(writable as unknown as WritableStream);
-        writable = null;
-      } else {
-        // Fallback: gera Blob e dispara link (pode ser pesado para muitos GB)
-        setDownloadPhase('zipping');
-        const zipBlob = await response.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(zipBlob);
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
-      }
+      // Usa StreamSaver para baixar direto ao disco como download nativo
+      // (funciona em qualquer contexto, inclusive iframes)
+      fileStream = streamSaver.createWriteStream(fileName);
+      await response.body!.pipeTo(fileStream);
+      fileStream = null;
 
       toast({ title: 'Download concluído!', description: `${allFiles.length} arquivos baixados.` });
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Erro ao baixar', description: err.message, variant: 'destructive' });
-      if (writable) {
-        try { await writable.abort(); } catch {}
+      if (fileStream) {
+        try { await fileStream.abort(); } catch {}
       }
     } finally {
       setDownloadingBucket(false);
